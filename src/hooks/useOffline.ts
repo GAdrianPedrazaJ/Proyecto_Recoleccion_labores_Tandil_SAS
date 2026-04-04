@@ -3,10 +3,6 @@ import { countNoSincronizados } from '../services/db'
 import { syncPendientes } from '../services/sync'
 import { useAppStore } from '../store/useAppStore'
 
-/**
- * Escucha online/offline, actualiza el store y al volver online ejecuta syncPendientes().
- * Devuelve isOnline, isSyncing y cantidad de registros aún no sincronizados.
- */
 export function useOffline(): {
   isOnline: boolean
   isSyncing: boolean
@@ -14,7 +10,8 @@ export function useOffline(): {
   refreshPending: () => Promise<void>
 } {
   const setIsOnline = useAppStore((s) => s.setIsOnline)
-  const [isSyncing, setIsSyncing] = useState(false)
+  const setIsSyncing = useAppStore((s) => s.setIsSyncing)
+  const isSyncing = useAppStore((s) => s.isSyncing)
   const [pendingCount, setPendingCount] = useState(0)
   const isOnline = useAppStore((s) => s.isOnline)
 
@@ -31,8 +28,9 @@ export function useOffline(): {
     } finally {
       setIsSyncing(false)
       await refreshPending()
+      window.dispatchEvent(new CustomEvent('labores:sync'))
     }
-  }, [refreshPending])
+  }, [refreshPending, setIsSyncing])
 
   useEffect(() => {
     const onOnline = () => {

@@ -19,5 +19,9 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      // Carga de IndexedDB en mount: setState tras await es válido aquí
+      'react-hooks/set-state-in-effect': 'off',
+    },
   },
 ])

@@ -3,19 +3,21 @@ import { getSyncIntervalMs } from '../utils/helpers'
 import { syncPendientes } from '../services/sync'
 import { useAppStore } from '../store/useAppStore'
 
-/**
- * Sincronización periódica según VITE_SYNC_INTERVAL_MS mientras `isOnline` en el store es true.
- * Montar `useOffline()` una sola vez en el layout para actualizar online/pending y evitar listeners duplicados.
- */
 export function useSync() {
   const isOnline = useAppStore((s) => s.isOnline)
+  const setIsSyncing = useAppStore((s) => s.setIsSyncing)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const syncNow = useCallback(async () => {
     if (!navigator.onLine) return
-    await syncPendientes()
-    window.dispatchEvent(new CustomEvent('labores:sync'))
-  }, [])
+    setIsSyncing(true)
+    try {
+      await syncPendientes()
+    } finally {
+      setIsSyncing(false)
+      window.dispatchEvent(new CustomEvent('labores:sync'))
+    }
+  }, [setIsSyncing])
 
   useEffect(() => {
     if (!isOnline) {

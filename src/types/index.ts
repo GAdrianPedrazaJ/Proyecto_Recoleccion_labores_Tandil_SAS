@@ -1,67 +1,95 @@
-/** Una labor individual dentro del registro de un colaborador (hasta 3 filas). */
+export interface Usuario {
+  id: string
+  username: string
+  passwordHash: string
+  rol: 'admin' | 'supervisor'
+  nombre: string
+  areas: string[]
+  activo: boolean
+}
+
+export interface Area {
+  id: string
+  nombre: string
+  tipo: 'Corte' | 'Labores' | 'Vegetativa'
+  sede: string
+  activo: boolean
+}
+
+export interface Colaborador {
+  id: string
+  nombre: string
+  areaId: string
+  externo: boolean
+  activo: boolean
+}
+
 export interface Labor {
   nombre: string
   camasPlaneadas: number
   rendimientoEstimadoPorCama: number
+  tiempoEstimado: number
   camasEjecutadas: number
   rendimientoRealPorCama: number
+  tiempoReal: number
+  cumplimiento: string
 }
 
-/** Tupla de hasta 3 labores (cada posición puede estar vacía). */
 export type LaboresTuple = [
+  Labor | undefined,
+  Labor | undefined,
   Labor | undefined,
   Labor | undefined,
   Labor | undefined,
 ]
 
-/** Registro de un colaborador en el formulario del día. */
 export interface RegistroColaborador {
   id: string
-  numeroColaborador: number
-  nombreColaborador: string
-  externo: boolean
+  formularioId: string
+  /** Referencia local para listados (área del formulario). */
+  areaId: string
+  fecha: string
+  dia: string
+  tipo: string
+  supervisor: string
+  sede: string
+  semana: string
+  idRegistro: string
+  no: number
+  colaborador: string
+  externo: string
   variedad: string
+  horaInicio: string
   tallosEstimados: number
   tallosReales: number
-  horaInicio: string
+  tiempoEstH: number
+  tiempoRealH: number
+  rendCorte: number
   labores: LaboresTuple
   proceso: boolean
   seguridad: boolean
   calidad: boolean
-  cumplimiento: boolean
-  compromiso: boolean
   observaciones: string
-  tiempoEjecucion: number
-}
-
-/** Formulario diario guardado en IndexedDB y enviado a Azure. */
-export interface FormularioDia {
-  id: string
-  fecha: string
-  supervisor: string
-  sede: string
-  dia:
-    | 'Lunes'
-    | 'Martes'
-    | 'Miercoles'
-    | 'Jueves'
-    | 'Viernes'
-    | 'Sabado'
-  tipo: 'Labores' | 'Corte' | 'Vegetativa'
-  colaboradores: RegistroColaborador[]
   sincronizado: boolean
-  fechaCreacion: string
   intentosSincronizacion: number
-  /**
-   * Se marca en true cuando se alcanzan 5 intentos fallidos;
-   * syncPendientes() no volverá a enviar hasta intervención manual.
-   */
+  fechaCreacion: string
   errorSincronizacionPermanente?: boolean
 }
 
-/** Fila de configuración persistida (supervisor / sede por defecto). */
-export interface ConfigRow {
+export interface FormularioDia {
   id: string
-  supervisor: string
-  sede: string
+  fecha: string
+  dia: 'Lunes' | 'Martes' | 'Miercoles' | 'Jueves' | 'Viernes' | 'Sabado'
+  tipo: 'Labores' | 'Corte' | 'Vegetativa'
+  areaId: string
+  supervisorId: string
+  colaboradores: RegistroColaborador[]
+  sincronizado: boolean
+  fechaCreacion: string
+}
+
+/** Config genérica en IndexedDB (keyPath `key`). */
+export interface ConfigEntry {
+  key: string
+  value: string
 }

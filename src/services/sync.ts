@@ -1,19 +1,14 @@
-import type { FormularioDia } from '../types'
-import { getPendientesSincronizacion, putFormulario } from './db'
+import type { RegistroColaborador } from '../types'
+import { getPendientesSincronizacion, putRegistro } from './db'
 import { postRegistroLabores } from './api'
 
 const MAX_INTENTOS = 5
 
-/**
- * Sincroniza todos los formularios con sincronizado: false.
- * - 200 → marca sincronizado: true y resetea intentos.
- * - Fallo → incrementa intentosSincronizacion; a 5 intentos marca error permanente.
- */
 export async function syncPendientes(): Promise<{
   ok: number
   failed: number
 }> {
-  const pendientes: FormularioDia[] = await getPendientesSincronizacion()
+  const pendientes: RegistroColaborador[] = await getPendientesSincronizacion()
   let ok = 0
   let failed = 0
 
@@ -21,7 +16,7 @@ export async function syncPendientes(): Promise<{
     try {
       const { status } = await postRegistroLabores(registro)
       if (status === 200) {
-        await putFormulario({
+        await putRegistro({
           ...registro,
           sincronizado: true,
           intentosSincronizacion: 0,
@@ -41,10 +36,10 @@ export async function syncPendientes(): Promise<{
   return { ok, failed }
 }
 
-async function registrarFallo(registro: FormularioDia): Promise<void> {
+async function registrarFallo(registro: RegistroColaborador): Promise<void> {
   const intentos = registro.intentosSincronizacion + 1
   const errorSincronizacionPermanente = intentos >= MAX_INTENTOS
-  await putFormulario({
+  await putRegistro({
     ...registro,
     intentosSincronizacion: intentos,
     errorSincronizacionPermanente,

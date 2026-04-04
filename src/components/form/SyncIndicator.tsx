@@ -1,18 +1,16 @@
-/** Estado de red/sync inyectado desde el layout (una sola suscripción useOffline). */
 export type SyncIndicatorState = {
   isOnline: boolean
   isSyncing: boolean
   pendingCount: number
 }
 
-const dotBase = 'h-3 w-3 rounded-full'
+const dotBase = 'h-3 w-3 shrink-0 rounded-full'
 
-/**
- * Verde pulsante: online y sin pendientes de subir.
- * Amarillo: hay registros aún no sincronizados.
- * Rojo: sin conexión.
- */
-export function SyncIndicator({ isOnline, isSyncing, pendingCount }: SyncIndicatorState) {
+export function SyncIndicator({
+  isOnline,
+  isSyncing,
+  pendingCount,
+}: SyncIndicatorState) {
   if (!isOnline) {
     return (
       <div className="flex items-center gap-2 text-xs text-red-700" title="Sin conexión">
@@ -26,10 +24,10 @@ export function SyncIndicator({ isOnline, isSyncing, pendingCount }: SyncIndicat
     return (
       <div
         className="flex items-center gap-2 text-xs text-amber-800"
-        title={`${pendingCount} pendiente(s) de sincronizar`}
+        title={`${pendingCount} pendiente(s)`}
       >
         <span className={`${dotBase} animate-pulse bg-amber-400`} />
-        Pendientes
+        Pendientes ({pendingCount})
       </div>
     )
   }
@@ -37,7 +35,7 @@ export function SyncIndicator({ isOnline, isSyncing, pendingCount }: SyncIndicat
   return (
     <div
       className="flex items-center gap-2 text-xs text-green-800"
-      title={isSyncing ? 'Sincronizando…' : 'En línea y al día'}
+      title={isSyncing ? 'Sincronizando…' : 'En línea'}
     >
       <span
         className={`${dotBase} bg-primary animate-pulse`}
