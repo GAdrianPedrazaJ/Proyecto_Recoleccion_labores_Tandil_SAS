@@ -1,5 +1,14 @@
 import axios from 'axios'
-import type { RegistroColaborador } from '../types'
+import type { Area, Colaborador, RegistroColaborador } from '../types'
+
+export interface RemoteColaborador extends Colaborador {
+  supervisorId: string
+}
+
+export interface RemoteVariedad {
+  id: string
+  nombre: string
+}
 
 /** URL base de la Azure Function (variable de entorno Vite). */
 function getFunctionUrl(): string {
@@ -12,58 +21,70 @@ function getFunctionUrl(): string {
   return url ?? ''
 }
 
-/** Cliente Axios reutilizable para POST del registro completo. */
+function baseUrl() {
+  return getFunctionUrl().replace(/\/$/, '')
+}
+
+/** Cliente Axios reutilizable. */
 export const apiClient = axios.create({
   timeout: 30_000,
   headers: { 'Content-Type': 'application/json' },
 })
 
-/**
- * Envía un FormularioDia a la Azure Function.
- * Lanza un `Error` con detalles cuando falla (network o 4xx/5xx).
- */
+function handleAxiosError(err: unknown): never {
+  if (axios.isAxiosError(err)) {
+    const status = err.response?.status
+    const body = err.response?.data
+    throw new Error(
+      `API error ${status ?? 'network'}: ${body ? JSON.stringify(body) : err.message}`,
+    )
+  }
+  throw err
+}
+
+/** Envía un RegistroColaborador a la Azure Function (POST /registro). */
 export async function postRegistroLabores(
   payload: RegistroColaborador,
 ): Promise<{ status: number; data?: unknown }> {
-  const base = getFunctionUrl()
   try {
-    const res = await apiClient.post<unknown>(base, payload)
+    const res = await apiClient.post<unknown>(`${baseUrl()}/registro`, payload)
     return { status: res.status, data: res.data }
   } catch (err) {
-    if (axios.isAxiosError(err)) {
-      const status = err.response?.status
-      const body = err.response?.data
-      const msg = `API error ${status ?? 'network'}: ${
-        body ? JSON.stringify(body) : err.message
-      }`
-      throw new Error(msg)
-    }
-    throw err
+    handleAxiosError(err)
   }
 }
 
-/** Asigna un supervisor a un area via Azure Function PATCH endpoint. */
+/** Asigna un supervisor a un área (PATCH /areas/{id}/assign). */
 export async function assignArea(
   areaId: string,
   supervisorId: string,
   changedBy?: string,
 ): Promise<{ status: number; data?: unknown }> {
-  const base = getFunctionUrl()
-  const url = `${base.replace(/\/$/, '')}/areas/${encodeURIComponent(
-    areaId,
-  )}/assign`
   try {
-    const res = await apiClient.patch(url, { supervisorId, changedBy })
+    const res = await apiClient.patch(
+      `${baseUrl()}/areas/${encodeURIComponent(areaId)}/assign`,
+      { supervisorId, changedBy },
+    )
     return { status: res.status, data: res.data }
   } catch (err) {
-    if (axios.isAxiosError(err)) {
-      const status = err.response?.status
-      const body = err.response?.data
-      const msg = `API error ${status ?? 'network'}: ${
-        body ? JSON.stringify(body) : err.message
-      }`
-      throw new Error(msg)
-    }
-    throw err
+    handleAxiosError(err)
   }
+}
+
+/** Descarga la lista de áreas desde Google Sheets (GET /areas). */
+export async function fetchAreas(): Promise<Area[]> {
+  const res = await apiClient.get<Area[]>(`${baseUrl()}/areas`)
+  return res.data
+}
+
+/** Descarga la lista de colaboradores desde Google Sheets (GET /colaboradores). */
+export async function fetchColaboradores(): Promise<RemoteColaborador[]> {
+  const res = await apiClient.get<RemoteColaborador[]>(`${baseUrl()}/colaboradores`)
+  return res.data
+}
+
+/** Descarga la lista de variedades desde Google Sheets (GET /variedades). */
+export async function fetchVariedades(): Promise<RemoteVariedad[]> {
+  const res = await apiClient.get<RemoteVariedad[]>(`${baseUrl()}/variedades`)
+  return res.data
 }

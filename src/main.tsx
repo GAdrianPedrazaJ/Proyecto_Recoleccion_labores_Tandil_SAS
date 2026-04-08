@@ -18,9 +18,12 @@ import { NuevoRegistro } from './pages/supervisor/NuevoRegistro'
 import { PendientesPage } from './pages/supervisor/PendientesPage'
 import { HistorialPage } from './pages/supervisor/HistorialPage'
 import { seedIfEmpty } from './services/db'
+import { syncFromRemote } from './services/sync'
 
 registerSW({ immediate: true })
 void seedIfEmpty()
+// Descarga áreas, colaboradores y variedades desde Google Sheets al iniciar
+void syncFromRemote()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

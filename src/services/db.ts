@@ -274,3 +274,25 @@ export async function setConfigKey(key: string, value: string): Promise<void> {
   const row: ConfigEntry = { key, value }
   await db.put('config', row)
 }
+
+/** --- Variedades (guardadas como JSON en config) --- */
+const VARIEDADES_KEY = 'variedades'
+
+export interface Variedad {
+  id: string
+  nombre: string
+}
+
+export async function getAllVariedades(): Promise<Variedad[]> {
+  const raw = await getConfigKey(VARIEDADES_KEY)
+  if (!raw) return []
+  try {
+    return JSON.parse(raw) as Variedad[]
+  } catch {
+    return []
+  }
+}
+
+export async function setAllVariedades(variedades: Variedad[]): Promise<void> {
+  await setConfigKey(VARIEDADES_KEY, JSON.stringify(variedades))
+}

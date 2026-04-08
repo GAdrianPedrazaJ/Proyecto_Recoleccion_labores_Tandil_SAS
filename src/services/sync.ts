@@ -1,6 +1,12 @@
 import type { RegistroColaborador } from '../types'
-import { getPendientesSincronizacion, putRegistro } from './db'
-import { postRegistroLabores } from './api'
+import {
+  getPendientesSincronizacion,
+  putRegistro,
+  putArea,
+  putColaborador,
+  setAllVariedades,
+} from './db'
+import { postRegistroLabores, fetchAreas, fetchColaboradores, fetchVariedades } from './api'
 
 const MAX_INTENTOS = 5
 
@@ -96,4 +102,43 @@ async function registrarFallo(registro: RegistroColaborador, errorMsg: string): 
     errorSincronizacionPermanente,
     ultimoError: errorMsg,
   })
+}
+
+/**
+ * Descarga áreas, colaboradores y variedades desde Google Sheets
+ * y los guarda en IndexedDB para uso offline.
+ */
+export async function syncFromRemote(): Promise<void> {
+  try {
+    const [areas, colaboradores, variedades] = await Promise.all([
+      fetchAreas(),
+      fetchColaboradores(),
+      fetchVariedades(),
+    ])
+
+    for (const area of areas) {
+      await putArea({
+        id: area.id,
+        nombre: area.nombre,
+        tipo: (area as { tipo?: string }).tipo as 'Corte' | 'Labores' | 'Vegetativa' ?? 'Labores',
+        sede: area.sede,
+        activo: true,
+      })
+    }
+
+    for (const col of colaboradores) {
+      await putColaborador({
+        id: col.id,
+        nombre: col.nombre,
+        areaId: col.areaId,
+        externo: col.externo,
+        activo: col.activo,
+      })
+    }
+
+    await setAllVariedades(variedades)
+  } catch (err) {
+    // Fallo silencioso: la app funciona con los datos locales
+    console.warn('[sync] syncFromRemote falló, usando datos locales:', err)
+  }
 }
