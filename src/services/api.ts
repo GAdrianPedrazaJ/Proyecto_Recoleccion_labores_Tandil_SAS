@@ -73,18 +73,18 @@ export async function assignArea(
 
 /** Descarga la lista de áreas desde Google Sheets (GET /areas). */
 export async function fetchAreas(): Promise<Area[]> {
-  const res = await apiClient.get<Area[]>(`${baseUrl()}/areas`)
+  const res = await apiClient.get<Area[]>(`${baseUrl()}/areas`, { timeout: 120_000 })
   return res.data
 }
 
 /** Descarga la lista de colaboradores desde Google Sheets (GET /colaboradores). */
 export async function fetchColaboradores(): Promise<RemoteColaborador[]> {
-  const res = await apiClient.get<RemoteColaborador[]>(`${baseUrl()}/colaboradores`)
+  const res = await apiClient.get<RemoteColaborador[]>(`${baseUrl()}/colaboradores`, { timeout: 120_000 })
   return res.data
 }
 
 /** Descarga la lista de variedades desde Google Sheets (GET /variedades). */
 export async function fetchVariedades(): Promise<RemoteVariedad[]> {
-  const res = await apiClient.get<RemoteVariedad[]>(`${baseUrl()}/variedades`)
+  const res = await apiClient.get<RemoteVariedad[]>(`${baseUrl()}/variedades`, { timeout: 120_000 })
   return res.data
 }
