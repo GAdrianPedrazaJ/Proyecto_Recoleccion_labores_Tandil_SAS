@@ -19,9 +19,9 @@ jobs:
         working-directory: azure-function
         run: npm ci
 
-      - name: Zip function app
+      - name: Zip function app (exclude node_modules, Azure will install)
         working-directory: azure-function
-        run: zip -r function.zip . -x "node_modules/**/node_modules/**"
+        run: zip -r function.zip . -x "node_modules/**" -x ".git/**"
 
       - name: Deploy to Azure Functions
         uses: azure/functions-action@v1
@@ -29,3 +29,5 @@ jobs:
           app-name: ${{ secrets.AZURE_FUNCTIONAPP_NAME }}
           publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
           package: azure-function/function.zip
+          scm-do-build-during-deployment: true
+          enable-oryx-build: true
