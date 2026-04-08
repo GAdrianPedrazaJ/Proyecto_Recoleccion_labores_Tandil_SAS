@@ -229,25 +229,18 @@ export async function getAllRegistros(): Promise<RegistroColaborador[]> {
 export async function getPendientesSincronizacion(): Promise<
   RegistroColaborador[]
 > {
-  const db = await getDb()
-  const tx = db.transaction('registros', 'readonly')
-  const idx = tx.store.index('by-sincronizado')
-  const unsynced = await idx.getAll(IDBKeyRange.only(false))
-  await tx.done
-  return unsynced.filter(
+  const all = await getAllRegistros()
+  return all.filter(
     (r) =>
+      r.sincronizado === false &&
       !r.errorSincronizacionPermanente &&
       r.intentosSincronizacion < MAX_SYNC_ATTEMPTS,
   )
 }
 
 export async function countNoSincronizados(): Promise<number> {
-  const db = await getDb()
-  const tx = db.transaction('registros', 'readonly')
-  const idx = tx.store.index('by-sincronizado')
-  const list = await idx.getAll(IDBKeyRange.only(false))
-  await tx.done
-  return list.length
+  const all = await getAllRegistros()
+  return all.filter((r) => r.sincronizado === false).length
 }
 
 export async function countRegistrosHoy(fecha: string): Promise<number> {
