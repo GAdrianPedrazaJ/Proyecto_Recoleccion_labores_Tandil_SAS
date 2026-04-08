@@ -1,15 +1,17 @@
 const { readAllRows, updateRow, appendRows } = require('../shared/sheets')
 
+// Sheet names match the Excel file tabs
 const SHEET_AREAS = process.env.SHEET_AREAS || 'Areas'
-const SHEET_AUDIT = process.env.SHEET_AUDIT || 'AssignmentsAudit'
+const SHEET_AUDIT = process.env.SHEET_AUDIT || 'Asignaciones'
 
 module.exports = async function (context, req) {
   const areaId = context.bindingData.id
   const { supervisorId, changedBy } = req.body || {}
 
   try {
+    // Areas columns: Id_Area | Nom_Area | sede | id_supervisor
     const rows = await readAllRows(SHEET_AREAS)
-    // Row 0 is header, data starts at row 1
+    // Row index 0 = header row, data starts at 1
     let foundIndex = -1
     for (let i = 1; i < rows.length; i++) {
       if (rows[i][0] === areaId) {
@@ -28,10 +30,10 @@ module.exports = async function (context, req) {
     const updated = [...existing]
     updated[3] = supervisorId || ''
 
-    // updateRow is 1-indexed in sheets (row 1 = header), so data row i = sheet row i+1
+    // Sheet rows are 1-indexed; header = row 1, first data row = row 2
     await updateRow(SHEET_AREAS, foundIndex + 1, updated)
 
-    // Append audit record
+    // Asignaciones columns: id | areaId | oldSupervisorId | newSupervisorId | changedAt | changedBy
     await appendRows(SHEET_AUDIT, [[
       `audit-${Date.now()}`,
       areaId,

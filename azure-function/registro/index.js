@@ -1,6 +1,8 @@
-const { appendRows } = require('../shared/sheets')
+const { appendRows, readAllRows } = require('../shared/sheets')
 
-const SHEET_REGISTROS = process.env.SHEET_REGISTROS || 'Registros'
+// Sheet names match the Excel file tabs
+const SHEET_FORMULARIOS = process.env.SHEET_FORMULARIOS || 'Formularios'
+const SHEET_ROWS = process.env.SHEET_ROWS || 'FormularioRows'
 
 module.exports = async function (context, req) {
   context.log('Registro function called')
@@ -11,54 +13,58 @@ module.exports = async function (context, req) {
   }
 
   try {
-    // Flatten labores
-    const labores = r.labores || []
-    const lab = (i, field) => {
-      const l = labores[i]
-      return l ? (l[field] ?? '') : ''
+    // --- Formularios tab (one row per form/day, avoid duplicates) ---
+    // Columns: id | fecha | areaId | supervisorId | tipo | fechaCreacion |
+    //          sincronizado | intentosSincronizacion | errorSincronizacionPermanente | ultimoError
+    if (r.formularioId) {
+      const existing = await readAllRows(SHEET_FORMULARIOS)
+      const alreadyExists = existing.some((row) => row[0] === r.formularioId)
+      if (!alreadyExists) {
+        await appendRows(SHEET_FORMULARIOS, [[
+          r.formularioId,
+          r.fecha ?? '',
+          r.areaId ?? '',
+          r.supervisor ?? '',
+          r.tipo ?? '',
+          r.fechaCreacion ?? '',
+          r.sincronizado ? 'TRUE' : 'FALSE',
+          r.intentosSincronizacion ?? 0,
+          r.errorSincronizacionPermanente ? 'TRUE' : 'FALSE',
+          r.ultimoError ?? '',
+        ]])
+      }
     }
 
-    const row = [
+    // --- FormularioRows tab (one row per colaborador) ---
+    // Columns: id | formularioId | numeroColaborador | nombreColaborador | externo |
+    //          variedad | tallosEstimados | tallosReales | horaInicio |
+    //          camasPlaneadas | rendimientoEstimadoPorCama | camasEjecutadas | rendimientoRealPorCama |
+    //          proceso | seguridad | calidad | cumplimiento | compromiso | observaciones | tiempoEjecucion
+    const labores = r.labores || []
+    const lab = (i, field) => (labores[i] ? (labores[i][field] ?? '') : '')
+
+    await appendRows(SHEET_ROWS, [[
       r.id,
       r.formularioId ?? '',
-      r.areaId ?? '',
-      r.fecha ?? '',
-      r.dia ?? '',
-      r.tipo ?? '',
-      r.supervisor ?? '',
-      r.sede ?? '',
-      r.semana ?? '',
       r.no ?? '',
       r.colaborador ?? '',
       r.externo ?? '',
       r.variedad ?? '',
-      r.horaInicio ?? '',
       r.tallosEstimados ?? 0,
       r.tallosReales ?? 0,
-      r.tiempoEstH ?? 0,
-      r.tiempoRealH ?? 0,
-      r.rendCorte ?? 0,
-      // Labor 1
-      lab(0, 'nombre'), lab(0, 'camasPlaneadas'), lab(0, 'camasEjecutadas'),
-      lab(0, 'rendimientoEstimadoPorCama'), lab(0, 'rendimientoRealPorCama'),
-      lab(0, 'tiempoEstimado'), lab(0, 'tiempoReal'), lab(0, 'cumplimiento'),
-      // Labor 2
-      lab(1, 'nombre'), lab(1, 'camasPlaneadas'), lab(1, 'camasEjecutadas'),
-      lab(1, 'rendimientoEstimadoPorCama'), lab(1, 'rendimientoRealPorCama'),
-      lab(1, 'tiempoEstimado'), lab(1, 'tiempoReal'), lab(1, 'cumplimiento'),
-      // Labor 3
-      lab(2, 'nombre'), lab(2, 'camasPlaneadas'), lab(2, 'camasEjecutadas'),
-      lab(2, 'rendimientoEstimadoPorCama'), lab(2, 'rendimientoRealPorCama'),
-      lab(2, 'tiempoEstimado'), lab(2, 'tiempoReal'), lab(2, 'cumplimiento'),
-      // Checks
-      r.proceso ? 'SI' : 'NO',
-      r.seguridad ? 'SI' : 'NO',
-      r.calidad ? 'SI' : 'NO',
+      r.horaInicio ?? '',
+      lab(0, 'camasPlaneadas'),
+      lab(0, 'rendimientoEstimadoPorCama'),
+      lab(0, 'camasEjecutadas'),
+      lab(0, 'rendimientoRealPorCama'),
+      r.proceso ? 'TRUE' : 'FALSE',
+      r.seguridad ? 'TRUE' : 'FALSE',
+      r.calidad ? 'TRUE' : 'FALSE',
+      lab(0, 'cumplimiento'),
+      '',           // compromiso (no está en RegistroColaborador, se deja vacío)
       r.observaciones ?? '',
-      r.fechaCreacion ?? '',
-    ]
-
-    await appendRows(SHEET_REGISTROS, [row])
+      r.tiempoRealH ?? 0,
+    ]])
 
     context.res = { status: 200, body: { ok: true } }
   } catch (err) {
