@@ -1,0 +1,10 @@
+{
+  "name": "labores-azure-functions",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@azure/identity": "^2.0.0",
+    "@microsoft/microsoft-graph-client": "^3.0.2",
+    "isomorphic-fetch": "^3.0.0"
+  }
+}

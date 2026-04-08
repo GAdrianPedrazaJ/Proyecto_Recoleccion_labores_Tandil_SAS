@@ -116,6 +116,13 @@ function openDb() {
       if (!database.objectStoreNames.contains('config')) {
         database.createObjectStore('config', { keyPath: 'key' })
       }
+      if (!database.objectStoreNames.contains('areas')) {
+        const areas = database.createObjectStore('areas', { keyPath: 'id' })
+        areas.createIndex('by-sede', 'sede')
+      }
+      if (!database.objectStoreNames.contains('supervisors')) {
+        database.createObjectStore('supervisors', { keyPath: 'id' })
+      }
     },
   })
 }
@@ -266,4 +273,31 @@ export async function setConfigKey(key: string, value: string): Promise<void> {
   const db = await getDb()
   const row: ConfigEntry = { key, value }
   await db.put('config', row)
+}
+
+/** Areas: listar y persistir. */
+export async function getAllAreas(): Promise<any[]> {
+  const db = await getDb()
+  return db.getAll('areas')
+}
+
+export async function getArea(id: string): Promise<any | undefined> {
+  const db = await getDb()
+  return db.get('areas', id)
+}
+
+export async function putArea(row: any): Promise<void> {
+  const db = await getDb()
+  await db.put('areas', row)
+}
+
+/** Supervisors */
+export async function getAllSupervisors(): Promise<any[]> {
+  const db = await getDb()
+  return db.getAll('supervisors')
+}
+
+export async function putSupervisor(row: any): Promise<void> {
+  const db = await getDb()
+  await db.put('supervisors', row)
 }
