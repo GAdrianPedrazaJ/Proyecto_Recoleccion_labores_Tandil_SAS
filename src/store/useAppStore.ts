@@ -1,29 +1,51 @@
 import { create } from 'zustand'
-import type { FormularioDia } from '../types'
+import type { Usuario } from '../types'
+import { getUsuarioByUsername, seedIfEmpty } from '../services/db'
 
-/** Estado global de app: supervisor, sede, registros del día y conectividad. */
+const STORAGE_KEY = 'labores-usuario'
+
 interface AppState {
-  supervisor: string
-  sede: string
-  registrosHoy: FormularioDia[]
-  areas: any[]
+  usuarioActual: Usuario | null
   isOnline: boolean
-  setAreas: (areas: any[]) => void
-  setSupervisor: (v: string) => void
-  setSede: (v: string) => void
-  setRegistrosHoy: (rows: FormularioDia[]) => void
+  isSyncing: boolean
+  login: (username: string, password: string) => Promise<boolean>
+  logout: () => void
+  hydrateFromStorage: () => void
   setIsOnline: (v: boolean) => void
+  setIsSyncing: (v: boolean) => void
 }
 
 export const useAppStore = create<AppState>((set) => ({
-  supervisor: '',
-  sede: '',
-  registrosHoy: [],
-  areas: [],
+  usuarioActual: null,
   isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
-  setAreas: (areas) => set({ areas }),
-  setSupervisor: (supervisor) => set({ supervisor }),
-  setSede: (sede) => set({ sede }),
-  setRegistrosHoy: (registrosHoy) => set({ registrosHoy }),
+  isSyncing: false,
+
+  login: async (username, password) => {
+    await seedIfEmpty()
+    const user = await getUsuarioByUsername(username)
+    if (!user || user.passwordHash !== password || !user.activo) return false
+    set({ usuarioActual: user })
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(user))
+    } catch { /* quota */ }
+    return true
+  },
+
+  logout: () => {
+    set({ usuarioActual: null })
+    localStorage.removeItem(STORAGE_KEY)
+  },
+
+  hydrateFromStorage: () => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY)
+      if (raw) {
+        const user: Usuario = JSON.parse(raw)
+        set({ usuarioActual: user })
+      }
+    } catch { /* corrupt */ }
+  },
+
   setIsOnline: (isOnline) => set({ isOnline }),
+  setIsSyncing: (isSyncing) => set({ isSyncing }),
 }))

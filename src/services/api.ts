@@ -1,5 +1,5 @@
 import axios from 'axios'
-import type { FormularioDia } from '../types'
+import type { RegistroColaborador } from '../types'
 
 /** URL base de la Azure Function (variable de entorno Vite). */
 function getFunctionUrl(): string {
@@ -23,7 +23,7 @@ export const apiClient = axios.create({
  * Lanza un `Error` con detalles cuando falla (network o 4xx/5xx).
  */
 export async function postRegistroLabores(
-  payload: FormularioDia,
+  payload: RegistroColaborador,
 ): Promise<{ status: number; data?: unknown }> {
   const base = getFunctionUrl()
   try {

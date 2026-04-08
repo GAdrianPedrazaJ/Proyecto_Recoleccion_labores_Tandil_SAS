@@ -1,5 +1,10 @@
-import { useCallback, useState, type ReactNode } from 'react'
-import { ToastContext, type ToastType } from './toastContext'
+import { createContext, useCallback, useState, type ReactNode } from 'react'
+
+export type ToastType = 'success' | 'error' | 'info'
+
+export const ToastContext = createContext<{
+  showToast: (message: string, type?: ToastType) => void
+} | null>(null)
 
 type ToastItem = { id: number; message: string; type: ToastType }
 

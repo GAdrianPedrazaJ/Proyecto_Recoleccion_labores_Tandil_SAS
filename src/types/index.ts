@@ -99,16 +99,6 @@ export interface ConfigEntry {
   value: string
 }
 
-/** Area de trabajo (p. ej. Rosas 10). */
-export interface Area {
-  id: string
-  nombre: string
-  sede?: string
-  supervisorId?: string
-  codigo?: string
-  active?: boolean
-}
-
 export interface Supervisor {
   id: string
   nombre: string

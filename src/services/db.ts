@@ -274,30 +274,3 @@ export async function setConfigKey(key: string, value: string): Promise<void> {
   const row: ConfigEntry = { key, value }
   await db.put('config', row)
 }
-
-/** Areas: listar y persistir. */
-export async function getAllAreas(): Promise<any[]> {
-  const db = await getDb()
-  return db.getAll('areas')
-}
-
-export async function getArea(id: string): Promise<any | undefined> {
-  const db = await getDb()
-  return db.get('areas', id)
-}
-
-export async function putArea(row: any): Promise<void> {
-  const db = await getDb()
-  await db.put('areas', row)
-}
-
-/** Supervisors */
-export async function getAllSupervisors(): Promise<any[]> {
-  const db = await getDb()
-  return db.getAll('supervisors')
-}
-
-export async function putSupervisor(row: any): Promise<void> {
-  const db = await getDb()
-  await db.put('supervisors', row)
-}
