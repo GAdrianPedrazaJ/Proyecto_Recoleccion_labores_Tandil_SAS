@@ -1,79 +1,64 @@
-const { Client } = require('@microsoft/microsoft-graph-client')
-require('isomorphic-fetch')
-const { ClientSecretCredential } = require('@azure/identity')
+const { appendRows } = require('../shared/sheets')
 
-const TENANT_ID = process.env.TENANT_ID
-const CLIENT_ID = process.env.CLIENT_ID
-const CLIENT_SECRET = process.env.CLIENT_SECRET
-const WORKBOOK_PATH = process.env.WORKBOOK_PATH // e.g. /drive/root:/path/labores-db.xlsx:
-const TABLE_FORMULARIOS = process.env.TABLE_FORMULARIOS || 'Formularios'
-const TABLE_FORMULARIOROWS = process.env.TABLE_FORMULARIOROWS || 'FormularioRows'
-
-async function getClient() {
-  const credential = new ClientSecretCredential(TENANT_ID, CLIENT_ID, CLIENT_SECRET)
-  const token = await credential.getToken('https://graph.microsoft.com/.default')
-  return Client.init({ authProvider: (done) => done(null, token.token) })
-}
+const SHEET_REGISTROS = process.env.SHEET_REGISTROS || 'Registros'
 
 module.exports = async function (context, req) {
   context.log('Registro function called')
-  const client = await getClient()
-  const payload = req.body
-  if (!payload || !payload.id) {
-    context.res = { status: 400, body: { error: 'Invalid payload' } }
+  const r = req.body
+  if (!r || !r.id) {
+    context.res = { status: 400, body: { error: 'Invalid payload: missing id' } }
     return
   }
 
   try {
-    // Add formulario row
-    const formularioValues = [
-      payload.id,
-      payload.fecha,
-      payload.areaId ?? '',
-      payload.supervisor ?? '',
-      payload.tipo ?? '',
-      payload.fechaCreacion ?? '',
-      payload.sincronizado ? 'TRUE' : 'FALSE',
-      payload.intentosSincronizacion ?? 0,
-      payload.errorSincronizacionPermanente ? 'TRUE' : 'FALSE',
-      payload.ultimoError ?? '',
+    // Flatten labores
+    const labores = r.labores || []
+    const lab = (i, field) => {
+      const l = labores[i]
+      return l ? (l[field] ?? '') : ''
+    }
+
+    const row = [
+      r.id,
+      r.formularioId ?? '',
+      r.areaId ?? '',
+      r.fecha ?? '',
+      r.dia ?? '',
+      r.tipo ?? '',
+      r.supervisor ?? '',
+      r.sede ?? '',
+      r.semana ?? '',
+      r.no ?? '',
+      r.colaborador ?? '',
+      r.externo ?? '',
+      r.variedad ?? '',
+      r.horaInicio ?? '',
+      r.tallosEstimados ?? 0,
+      r.tallosReales ?? 0,
+      r.tiempoEstH ?? 0,
+      r.tiempoRealH ?? 0,
+      r.rendCorte ?? 0,
+      // Labor 1
+      lab(0, 'nombre'), lab(0, 'camasPlaneadas'), lab(0, 'camasEjecutadas'),
+      lab(0, 'rendimientoEstimadoPorCama'), lab(0, 'rendimientoRealPorCama'),
+      lab(0, 'tiempoEstimado'), lab(0, 'tiempoReal'), lab(0, 'cumplimiento'),
+      // Labor 2
+      lab(1, 'nombre'), lab(1, 'camasPlaneadas'), lab(1, 'camasEjecutadas'),
+      lab(1, 'rendimientoEstimadoPorCama'), lab(1, 'rendimientoRealPorCama'),
+      lab(1, 'tiempoEstimado'), lab(1, 'tiempoReal'), lab(1, 'cumplimiento'),
+      // Labor 3
+      lab(2, 'nombre'), lab(2, 'camasPlaneadas'), lab(2, 'camasEjecutadas'),
+      lab(2, 'rendimientoEstimadoPorCama'), lab(2, 'rendimientoRealPorCama'),
+      lab(2, 'tiempoEstimado'), lab(2, 'tiempoReal'), lab(2, 'cumplimiento'),
+      // Checks
+      r.proceso ? 'SI' : 'NO',
+      r.seguridad ? 'SI' : 'NO',
+      r.calidad ? 'SI' : 'NO',
+      r.observaciones ?? '',
+      r.fechaCreacion ?? '',
     ]
 
-    await client
-      .api(`${WORKBOOK_PATH}/workbook/tables('${TABLE_FORMULARIOS}')/rows/add`)
-      .post({ values: [formularioValues] })
-
-    // Add rows for each colaborador into FormularioRows
-    const rows = (payload.colaboradores || []).map((c) => [
-      c.id,
-      payload.id,
-      c.numeroColaborador,
-      c.nombreColaborador,
-      c.externo ? 'TRUE' : 'FALSE',
-      c.variedad,
-      c.tallosEstimados,
-      c.tallosReales,
-      c.horaInicio,
-      // first labor (flattened example)
-      c.labores && c.labores[0] ? c.labores[0].camasPlaneadas : '',
-      c.labores && c.labores[0] ? c.labores[0].rendimientoEstimadoPorCama : '',
-      c.labores && c.labores[0] ? c.labores[0].camasEjecutadas : '',
-      c.labores && c.labores[0] ? c.labores[0].rendimientoRealPorCama : '',
-      c.proceso ? 'TRUE' : 'FALSE',
-      c.seguridad ? 'TRUE' : 'FALSE',
-      c.calidad ? 'TRUE' : 'FALSE',
-      c.cumplimiento ? 'TRUE' : 'FALSE',
-      c.compromiso ? 'TRUE' : 'FALSE',
-      c.observaciones || '',
-      c.tiempoEjecucion || 0,
-    ])
-
-    if (rows.length) {
-      // Graph allows adding multiple rows at once
-      await client
-        .api(`${WORKBOOK_PATH}/workbook/tables('${TABLE_FORMULARIOROWS}')/rows/add`)
-        .post({ values: rows })
-    }
+    await appendRows(SHEET_REGISTROS, [row])
 
     context.res = { status: 200, body: { ok: true } }
   } catch (err) {
