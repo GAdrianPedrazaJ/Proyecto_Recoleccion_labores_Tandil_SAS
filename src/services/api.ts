@@ -20,12 +20,50 @@ export const apiClient = axios.create({
 
 /**
  * Envía un FormularioDia a la Azure Function.
- * Ajusta el body si tu API espera otro formato.
+ * Lanza un `Error` con detalles cuando falla (network o 4xx/5xx).
  */
 export async function postRegistroLabores(
   payload: FormularioDia,
-): Promise<{ status: number }> {
+): Promise<{ status: number; data?: unknown }> {
   const base = getFunctionUrl()
-  const res = await apiClient.post<unknown>(base, payload)
-  return { status: res.status }
+  try {
+    const res = await apiClient.post<unknown>(base, payload)
+    return { status: res.status, data: res.data }
+  } catch (err) {
+    if (axios.isAxiosError(err)) {
+      const status = err.response?.status
+      const body = err.response?.data
+      const msg = `API error ${status ?? 'network'}: ${
+        body ? JSON.stringify(body) : err.message
+      }`
+      throw new Error(msg)
+    }
+    throw err
+  }
+}
+
+/** Asigna un supervisor a un area via Azure Function PATCH endpoint. */
+export async function assignArea(
+  areaId: string,
+  supervisorId: string,
+  changedBy?: string,
+): Promise<{ status: number; data?: unknown }> {
+  const base = getFunctionUrl()
+  const url = `${base.replace(/\/$/, '')}/areas/${encodeURIComponent(
+    areaId,
+  )}/assign`
+  try {
+    const res = await apiClient.patch(url, { supervisorId, changedBy })
+    return { status: res.status, data: res.data }
+  } catch (err) {
+    if (axios.isAxiosError(err)) {
+      const status = err.response?.status
+      const body = err.response?.data
+      const msg = `API error ${status ?? 'network'}: ${
+        body ? JSON.stringify(body) : err.message
+      }`
+      throw new Error(msg)
+    }
+    throw err
+  }
 }

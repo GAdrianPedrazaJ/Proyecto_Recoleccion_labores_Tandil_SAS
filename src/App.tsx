@@ -4,7 +4,7 @@ import { Header } from './components/layout/Header'
 import { BottomNav } from './components/layout/BottomNav'
 import { useOffline } from './hooks/useOffline'
 import { useSync } from './hooks/useSync'
-import { getConfig } from './services/db'
+import { getConfig, getAllAreas } from './services/db'
 import { useAppStore } from './store/useAppStore'
 
 /**
@@ -16,15 +16,19 @@ function AppLayout() {
   useSync()
   const setSupervisor = useAppStore((s) => s.setSupervisor)
   const setSede = useAppStore((s) => s.setSede)
+  const setAreas = useAppStore((s) => s.setAreas)
 
   useEffect(() => {
-    void getConfig('default').then((c) => {
+    void (async () => {
+      const c = await getConfig('default')
       if (c) {
         setSupervisor(c.supervisor)
         setSede(c.sede)
       }
-    })
-  }, [setSupervisor, setSede])
+      const areas = await getAllAreas()
+      if (areas && areas.length) setAreas(areas)
+    })()
+  }, [setSupervisor, setSede, setAreas])
 
   return (
     <div className="flex min-h-dvh flex-col bg-surface pb-20">

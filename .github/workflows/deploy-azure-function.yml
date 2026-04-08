@@ -1,0 +1,31 @@
+name: Deploy Azure Function
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies (function)
+        working-directory: azure-function
+        run: npm ci
+
+      - name: Zip function app
+        working-directory: azure-function
+        run: zip -r function.zip . -x "node_modules/**/node_modules/**"
+
+      - name: Deploy to Azure Functions
+        uses: azure/functions-action@v1
+        with:
+          app-name: ${{ secrets.AZURE_FUNCTIONAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
+          package: azure-function/function.zip

@@ -57,6 +57,11 @@ export interface FormularioDia {
    * syncPendientes() no volverá a enviar hasta intervención manual.
    */
   errorSincronizacionPermanente?: boolean
+  /**
+   * Mensaje del último error ocurrido al intentar sincronizar.
+   * Usado para diagnóstico y mostrar en UI si es necesario.
+   */
+  ultimoError?: string
 }
 
 /** Fila de configuración persistida (supervisor / sede por defecto). */
@@ -64,4 +69,30 @@ export interface ConfigRow {
   id: string
   supervisor: string
   sede: string
+}
+
+/** Area de trabajo (p. ej. Rosas 10). */
+export interface Area {
+  id: string
+  nombre: string
+  sede?: string
+  supervisorId?: string
+  codigo?: string
+  active?: boolean
+}
+
+export interface Supervisor {
+  id: string
+  nombre: string
+  email?: string
+  telefono?: string
+}
+
+export interface AssignmentAudit {
+  id: string
+  areaId: string
+  oldSupervisorId?: string
+  newSupervisorId?: string
+  changedAt: string
+  changedBy?: string
 }

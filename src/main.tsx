@@ -8,6 +8,7 @@ import { Home } from './pages/Home.tsx'
 import { NuevoRegistro } from './pages/NuevoRegistro.tsx'
 import { RegistrosPendientes } from './pages/RegistrosPendientes.tsx'
 import { Historial } from './pages/Historial.tsx'
+import AdminAreas from './pages/AdminAreas'
 
 registerSW({ immediate: true })
 
@@ -20,6 +21,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/nuevo" element={<NuevoRegistro />} />
           <Route path="/pendientes" element={<RegistrosPendientes />} />
           <Route path="/historial" element={<Historial />} />
+          <Route path="/admin/areas" element={<AdminAreas />} />
         </Route>
       </Routes>
     </BrowserRouter>
