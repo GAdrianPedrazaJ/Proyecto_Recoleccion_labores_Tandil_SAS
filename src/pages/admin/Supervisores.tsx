@@ -5,13 +5,10 @@ import { z } from 'zod'
 import { getAllSupervisores, getAllAreas, putSupervisor, deleteSupervisor } from '../../services/db'
 import { upsertSupervisor, deleteSupervisorSupa } from '../../services/api'
 import type { Supervisor, Area } from '../../types'
-import { Header } from '../../components/layout/Header'
-import { BottomNav } from '../../components/layout/BottomNav'
-import { Card } from '../../components/ui/Card'
+import { AdminLayout } from '../../components/layout/AdminLayout'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
 import { Select } from '../../components/ui/Select'
-import { Badge } from '../../components/ui/Badge'
 import { Spinner } from '../../components/ui/Spinner'
 
 const schema = z.object({
@@ -21,15 +18,14 @@ const schema = z.object({
   activo: z.boolean(),
 })
 type FormData = z.infer<typeof schema>
-type Mode = 'list' | 'add' | 'edit'
 
 export default function AdminSupervisores() {
   const [items, setItems] = useState<Supervisor[]>([])
   const [areas, setAreas] = useState<Area[]>([])
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [mode, setMode] = useState<Mode>('list')
+  const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<Supervisor | null>(null)
+  const [saving, setSaving] = useState(false)
   const [search, setSearch] = useState('')
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>({
@@ -40,117 +36,107 @@ export default function AdminSupervisores() {
   const load = async () => {
     setLoading(true)
     const [s, a] = await Promise.all([getAllSupervisores(), getAllAreas()])
-    setItems(s)
-    setAreas(a)
-    setLoading(false)
+    setItems(s); setAreas(a); setLoading(false)
   }
-
   useEffect(() => { load() }, [])
 
-  const openAdd = () => {
-    setEditing(null)
-    reset({ nombre: '', areaId: areas[0]?.id ?? '', sedeId: areas[0]?.sedeId ?? '', activo: true })
-    setMode('add')
-  }
-
-  const openEdit = (item: Supervisor) => {
-    setEditing(item)
-    reset({ nombre: item.nombre, areaId: item.areaId, sedeId: item.sedeId, activo: item.activo })
-    setMode('edit')
-  }
+  const openAdd = () => { setEditing(null); reset({ nombre: '', areaId: areas[0]?.id ?? '', sedeId: '', activo: true }); setModalOpen(true) }
+  const openEdit = (item: Supervisor) => { setEditing(item); reset({ nombre: item.nombre, areaId: item.areaId, sedeId: item.sedeId, activo: item.activo }); setModalOpen(true) }
 
   const onSubmit = async (data: FormData) => {
     setSaving(true)
-    const sup: Supervisor = editing
-      ? { ...editing, ...data }
-      : { id: `sup${Date.now()}`, ...data }
-    try {
-      await Promise.all([putSupervisor(sup), upsertSupervisor(sup)])
-    } catch {
-      await putSupervisor(sup)
-    }
-    await load()
-    setMode('list')
-    setSaving(false)
+    const s: Supervisor = editing ? { ...editing, ...data } : { id: crypto.randomUUID(), ...data }
+    try { await Promise.all([putSupervisor(s), upsertSupervisor(s)]) } catch { await putSupervisor(s) }
+    await load(); setModalOpen(false); setSaving(false)
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('¿Eliminar este supervisor?')) return
-    try {
-      await Promise.all([deleteSupervisor(id), deleteSupervisorSupa(id)])
-    } catch {
-      await deleteSupervisor(id)
-    }
+  const handleDelete = async (id: string, nombre: string) => {
+    if (!confirm(`¿Eliminar supervisor "${nombre}"?`)) return
+    try { await Promise.all([deleteSupervisor(id), deleteSupervisorSupa(id)]) } catch { await deleteSupervisor(id) }
     setItems((prev) => prev.filter((s) => s.id !== id))
   }
 
-  const areaOptions = areas.map((a) => ({ value: a.id, label: a.nombre }))
   const getAreaNombre = (id: string) => areas.find((a) => a.id === id)?.nombre ?? id
-
-  const filtered = search
-    ? items.filter((s) => s.nombre.toLowerCase().includes(search.toLowerCase()))
-    : items
+  const areaOptions = areas.map((a) => ({ value: a.id, label: a.nombre }))
+  const filtered = search ? items.filter((s) => s.nombre.toLowerCase().includes(search.toLowerCase())) : items
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50">
-      <Header title="Supervisores" showBack />
-      <main className="flex-1 px-4 py-6 pb-24 space-y-4">
-        {mode === 'list' ? (
-          <>
-            <div className="flex items-center justify-between">
-              <h1 className="text-xl font-bold text-gray-900">Supervisores</h1>
-              <Button size="sm" onClick={openAdd}>+ Nuevo</Button>
-            </div>
+    <AdminLayout>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Supervisores</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{items.length} supervisor{items.length !== 1 ? 'es' : ''}</p>
+        </div>
+        <Button onClick={openAdd}>+ Nuevo supervisor</Button>
+      </div>
 
-            <input
-              type="search"
-              placeholder="Buscar supervisor..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
-            />
-
-            {loading && <div className="flex justify-center py-8"><Spinner /></div>}
-            <p className="text-xs text-gray-500">{filtered.length} supervisor{filtered.length !== 1 ? 'es' : ''}</p>
-
-            <div className="space-y-2">
-              {filtered.map((s) => (
-                <Card key={s.id}>
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 truncate">{s.nombre}</p>
-                      <p className="text-xs text-gray-500 truncate">{getAreaNombre(s.areaId)}</p>
-                    </div>
-                    <Badge variant={s.activo ? 'green' : 'red'}>{s.activo ? 'Activo' : 'Inactivo'}</Badge>
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="ghost" onClick={() => openEdit(s)}>Editar</Button>
-                      <Button size="sm" variant="ghost" onClick={() => handleDelete(s.id)}>
-                        <span className="text-red-500">Borrar</span>
-                      </Button>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          </>
-        ) : (
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <h2 className="text-lg font-bold text-gray-900">{editing ? 'Editar supervisor' : 'Nuevo supervisor'}</h2>
-            <Input label="Nombre" error={errors.nombre?.message} {...register('nombre')} />
-            <Select label="Área" options={areaOptions} error={errors.areaId?.message} {...register('areaId')} />
-            <Input label="Sede" placeholder="(opcional)" {...register('sedeId')} />
-            <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-              <input type="checkbox" {...register('activo')} className="rounded" />
-              Activo
-            </label>
-            <div className="flex gap-3">
-              <Button type="submit" className="flex-1" loading={saving}>Guardar</Button>
-              <Button type="button" variant="ghost" className="flex-1" onClick={() => setMode('list')}>Cancelar</Button>
-            </div>
-          </form>
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-3">
+          <input type="search" placeholder="Buscar supervisor..." value={search} onChange={(e) => setSearch(e.target.value)}
+            className="w-72 rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-green-500 focus:outline-none"
+          />
+          <span className="text-xs text-gray-400">{filtered.length} resultado{filtered.length !== 1 ? 's' : ''}</span>
+        </div>
+        {loading ? <div className="flex justify-center py-16"><Spinner /></div> : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-200">
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Nombre</th>
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Área</th>
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Sede</th>
+                  <th className="text-center px-4 py-3 font-semibold text-gray-600">Estado</th>
+                  <th className="text-center px-4 py-3 font-semibold text-gray-600">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.length === 0 && <tr><td colSpan={5} className="text-center py-12 text-gray-400">Sin resultados</td></tr>}
+                {filtered.map((s, i) => (
+                  <tr key={s.id} className={`border-b border-gray-100 hover:bg-blue-50/30 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/60'}`}>
+                    <td className="px-4 py-3 font-medium text-gray-900">{s.nombre}</td>
+                    <td className="px-4 py-3">
+                      <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700 border border-blue-200">{getAreaNombre(s.areaId)}</span>
+                    </td>
+                    <td className="px-4 py-3 text-gray-600">{s.sedeId || '—'}</td>
+                    <td className="px-4 py-3 text-center">
+                      <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${s.activo ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>{s.activo ? 'Activo' : 'Inactivo'}</span>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <button onClick={() => openEdit(s)} className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50">
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 012.828 2.828L11.828 15.828a4 4 0 01-2.828 1.172H7v-2a4 4 0 011.172-2.828z" /></svg>
+                        </button>
+                        <button onClick={() => handleDelete(s.id, s.nombre)} className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50">
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4h6v3M4 7h16" /></svg>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
-      </main>
-      <BottomNav />
-    </div>
+      </div>
+
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6">
+            <h2 className="text-lg font-bold text-gray-900 mb-5">{editing ? 'Editar supervisor' : 'Nuevo supervisor'}</h2>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              <Input label="Nombre" {...register('nombre')} error={errors.nombre?.message} />
+              <Select label="Área" options={areaOptions} {...register('areaId')} error={errors.areaId?.message} />
+              <Input label="Sede" {...register('sedeId')} />
+              <label className="flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" {...register('activo')} className="rounded" /> Activo</label>
+              <div className="flex gap-3 pt-2">
+                <Button type="submit" loading={saving} className="flex-1">Guardar</Button>
+                <Button type="button" variant="ghost" onClick={() => setModalOpen(false)} className="flex-1">Cancelar</Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </AdminLayout>
   )
 }
+

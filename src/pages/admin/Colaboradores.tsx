@@ -4,16 +4,13 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { getAllAreas, getAllColaboradores, putColaborador, deleteColaborador } from '../../services/db'
 import type { Area, Colaborador } from '../../types'
-import { Header } from '../../components/layout/Header'
-import { BottomNav } from '../../components/layout/BottomNav'
-import { Card } from '../../components/ui/Card'
+import { AdminLayout } from '../../components/layout/AdminLayout'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
 import { Select } from '../../components/ui/Select'
-import { Badge } from '../../components/ui/Badge'
 import { Spinner } from '../../components/ui/Spinner'
 
-const colabSchema = z.object({
+const schema = z.object({
   nombre: z.string().min(1, 'Requerido'),
   areaId: z.string().min(1, 'Requerido'),
   supervisorId: z.string(),
@@ -21,163 +18,141 @@ const colabSchema = z.object({
   asignado: z.boolean(),
   activo: z.boolean(),
 })
-type ColabForm = z.infer<typeof colabSchema>
-
-type Mode = 'list' | 'add' | 'edit'
+type FormData = z.infer<typeof schema>
 
 export default function AdminColaboradores() {
   const [colaboradores, setColaboradores] = useState<Colaborador[]>([])
   const [areas, setAreas] = useState<Area[]>([])
   const [loading, setLoading] = useState(true)
-  const [mode, setMode] = useState<Mode>('list')
+  const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<Colaborador | null>(null)
+  const [saving, setSaving] = useState(false)
   const [search, setSearch] = useState('')
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<ColabForm>({
-    resolver: zodResolver(colabSchema),
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>({
+    resolver: zodResolver(schema),
     defaultValues: { nombre: '', areaId: '', supervisorId: '', externo: false, asignado: false, activo: true },
   })
 
   const load = async () => {
     setLoading(true)
-    const [colabs, areasData] = await Promise.all([getAllColaboradores(), getAllAreas()])
-    setColaboradores(colabs)
-    setAreas(areasData)
-    setLoading(false)
+    const [c, a] = await Promise.all([getAllColaboradores(), getAllAreas()])
+    setColaboradores(c); setAreas(a); setLoading(false)
   }
-
   useEffect(() => { load() }, [])
 
-  const openAdd = () => {
-    setEditing(null)
-    reset({ nombre: '', areaId: areas[0]?.id ?? '', supervisorId: '', externo: false, asignado: false, activo: true })
-    setMode('add')
-  }
+  const openAdd = () => { setEditing(null); reset({ nombre: '', areaId: areas[0]?.id ?? '', supervisorId: '', externo: false, asignado: false, activo: true }); setModalOpen(true) }
+  const openEdit = (c: Colaborador) => { setEditing(c); reset({ nombre: c.nombre, areaId: c.areaId, supervisorId: c.supervisorId, externo: c.externo, asignado: c.asignado, activo: c.activo }); setModalOpen(true) }
 
-  const openEdit = (c: Colaborador) => {
-    setEditing(c)
-    reset({ nombre: c.nombre, areaId: c.areaId, supervisorId: c.supervisorId, externo: c.externo, asignado: c.asignado, activo: c.activo })
-    setMode('edit')
-  }
-
-  const onSubmit = async (data: ColabForm) => {
-    const colab: Colaborador = editing
-      ? { ...editing, ...data }
-      : { id: crypto.randomUUID(), ...data }
+  const onSubmit = async (data: FormData) => {
+    setSaving(true)
+    const colab: Colaborador = editing ? { ...editing, ...data } : { id: crypto.randomUUID(), ...data }
     await putColaborador(colab)
-    await load()
-    setMode('list')
+    await load(); setModalOpen(false); setSaving(false)
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('¿Eliminar este colaborador del dispositivo?')) return
+    if (!confirm('¿Eliminar este colaborador?')) return
     await deleteColaborador(id)
     setColaboradores((prev) => prev.filter((c) => c.id !== id))
   }
 
-  const areaOptions = areas.map((a) => ({ value: a.id, label: a.nombre }))
-  const filtered = search
-    ? colaboradores.filter((c) => c.nombre.toLowerCase().includes(search.toLowerCase()))
-    : colaboradores
-
   const getAreaNombre = (id: string) => areas.find((a) => a.id === id)?.nombre ?? id
+  const areaOptions = areas.map((a) => ({ value: a.id, label: a.nombre }))
+  const filtered = search ? colaboradores.filter((c) => c.nombre.toLowerCase().includes(search.toLowerCase())) : colaboradores
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50">
-      <Header title="Colaboradores" showBack />
+    <AdminLayout>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Colaboradores</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{colaboradores.length} colaborador{colaboradores.length !== 1 ? 'es' : ''}</p>
+        </div>
+        <Button onClick={openAdd}>+ Nuevo colaborador</Button>
+      </div>
 
-      <main className="flex-1 px-4 py-6 pb-24 space-y-4">
-        {mode === 'list' && (
-          <>
-            <div className="flex items-center justify-between">
-              <h1 className="text-xl font-bold text-gray-900">Colaboradores</h1>
-              <Button size="sm" onClick={openAdd}>+ Nuevo</Button>
-            </div>
-
-            <input
-              type="search"
-              placeholder="Buscar por nombre..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
-            />
-
-            {loading && <div className="flex justify-center py-8"><Spinner /></div>}
-
-            <p className="text-xs text-gray-500">{filtered.length} colaborador{filtered.length !== 1 ? 'es' : ''}</p>
-
-            <div className="space-y-2">
-              {filtered.map((c) => (
-                <Card key={c.id}>
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-green-100 text-sm font-bold text-green-700">
-                      {c.nombre.charAt(0)}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-gray-900">{c.nombre}</p>
-                      <p className="text-xs text-gray-500 truncate">{getAreaNombre(c.areaId)}</p>
-                    </div>
-                    <div className="flex flex-col items-end gap-1">
-                      {c.externo && <Badge variant="blue">Externo</Badge>}
-                      <Badge variant={c.activo ? 'green' : 'gray'}>{c.activo ? 'Activo' : 'Inactivo'}</Badge>
-                    </div>
-                    <div className="flex gap-1">
-                      <button type="button" onClick={() => openEdit(c)} className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600" aria-label="Editar">
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                        </svg>
-                      </button>
-                      <button type="button" onClick={() => handleDelete(c.id)} className="rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500" aria-label="Eliminar">
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          </>
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-3">
+          <input type="search" placeholder="Buscar por nombre..." value={search} onChange={(e) => setSearch(e.target.value)}
+            className="w-72 rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-green-500 focus:outline-none"
+          />
+          <span className="text-xs text-gray-400">{filtered.length} resultado{filtered.length !== 1 ? 's' : ''}</span>
+        </div>
+        {loading ? (
+          <div className="flex justify-center py-16"><Spinner /></div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-200">
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Nombre</th>
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Área</th>
+                  <th className="text-center px-4 py-3 font-semibold text-gray-600">Externo</th>
+                  <th className="text-center px-4 py-3 font-semibold text-gray-600">Asignado</th>
+                  <th className="text-center px-4 py-3 font-semibold text-gray-600">Estado</th>
+                  <th className="text-center px-4 py-3 font-semibold text-gray-600">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.length === 0 && <tr><td colSpan={6} className="text-center py-12 text-gray-400">Sin resultados</td></tr>}
+                {filtered.map((c, i) => (
+                  <tr key={c.id} className={`border-b border-gray-100 hover:bg-blue-50/30 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/60'}`}>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-green-100 text-sm font-bold text-green-700">{c.nombre.charAt(0)}</div>
+                        <span className="font-medium text-gray-900">{c.nombre}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-gray-600">{getAreaNombre(c.areaId)}</td>
+                    <td className="px-4 py-3 text-center">
+                      <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${c.externo ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-500'}`}>{c.externo ? 'Sí' : 'No'}</span>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${c.asignado ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'}`}>{c.asignado ? 'Sí' : 'No'}</span>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${c.activo ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>{c.activo ? 'Activo' : 'Inactivo'}</span>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <button onClick={() => openEdit(c)} className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50" title="Editar">
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 012.828 2.828L11.828 15.828a4 4 0 01-2.828 1.172H7v-2a4 4 0 011.172-2.828z" /></svg>
+                        </button>
+                        <button onClick={() => handleDelete(c.id)} className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50" title="Eliminar">
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4h6v3M4 7h16" /></svg>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
+      </div>
 
-        {(mode === 'add' || mode === 'edit') && (
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h1 className="text-xl font-bold text-gray-900">
-                {mode === 'add' ? 'Nuevo colaborador' : 'Editar colaborador'}
-              </h1>
-              <Button type="button" variant="ghost" size="sm" onClick={() => setMode('list')}>
-                Cancelar
-              </Button>
-            </div>
-
-            <div className="rounded-xl bg-white p-4 shadow-sm border border-gray-100 space-y-4">
-              <Input label="Nombre completo" error={errors.nombre?.message} {...register('nombre')} />
-              <Select
-                label="Área"
-                options={areaOptions}
-                placeholder="Seleccionar área..."
-                error={errors.areaId?.message}
-                {...register('areaId')}
-              />
-              <label className="flex items-center gap-2 text-sm text-gray-700">
-                <input type="checkbox" className="h-4 w-4 rounded border-gray-300 text-green-600" {...register('externo')} />
-                Colaborador externo
-              </label>
-              <label className="flex items-center gap-2 text-sm text-gray-700">
-                <input type="checkbox" className="h-4 w-4 rounded border-gray-300 text-green-600" {...register('activo')} />
-                Activo
-              </label>
-            </div>
-
-            <Button type="submit" className="w-full">
-              {mode === 'add' ? 'Crear colaborador' : 'Guardar cambios'}
-            </Button>
-          </form>
-        )}
-      </main>
-
-      <BottomNav />
-    </div>
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6">
+            <h2 className="text-lg font-bold text-gray-900 mb-5">{editing ? 'Editar colaborador' : 'Nuevo colaborador'}</h2>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              <Input label="Nombre" {...register('nombre')} error={errors.nombre?.message} />
+              <Select label="Área" options={areaOptions} {...register('areaId')} error={errors.areaId?.message} />
+              <Input label="Supervisor ID (opcional)" {...register('supervisorId')} />
+              <div className="flex gap-6">
+                <label className="flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" {...register('externo')} className="rounded" /> Externo</label>
+                <label className="flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" {...register('asignado')} className="rounded" /> Asignado</label>
+                <label className="flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" {...register('activo')} className="rounded" /> Activo</label>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <Button type="submit" loading={saving} className="flex-1">Guardar</Button>
+                <Button type="button" variant="ghost" onClick={() => setModalOpen(false)} className="flex-1">Cancelar</Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </AdminLayout>
   )
 }
+

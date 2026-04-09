@@ -1,19 +1,13 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { useAuthStore } from '../../store/useAuthStore'
 import { fetchDashboardFormularios } from '../../services/api'
 import { syncPendientes } from '../../services/sync'
 import { countNoSincronizados, getAllAreas } from '../../services/db'
 import type { Area } from '../../types'
 import type { DashboardFormulario } from '../../services/api'
-import { Header } from '../../components/layout/Header'
-import { BottomNav } from '../../components/layout/BottomNav'
-import { Card } from '../../components/ui/Card'
-import { Badge } from '../../components/ui/Badge'
+import { AdminLayout } from '../../components/layout/AdminLayout'
 import { Button } from '../../components/ui/Button'
 import { Spinner } from '../../components/ui/Spinner'
-
-// ─── helpers ─────────────────────────────────────────────────────────────────
 
 function getISOWeek(dateStr: string): number {
   const d = new Date(dateStr + 'T12:00:00')
@@ -24,8 +18,7 @@ function getISOWeek(dateStr: string): number {
 
 function getWeekLabel(dateStr: string): string {
   const d = new Date(dateStr + 'T12:00:00')
-  const week = getISOWeek(dateStr)
-  return `Sem ${week} (${d.getFullYear()})`
+  return `Sem ${getISOWeek(dateStr)} (${d.getFullYear()})`
 }
 
 function daysAgoIso(days: number): string {
@@ -34,39 +27,11 @@ function daysAgoIso(days: number): string {
   return d.toISOString().split('T')[0]
 }
 
-// ─── types ────────────────────────────────────────────────────────────────────
-
-interface AreaStats {
-  areaId: string
-  nombre: string
-  total: number
-  completos: number
-  borradores: number
-  porcentaje: number
-}
-
-interface WeekStats {
-  label: string
-  total: number
-  completos: number
-}
-
-// ─── links admin ──────────────────────────────────────────────────────────────
-
-const LINKS = [
-  { to: '/admin/areas',          icon: '🗺️',  label: 'Áreas' },
-  { to: '/admin/colaboradores',  icon: '👥',  label: 'Colaboradores' },
-  { to: '/admin/supervisores',   icon: '🧑‍💼', label: 'Supervisores' },
-  { to: '/admin/bloques',        icon: '🟩',  label: 'Bloques' },
-  { to: '/admin/variedades',     icon: '🌸',  label: 'Variedades' },
-  { to: '/admin/labores',        icon: '🌿',  label: 'Labores' },
-  { to: '/admin/estadisticas',   icon: '📊',  label: 'Estadísticas' },
-]
+interface AreaStats { areaId: string; nombre: string; total: number; completos: number; borradores: number; porcentaje: number }
+interface WeekStats { label: string; total: number; completos: number }
 
 export default function AdminDashboard() {
-  const logout = useAuthStore((s) => s.logout)
   const username = useAuthStore((s) => s.username)
-
   const [areas, setAreas] = useState<Area[]>([])
   const [formularios, setFormularios] = useState<DashboardFormulario[]>([])
   const [pendingCount, setPendingCount] = useState(0)
@@ -97,13 +62,11 @@ export default function AdminDashboard() {
     setSyncing(false)
   }
 
-  // ── Esta semana ─────────────────────────────────────────────────────────────
   const todayStr = new Date().toISOString().split('T')[0]
   const currentWeek = getISOWeek(todayStr)
   const thisWeek = formularios.filter((f) => getISOWeek(f.fecha) === currentWeek)
   const thisWeekCompletos = thisWeek.filter((f) => f.estado === 'completo').length
 
-  // ── Por área ────────────────────────────────────────────────────────────────
   const areaStats: AreaStats[] = areas
     .map((a) => {
       const aForms = thisWeek.filter((f) => f.areaId === a.id)
@@ -114,7 +77,6 @@ export default function AdminDashboard() {
     })
     .sort((a, b) => b.completos - a.completos || b.total - a.total)
 
-  // ── Por semana ──────────────────────────────────────────────────────────────
   const weekMap = new Map<string, WeekStats>()
   formularios.forEach((f) => {
     const label = getWeekLabel(f.fecha)
@@ -123,157 +85,133 @@ export default function AdminDashboard() {
     w.total++
     if (f.estado === 'completo') w.completos++
   })
-  const weekStats: WeekStats[] = Array.from(weekMap.values()).slice(0, 4)
-
+  const weekStats = Array.from(weekMap.values()).slice(0, 6)
   const areaMasAdelantada = areaStats.find((a) => a.completos > 0)
-  const areasConLaboresBajos = areaStats.filter((a) => a.total === 0).slice(0, 5)
+  const areasConLaboresBajos = areaStats.filter((a) => a.total === 0).slice(0, 8)
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50">
-      <Header title="Admin" showSync />
-
-      <main className="flex-1 px-4 py-6 pb-24 space-y-5">
-        {/* Encabezado */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">Panel Admin</h1>
-            <p className="text-sm text-gray-500">Bienvenido/a, {username}</p>
-          </div>
-          <Button variant="ghost" size="sm" onClick={logout}>Salir</Button>
+    <AdminLayout>
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-sm text-gray-500 mt-0.5">
+            Bienvenido/a, {username} · {new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}
+          </p>
         </div>
-
-        {/* Stats esta semana */}
-        <div className="grid grid-cols-3 gap-2">
-          <Card>
-            <p className="text-2xl font-bold text-gray-900">{thisWeek.length}</p>
-            <p className="text-xs text-gray-500">Esta semana</p>
-          </Card>
-          <Card>
-            <p className="text-2xl font-bold text-green-600">{thisWeekCompletos}</p>
-            <p className="text-xs text-gray-500">Completos</p>
-          </Card>
-          <Card>
-            <p className={`text-2xl font-bold ${pendingCount > 0 ? 'text-yellow-600' : 'text-gray-400'}`}>{pendingCount}</p>
-            <p className="text-xs text-gray-500">Sin sync</p>
-          </Card>
-        </div>
-
         {pendingCount > 0 && (
-          <Button className="w-full" variant="secondary" loading={syncing} onClick={handleSync}>
-            Sincronizar pendientes ({pendingCount})
+          <Button variant="secondary" loading={syncing} onClick={handleSync}>
+            Sincronizar {pendingCount} pendiente{pendingCount !== 1 ? 's' : ''}
           </Button>
         )}
+      </div>
 
-        {/* Destacados */}
-        {!loading && (areaMasAdelantada || areasConLaboresBajos.length > 0) && (
-          <div className="grid grid-cols-2 gap-2">
-            {areaMasAdelantada && (
-              <Card>
-                <p className="text-xs font-semibold text-green-600 uppercase tracking-wide">Mayor avance</p>
-                <p className="mt-1 text-sm font-bold text-gray-900 truncate">{areaMasAdelantada.nombre}</p>
-                <p className="text-xs text-gray-500">{areaMasAdelantada.completos} completo{areaMasAdelantada.completos !== 1 ? 's' : ''} esta semana</p>
-              </Card>
-            )}
-            {areasConLaboresBajos.length > 0 && (
-              <Card>
-                <p className="text-xs font-semibold text-orange-500 uppercase tracking-wide">Sin registros</p>
-                <div className="mt-1 space-y-0.5">
-                  {areasConLaboresBajos.map((a) => (
-                    <p key={a.areaId} className="text-xs text-gray-700 truncate">{a.nombre}</p>
-                  ))}
-                </div>
-              </Card>
-            )}
-          </div>
-        )}
+      {/* KPI cards */}
+      <div className="grid grid-cols-4 gap-4 mb-8">
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Esta semana</p>
+          <p className="text-4xl font-bold text-gray-900 mt-2">{thisWeek.length}</p>
+          <p className="text-xs text-gray-500 mt-1">registros totales</p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+          <p className="text-xs font-semibold text-green-500 uppercase tracking-wide">Completos</p>
+          <p className="text-4xl font-bold text-green-600 mt-2">{thisWeekCompletos}</p>
+          <p className="text-xs text-gray-500 mt-1">esta semana</p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+          <p className="text-xs font-semibold text-yellow-500 uppercase tracking-wide">Borradores</p>
+          <p className="text-4xl font-bold text-yellow-600 mt-2">{thisWeek.length - thisWeekCompletos}</p>
+          <p className="text-xs text-gray-500 mt-1">en progreso</p>
+        </div>
+        <div className={`rounded-xl border shadow-sm p-5 ${pendingCount > 0 ? 'bg-orange-50 border-orange-200' : 'bg-white border-gray-200'}`}>
+          <p className={`text-xs font-semibold uppercase tracking-wide ${pendingCount > 0 ? 'text-orange-500' : 'text-gray-400'}`}>Sin sync</p>
+          <p className={`text-4xl font-bold mt-2 ${pendingCount > 0 ? 'text-orange-600' : 'text-gray-400'}`}>{pendingCount}</p>
+          <p className="text-xs text-gray-500 mt-1">pendientes</p>
+        </div>
+      </div>
 
-        {/* Tabs */}
-        <div className="flex gap-1 rounded-lg bg-gray-200 p-1">
+      {/* Destacados */}
+      {!loading && (areaMasAdelantada || areasConLaboresBajos.length > 0) && (
+        <div className="grid grid-cols-2 gap-4 mb-8">
+          {areaMasAdelantada && (
+            <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-5 text-white shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-wide text-green-100">Mayor avance esta semana</p>
+              <p className="text-xl font-bold mt-2">{areaMasAdelantada.nombre}</p>
+              <p className="text-sm text-green-100 mt-1">{areaMasAdelantada.completos} completo{areaMasAdelantada.completos !== 1 ? 's' : ''} · {areaMasAdelantada.porcentaje}%</p>
+              <div className="mt-3 h-1.5 bg-green-400/40 rounded-full">
+                <div className="h-1.5 bg-white rounded-full" style={{ width: `${areaMasAdelantada.porcentaje}%` }} />
+              </div>
+            </div>
+          )}
+          {areasConLaboresBajos.length > 0 && (
+            <div className="bg-white rounded-xl border border-orange-200 p-5 shadow-sm">
+              <p className="text-xs font-semibold text-orange-500 uppercase tracking-wide">Áreas sin registros esta semana</p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {areasConLaboresBajos.map((a) => (
+                  <span key={a.areaId} className="inline-block rounded-full bg-orange-50 px-2.5 py-0.5 text-xs text-orange-700 border border-orange-200">{a.nombre}</span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Tabla de avance */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+        <div className="border-b border-gray-100 px-5 flex gap-1 pt-2">
           {(['areas', 'semanas'] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`flex-1 rounded-md py-1.5 text-sm font-medium transition-colors ${tab === t ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
+              className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${tab === t ? 'border-green-600 text-green-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
             >
-              {t === 'areas' ? 'Por área' : 'Por semana'}
+              {t === 'areas' ? 'Por área (esta semana)' : 'Por semana (últimas 6)'}
             </button>
           ))}
         </div>
-
-        {loading && <div className="flex justify-center py-6"><Spinner /></div>}
-
-        {/* Vista: por área */}
-        {!loading && tab === 'areas' && (
-          <div className="space-y-2">
-            {areaStats.every((a) => a.total === 0) && (
-              <p className="text-center text-sm text-gray-400 py-6">Sin registros esta semana</p>
-            )}
-            {areaStats.filter((a) => a.total > 0).map((a) => (
-              <Card key={a.areaId}>
-                <div className="flex items-center justify-between gap-2 mb-1">
-                  <p className="text-sm font-medium text-gray-900 truncate">{a.nombre}</p>
-                  <Badge variant={a.completos > 0 ? 'green' : 'yellow'}>
-                    {a.completos}/{a.total}
-                  </Badge>
+        <div className="p-5">
+          {loading && <div className="flex justify-center py-10"><Spinner /></div>}
+          {!loading && tab === 'areas' && (
+            <div className="space-y-3">
+              {areaStats.filter((a) => a.total > 0).length === 0 && (
+                <p className="text-center text-sm text-gray-400 py-10">Sin registros esta semana</p>
+              )}
+              {areaStats.filter((a) => a.total > 0).map((a) => (
+                <div key={a.areaId} className="flex items-center gap-4">
+                  <div className="w-40 flex-shrink-0"><p className="text-sm font-medium text-gray-900 truncate">{a.nombre}</p></div>
+                  <div className="flex-1 h-5 bg-gray-100 rounded-full overflow-hidden">
+                    <div className={`h-5 rounded-full transition-all ${a.porcentaje >= 80 ? 'bg-green-500' : a.porcentaje >= 50 ? 'bg-yellow-400' : 'bg-red-400'}`} style={{ width: `${a.porcentaje}%` }} />
+                  </div>
+                  <div className="w-32 flex-shrink-0 text-right">
+                    <span className={`text-sm font-bold ${a.porcentaje >= 80 ? 'text-green-600' : a.porcentaje >= 50 ? 'text-yellow-600' : 'text-red-500'}`}>{a.porcentaje}%</span>
+                    <span className="text-xs text-gray-400 ml-2">{a.completos}/{a.total}</span>
+                  </div>
                 </div>
-                <div className="h-2 w-full rounded-full bg-gray-100">
-                  <div className="h-2 rounded-full bg-green-500 transition-all" style={{ width: `${a.porcentaje}%` }} />
-                </div>
-                <div className="mt-1 flex justify-between text-xs text-gray-400">
-                  <span>{a.borradores} borrador{a.borradores !== 1 ? 'es' : ''}</span>
-                  <span>{a.porcentaje}% completo</span>
-                </div>
-              </Card>
-            ))}
-          </div>
-        )}
-
-        {/* Vista: por semana */}
-        {!loading && tab === 'semanas' && (
-          <div className="space-y-2">
-            {weekStats.length === 0 && (
-              <p className="text-center text-sm text-gray-400 py-6">Sin datos en las últimas 4 semanas</p>
-            )}
-            {weekStats.map((w) => (
-              <Card key={w.label}>
-                <div className="flex items-center justify-between gap-2 mb-1">
-                  <p className="text-sm font-medium text-gray-900">{w.label}</p>
-                  <span className="text-xs text-gray-500">{w.total} registro{w.total !== 1 ? 's' : ''}</span>
-                </div>
-                <div className="h-2 w-full rounded-full bg-gray-100">
-                  <div
-                    className="h-2 rounded-full bg-green-500"
-                    style={{ width: w.total > 0 ? `${Math.round((w.completos / w.total) * 100)}%` : '0%' }}
-                  />
-                </div>
-                <div className="mt-1 flex justify-between text-xs text-gray-400">
-                  <span>{w.completos} completo{w.completos !== 1 ? 's' : ''}</span>
-                  <span>{w.total > 0 ? Math.round((w.completos / w.total) * 100) : 0}%</span>
-                </div>
-              </Card>
-            ))}
-          </div>
-        )}
-
-        {/* Accesos rápidos */}
-        <div>
-          <h2 className="mb-2 text-sm font-semibold text-gray-500 uppercase tracking-wide">Administrar</h2>
-          <div className="grid grid-cols-3 gap-2">
-            {LINKS.map(({ to, icon, label }) => (
-              <Link
-                key={to}
-                to={to}
-                className="flex flex-col items-center gap-1.5 rounded-xl border border-gray-200 bg-white py-4 text-center shadow-sm hover:shadow-md transition-shadow"
-              >
-                <span className="text-2xl">{icon}</span>
-                <span className="text-xs font-medium text-gray-700">{label}</span>
-              </Link>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
+          {!loading && tab === 'semanas' && (
+            <div className="space-y-3">
+              {weekStats.length === 0 && <p className="text-center text-sm text-gray-400 py-10">Sin datos</p>}
+              {weekStats.map((w) => {
+                const pct = w.total > 0 ? Math.round((w.completos / w.total) * 100) : 0
+                return (
+                  <div key={w.label} className="flex items-center gap-4">
+                    <div className="w-40 flex-shrink-0"><p className="text-sm font-medium text-gray-900">{w.label}</p></div>
+                    <div className="flex-1 h-5 bg-gray-100 rounded-full overflow-hidden">
+                      <div className={`h-5 rounded-full ${pct >= 80 ? 'bg-green-500' : pct >= 50 ? 'bg-yellow-400' : 'bg-red-400'}`} style={{ width: `${pct}%` }} />
+                    </div>
+                    <div className="w-32 flex-shrink-0 text-right">
+                      <span className="text-sm font-bold text-gray-700">{pct}%</span>
+                      <span className="text-xs text-gray-400 ml-2">{w.total} reg.</span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
-      </main>
-
-      <BottomNav />
-    </div>
+      </div>
+    </AdminLayout>
   )
 }
+

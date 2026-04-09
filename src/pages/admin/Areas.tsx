@@ -5,173 +5,148 @@ import { z } from 'zod'
 import { getAllAreas, putArea, deleteArea } from '../../services/db'
 import { patchAssignArea } from '../../services/api'
 import type { Area } from '../../types'
-import { Header } from '../../components/layout/Header'
-import { BottomNav } from '../../components/layout/BottomNav'
-import { Card } from '../../components/ui/Card'
+import { AdminLayout } from '../../components/layout/AdminLayout'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
-import { Badge } from '../../components/ui/Badge'
 import { Spinner } from '../../components/ui/Spinner'
 
-const areaSchema = z.object({
+const schema = z.object({
   nombre: z.string().min(1, 'Requerido'),
   sedeId: z.string(),
   supervisorId: z.string(),
   activo: z.boolean(),
 })
-type AreaForm = z.infer<typeof areaSchema>
-
-type Mode = 'list' | 'add' | 'edit'
+type FormData = z.infer<typeof schema>
 
 export default function AdminAreas() {
   const [areas, setAreas] = useState<Area[]>([])
   const [loading, setLoading] = useState(true)
-  const [mode, setMode] = useState<Mode>('list')
+  const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<Area | null>(null)
-  const [assigning, setAssigning] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [search, setSearch] = useState('')
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<AreaForm>({
-    resolver: zodResolver(areaSchema),
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>({
+    resolver: zodResolver(schema),
     defaultValues: { nombre: '', sedeId: '', supervisorId: '', activo: true },
   })
 
-  const load = async () => {
-    setLoading(true)
-    setAreas(await getAllAreas())
-    setLoading(false)
-  }
-
+  const load = async () => { setLoading(true); setAreas(await getAllAreas()); setLoading(false) }
   useEffect(() => { load() }, [])
 
-  const openAdd = () => {
-    setEditing(null)
-    reset({ nombre: '', sedeId: '', supervisorId: '', activo: true })
-    setMode('add')
-  }
+  const openAdd = () => { setEditing(null); reset({ nombre: '', sedeId: '', supervisorId: '', activo: true }); setModalOpen(true) }
+  const openEdit = (a: Area) => { setEditing(a); reset({ nombre: a.nombre, sedeId: a.sedeId, supervisorId: a.supervisorId, activo: a.activo }); setModalOpen(true) }
 
-  const openEdit = (area: Area) => {
-    setEditing(area)
-    reset({ nombre: area.nombre, sedeId: area.sedeId, supervisorId: area.supervisorId, activo: area.activo })
-    setMode('edit')
-  }
-
-  const onSubmit = async (data: AreaForm) => {
-    const area: Area = editing
-      ? { ...editing, ...data }
-      : { id: crypto.randomUUID(), ...data }
+  const onSubmit = async (data: FormData) => {
+    setSaving(true)
+    const area: Area = editing ? { ...editing, ...data } : { id: crypto.randomUUID(), ...data }
     await putArea(area)
-
-    // Si es edición y cambió supervisorId, sincronizar con backend
     if (editing && data.supervisorId !== editing.supervisorId) {
-      setAssigning(true)
-      try {
-        await patchAssignArea(area.id, data.supervisorId)
-      } catch {
-        // Si falla, queda actualizado localmente
-      }
-      setAssigning(false)
+      try { await patchAssignArea(area.id, data.supervisorId) } catch { /* offline ok */ }
     }
-
     await load()
-    setMode('list')
+    setModalOpen(false)
+    setSaving(false)
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('¿Eliminar esta área del dispositivo?')) return
+    if (!confirm('¿Eliminar esta área?')) return
     await deleteArea(id)
     setAreas((prev) => prev.filter((a) => a.id !== id))
   }
 
+  const filtered = search ? areas.filter((a) => a.nombre.toLowerCase().includes(search.toLowerCase())) : areas
+
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50">
-      <Header title="Áreas" showBack />
+    <AdminLayout>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Áreas</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{areas.length} área{areas.length !== 1 ? 's' : ''} en total</p>
+        </div>
+        <Button onClick={openAdd}>+ Nueva área</Button>
+      </div>
 
-      <main className="flex-1 px-4 py-6 pb-24 space-y-4">
-        {mode === 'list' && (
-          <>
-            <div className="flex items-center justify-between">
-              <h1 className="text-xl font-bold text-gray-900">Áreas</h1>
-              <Button size="sm" onClick={openAdd}>+ Nueva</Button>
-            </div>
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        {/* Toolbar */}
+        <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-3">
+          <input
+            type="search" placeholder="Buscar área..."
+            value={search} onChange={(e) => setSearch(e.target.value)}
+            className="w-72 rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+          />
+          <span className="text-xs text-gray-400">{filtered.length} resultado{filtered.length !== 1 ? 's' : ''}</span>
+        </div>
 
-            {loading && <div className="flex justify-center py-8"><Spinner /></div>}
-
-            <div className="space-y-2">
-              {areas.map((area) => (
-                <Card key={area.id}>
-                  <div className="flex items-center gap-3">
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium text-gray-900 truncate">{area.nombre}</p>
-                      <p className="text-xs text-gray-500">
-                        {area.sedeId && `Sede: ${area.sedeId}`}
-                        {area.supervisorId && ` · Supervisor: ${area.supervisorId}`}
-                      </p>
-                    </div>
-                    <Badge variant={area.activo ? 'green' : 'gray'}>
-                      {area.activo ? 'Activa' : 'Inactiva'}
-                    </Badge>
-                    <div className="flex gap-1">
-                      <button
-                        type="button"
-                        onClick={() => openEdit(area)}
-                        className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-                        aria-label="Editar"
-                      >
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                        </svg>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(area.id)}
-                        className="rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500"
-                        aria-label="Eliminar"
-                      >
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          </>
+        {/* Tabla */}
+        {loading ? (
+          <div className="flex justify-center py-16"><Spinner /></div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-200">
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Nombre</th>
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Sede</th>
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Supervisor</th>
+                  <th className="text-center px-4 py-3 font-semibold text-gray-600">Estado</th>
+                  <th className="text-center px-4 py-3 font-semibold text-gray-600">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.length === 0 && (
+                  <tr><td colSpan={5} className="text-center py-12 text-gray-400">Sin resultados</td></tr>
+                )}
+                {filtered.map((a, i) => (
+                  <tr key={a.id} className={`border-b border-gray-100 hover:bg-green-50/40 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/60'}`}>
+                    <td className="px-4 py-3 font-medium text-gray-900">{a.nombre}</td>
+                    <td className="px-4 py-3 text-gray-600">{a.sedeId || '—'}</td>
+                    <td className="px-4 py-3 text-gray-600">{a.supervisorId || '—'}</td>
+                    <td className="px-4 py-3 text-center">
+                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${a.activo ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                        {a.activo ? 'Activa' : 'Inactiva'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <button onClick={() => openEdit(a)} className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50 transition-colors" title="Editar">
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 012.828 2.828L11.828 15.828a4 4 0 01-2.828 1.172H7v-2a4 4 0 011.172-2.828z" /></svg>
+                        </button>
+                        <button onClick={() => handleDelete(a.id)} className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 transition-colors" title="Eliminar">
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4h6v3M4 7h16" /></svg>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
+      </div>
 
-        {(mode === 'add' || mode === 'edit') && (
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h1 className="text-xl font-bold text-gray-900">
-                {mode === 'add' ? 'Nueva área' : 'Editar área'}
-              </h1>
-              <Button type="button" variant="ghost" size="sm" onClick={() => setMode('list')}>
-                Cancelar
-              </Button>
-            </div>
-
-            <div className="rounded-xl bg-white p-4 shadow-sm border border-gray-100 space-y-4">
-              <Input label="Nombre" error={errors.nombre?.message} {...register('nombre')} />
+      {/* Modal */}
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6">
+            <h2 className="text-lg font-bold text-gray-900 mb-5">{editing ? 'Editar área' : 'Nueva área'}</h2>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              <Input label="Nombre" {...register('nombre')} error={errors.nombre?.message} />
               <Input label="Sede" {...register('sedeId')} />
-              <Input
-                label="ID Supervisor"
-                placeholder="ID del supervisor asignado"
-                {...register('supervisorId')}
-              />
+              <Input label="Supervisor ID" {...register('supervisorId')} />
               <label className="flex items-center gap-2 text-sm text-gray-700">
-                <input type="checkbox" className="h-4 w-4 rounded border-gray-300 text-green-600" {...register('activo')} />
-                Área activa
+                <input type="checkbox" {...register('activo')} className="rounded border-gray-300" />
+                Activa
               </label>
-            </div>
-
-            <Button type="submit" className="w-full" loading={assigning}>
-              {mode === 'add' ? 'Crear área' : 'Guardar cambios'}
-            </Button>
-          </form>
-        )}
-      </main>
-
-      <BottomNav />
-    </div>
+              <div className="flex gap-3 pt-2">
+                <Button type="submit" loading={saving} className="flex-1">Guardar</Button>
+                <Button type="button" variant="ghost" onClick={() => setModalOpen(false)} className="flex-1">Cancelar</Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </AdminLayout>
   )
 }
+

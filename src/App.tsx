@@ -14,6 +14,7 @@ import AdminVariedades from './pages/admin/Variedades'
 import AdminSupervisores from './pages/admin/Supervisores'
 import AdminLabores from './pages/admin/Labores'
 import AdminEstadisticas from './pages/admin/Estadisticas'
+import AdminAsignaciones from './pages/admin/Asignaciones'
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
@@ -41,6 +42,7 @@ export default function App() {
       <Route path="/admin/supervisores" element={<ProtectedRoute><AdminSupervisores /></ProtectedRoute>} />
       <Route path="/admin/labores" element={<ProtectedRoute><AdminLabores /></ProtectedRoute>} />
       <Route path="/admin/estadisticas" element={<ProtectedRoute><AdminEstadisticas /></ProtectedRoute>} />
+      <Route path="/admin/asignaciones" element={<ProtectedRoute><AdminAsignaciones /></ProtectedRoute>} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />

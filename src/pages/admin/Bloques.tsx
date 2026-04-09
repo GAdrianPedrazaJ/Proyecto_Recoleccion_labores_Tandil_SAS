@@ -5,9 +5,7 @@ import { z } from 'zod'
 import { getAllBloques, getAllAreas, putBloque, deleteBloque } from '../../services/db'
 import { upsertBloque, deleteBloqueSupa } from '../../services/api'
 import type { Bloque, Area } from '../../types'
-import { Header } from '../../components/layout/Header'
-import { BottomNav } from '../../components/layout/BottomNav'
-import { Card } from '../../components/ui/Card'
+import { AdminLayout } from '../../components/layout/AdminLayout'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
 import { Select } from '../../components/ui/Select'
@@ -18,15 +16,14 @@ const schema = z.object({
   areaId: z.string().min(1, 'Requerido'),
 })
 type FormData = z.infer<typeof schema>
-type Mode = 'list' | 'add' | 'edit'
 
 export default function AdminBloques() {
   const [items, setItems] = useState<Bloque[]>([])
   const [areas, setAreas] = useState<Area[]>([])
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [mode, setMode] = useState<Mode>('list')
+  const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<Bloque | null>(null)
+  const [saving, setSaving] = useState(false)
   const [search, setSearch] = useState('')
   const [filterArea, setFilterArea] = useState('')
 
@@ -38,53 +35,28 @@ export default function AdminBloques() {
   const load = async () => {
     setLoading(true)
     const [b, a] = await Promise.all([getAllBloques(), getAllAreas()])
-    setItems(b)
-    setAreas(a)
-    setLoading(false)
+    setItems(b); setAreas(a); setLoading(false)
   }
-
   useEffect(() => { load() }, [])
 
-  const openAdd = () => {
-    setEditing(null)
-    reset({ nombre: '', areaId: areas[0]?.id ?? '' })
-    setMode('add')
-  }
-
-  const openEdit = (item: Bloque) => {
-    setEditing(item)
-    reset({ nombre: item.nombre, areaId: item.areaId })
-    setMode('edit')
-  }
+  const openAdd = () => { setEditing(null); reset({ nombre: '', areaId: areas[0]?.id ?? '' }); setModalOpen(true) }
+  const openEdit = (item: Bloque) => { setEditing(item); reset({ nombre: item.nombre, areaId: item.areaId }); setModalOpen(true) }
 
   const onSubmit = async (data: FormData) => {
     setSaving(true)
-    const bloque: Bloque = editing
-      ? { ...editing, ...data }
-      : { id: `b${Date.now()}`, ...data }
-    try {
-      await Promise.all([putBloque(bloque), upsertBloque(bloque)])
-    } catch {
-      await putBloque(bloque)
-    }
-    await load()
-    setMode('list')
-    setSaving(false)
+    const bloque: Bloque = editing ? { ...editing, ...data } : { id: crypto.randomUUID(), ...data }
+    try { await Promise.all([putBloque(bloque), upsertBloque(bloque)]) } catch { await putBloque(bloque) }
+    await load(); setModalOpen(false); setSaving(false)
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('¿Eliminar este bloque?')) return
-    try {
-      await Promise.all([deleteBloque(id), deleteBloqueSupa(id)])
-    } catch {
-      await deleteBloque(id)
-    }
+  const handleDelete = async (id: string, nombre: string) => {
+    if (!confirm(`¿Eliminar bloque "${nombre}"?`)) return
+    try { await Promise.all([deleteBloque(id), deleteBloqueSupa(id)]) } catch { await deleteBloque(id) }
     setItems((prev) => prev.filter((b) => b.id !== id))
   }
 
-  const areaOptions = areas.map((a) => ({ value: a.id, label: a.nombre }))
   const getAreaNombre = (id: string) => areas.find((a) => a.id === id)?.nombre ?? id
-
+  const areaOptions = areas.map((a) => ({ value: a.id, label: a.nombre }))
   const filtered = items.filter((b) => {
     const matchSearch = !search || b.nombre.toLowerCase().includes(search.toLowerCase())
     const matchArea = !filterArea || b.areaId === filterArea
@@ -92,74 +64,79 @@ export default function AdminBloques() {
   })
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50">
-      <Header title="Bloques" showBack />
-      <main className="flex-1 px-4 py-6 pb-24 space-y-4">
-        {mode === 'list' ? (
-          <>
-            <div className="flex items-center justify-between">
-              <h1 className="text-xl font-bold text-gray-900">Bloques</h1>
-              <Button size="sm" onClick={openAdd}>+ Nuevo</Button>
-            </div>
+    <AdminLayout>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Bloques</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{items.length} bloque{items.length !== 1 ? 's' : ''}</p>
+        </div>
+        <Button onClick={openAdd}>+ Nuevo bloque</Button>
+      </div>
 
-            <div className="space-y-2">
-              <input
-                type="search"
-                placeholder="Buscar bloque..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
-              />
-              <select
-                value={filterArea}
-                onChange={(e) => setFilterArea(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
-              >
-                <option value="">Todas las áreas</option>
-                {areas.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}
-              </select>
-            </div>
-
-            {loading && <div className="flex justify-center py-8"><Spinner /></div>}
-            <p className="text-xs text-gray-500">{filtered.length} bloque{filtered.length !== 1 ? 's' : ''}</p>
-
-            <div className="space-y-2">
-              {filtered.map((b) => (
-                <Card key={b.id}>
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 truncate">{b.nombre}</p>
-                      <p className="text-xs text-gray-500 truncate">{getAreaNombre(b.areaId)}</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="ghost" onClick={() => openEdit(b)}>Editar</Button>
-                      <Button size="sm" variant="ghost" onClick={() => handleDelete(b.id)}>
-                        <span className="text-red-500">Borrar</span>
-                      </Button>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          </>
-        ) : (
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <h2 className="text-lg font-bold text-gray-900">{editing ? 'Editar bloque' : 'Nuevo bloque'}</h2>
-            <Input label="Nombre" error={errors.nombre?.message} {...register('nombre')} />
-            <Select
-              label="Área"
-              options={areaOptions}
-              error={errors.areaId?.message}
-              {...register('areaId')}
-            />
-            <div className="flex gap-3">
-              <Button type="submit" className="flex-1" loading={saving}>Guardar</Button>
-              <Button type="button" variant="ghost" className="flex-1" onClick={() => setMode('list')}>Cancelar</Button>
-            </div>
-          </form>
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-3 flex-wrap">
+          <input type="search" placeholder="Buscar bloque..." value={search} onChange={(e) => setSearch(e.target.value)}
+            className="w-60 rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-green-500 focus:outline-none"
+          />
+          <select value={filterArea} onChange={(e) => setFilterArea(e.target.value)}
+            className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-green-500 focus:outline-none">
+            <option value="">Todas las áreas</option>
+            {areas.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+          </select>
+          <span className="text-xs text-gray-400">{filtered.length} resultado{filtered.length !== 1 ? 's' : ''}</span>
+        </div>
+        {loading ? <div className="flex justify-center py-16"><Spinner /></div> : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-200">
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Nombre</th>
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Área</th>
+                  <th className="text-center px-4 py-3 font-semibold text-gray-600">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.length === 0 && <tr><td colSpan={3} className="text-center py-12 text-gray-400">Sin resultados</td></tr>}
+                {filtered.map((b, i) => (
+                  <tr key={b.id} className={`border-b border-gray-100 hover:bg-green-50/40 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/60'}`}>
+                    <td className="px-4 py-3 font-medium text-gray-900">{b.nombre}</td>
+                    <td className="px-4 py-3">
+                      <span className="inline-flex items-center rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700 border border-green-200">{getAreaNombre(b.areaId)}</span>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <button onClick={() => openEdit(b)} className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50">
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 012.828 2.828L11.828 15.828a4 4 0 01-2.828 1.172H7v-2a4 4 0 011.172-2.828z" /></svg>
+                        </button>
+                        <button onClick={() => handleDelete(b.id, b.nombre)} className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50">
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4h6v3M4 7h16" /></svg>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
-      </main>
-      <BottomNav />
-    </div>
+      </div>
+
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6">
+            <h2 className="text-lg font-bold text-gray-900 mb-5">{editing ? 'Editar bloque' : 'Nuevo bloque'}</h2>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              <Input label="Nombre" {...register('nombre')} error={errors.nombre?.message} />
+              <Select label="Área" options={areaOptions} {...register('areaId')} error={errors.areaId?.message} />
+              <div className="flex gap-3 pt-2">
+                <Button type="submit" loading={saving} className="flex-1">Guardar</Button>
+                <Button type="button" variant="ghost" onClick={() => setModalOpen(false)} className="flex-1">Cancelar</Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </AdminLayout>
   )
 }
+
