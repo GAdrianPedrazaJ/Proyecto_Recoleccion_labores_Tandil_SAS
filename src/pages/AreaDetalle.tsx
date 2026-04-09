@@ -38,8 +38,8 @@ export default function AreaDetalle() {
       getAllVariedades(),
       getAllVariedadesBloques(),
     ])
-    // If no data, try syncing once
-    if (colabs.length === 0 && bloquesData.length === 0) {
+    // If no data or variedadesBloques missing, try syncing once
+    if (colabs.length === 0 || vbData.length === 0) {
       await syncFromRemote()
       ;[areaData, colabs, bloquesData, varsData, vbData] = await Promise.all([
         getAreaById(id),
@@ -91,10 +91,13 @@ export default function AreaDetalle() {
 
   const bloquesOpts = bloques.map((b) => ({ value: b.id, label: b.nombre }))
   const getVarsOpts = (bloqueId: string) => {
-    if (!bloqueId) return variedades.map((v) => ({ value: v.id, label: v.nombre }))
+    const allVars = variedades.map((v) => ({ value: v.id, label: v.nombre }))
+    if (!bloqueId) return allVars
     const idsEnBloque = new Set(
       variedadesBloques.filter((vb) => vb.bloqueId === bloqueId).map((vb) => vb.variedadId)
     )
+    // Si no hay restricciones definidas para el bloque, mostrar todas las variedades
+    if (idsEnBloque.size === 0) return allVars
     return variedades
       .filter((v) => idsEnBloque.has(v.id))
       .map((v) => ({ value: v.id, label: v.nombre }))
@@ -168,7 +171,7 @@ export default function AreaDetalle() {
                       placeholder="Seleccionar..."
                       value={row.variedadId}
                       onChange={(e) => setVariedad(idx, e.target.value)}
-                      disabled={!row.bloqueId}
+                      disabled={bloques.length > 0 && !row.bloqueId}
                     />
                   </div>
                 )}

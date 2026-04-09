@@ -47,9 +47,16 @@ const SEED_SUPERVISORES: Supervisor[] = [
 ]
 
 const SEED_BLOQUES: Bloque[] = [
-  { id: 'b1', nombre: 'Bloque 1', areaId: 'a1' },
-  { id: 'b2', nombre: 'Bloque 2', areaId: 'a2' },
-  { id: 'b3', nombre: 'Bloque 3', areaId: 'a3' },
+  { id: 'b1',  nombre: 'Bloque 1',  areaId: 'a1' },
+  { id: 'b2',  nombre: 'Bloque 2',  areaId: 'a2' },
+  { id: 'b3',  nombre: 'Bloque 3',  areaId: 'a3' },
+  { id: 'b4',  nombre: 'Bloque 4',  areaId: 'a4' },
+  { id: 'b5',  nombre: 'Bloque 5',  areaId: 'a5' },
+  { id: 'b6',  nombre: 'Bloque 6',  areaId: 'a6' },
+  { id: 'b7',  nombre: 'Bloque 7',  areaId: 'a7' },
+  { id: 'b8',  nombre: 'Bloque 8',  areaId: 'a8' },
+  { id: 'b9',  nombre: 'Bloque 9',  areaId: 'a9' },
+  { id: 'b10', nombre: 'Bloque 10', areaId: 'a10' },
 ]
 
 const SEED_COLABORADORES: Colaborador[] = [
@@ -78,14 +85,11 @@ const SEED_VARIEDADES: Variedad[] = [
   { id: 'v10', nombre: 'Lemon Zest'   },
 ]
 
-const SEED_VARIEDADES_BLOQUES: VariedadBloque[] = [
-  { id: 'v1_b1', variedadId: 'v1', bloqueId: 'b1' },
-  { id: 'v2_b1', variedadId: 'v2', bloqueId: 'b1' },
-  { id: 'v3_b2', variedadId: 'v3', bloqueId: 'b2' },
-  { id: 'v4_b2', variedadId: 'v4', bloqueId: 'b2' },
-  { id: 'v5_b3', variedadId: 'v5', bloqueId: 'b3' },
-  { id: 'v6_b3', variedadId: 'v6', bloqueId: 'b3' },
-]
+const ALL_VAR_IDS = ['v1','v2','v3','v4','v5','v6','v7','v8','v9','v10']
+const ALL_BLOQUE_IDS = ['b1','b2','b3','b4','b5','b6','b7','b8','b9','b10']
+const SEED_VARIEDADES_BLOQUES: VariedadBloque[] = ALL_BLOQUE_IDS.flatMap((bId) =>
+  ALL_VAR_IDS.map((vId) => ({ id: `${vId}_${bId}`, variedadId: vId, bloqueId: bId }))
+)
 
 const SEED_LABORES: LaborCatalog[] = [
   { id: 'L1', nombre: 'Descabece con pedúnculo' },
