@@ -17,7 +17,8 @@ function fmt2(n: number): string {
 }
 
 export function LaborRow({ filaIndex, laborIndex, laborCatalog, isEditMode, onRemove }: LaborRowProps) {
-  const { register, control, setValue } = useFormContext<RegistroFV>()
+  const { register, control, setValue, formState: { errors } } = useFormContext<RegistroFV>()
+  const laborErrs = errors.filas?.[filaIndex]?.labores?.[laborIndex]
 
   const laborId = useWatch({ control, name: `filas.${filaIndex}.labores.${laborIndex}.laborId` })
   const camasEstimadas = useWatch({ control, name: `filas.${filaIndex}.labores.${laborIndex}.camasEstimadas` })
@@ -85,6 +86,7 @@ export function LaborRow({ filaIndex, laborIndex, laborCatalog, isEditMode, onRe
         label="Labor"
         options={laborOptions}
         placeholder="Seleccionar labor..."
+        error={laborErrs?.laborId?.message}
         {...register(`filas.${filaIndex}.labores.${laborIndex}.laborId`)}
       />
 
@@ -94,6 +96,7 @@ export function LaborRow({ filaIndex, laborIndex, laborCatalog, isEditMode, onRe
           label="Camas estimadas"
           type="number"
           min={0}
+          error={laborErrs?.camasEstimadas?.message}
           {...register(`filas.${filaIndex}.labores.${laborIndex}.camasEstimadas`, { valueAsNumber: true })}
         />
         <Input
@@ -101,6 +104,7 @@ export function LaborRow({ filaIndex, laborIndex, laborCatalog, isEditMode, onRe
           type="number"
           min={0}
           placeholder={isEditMode ? '' : 'Al cierre'}
+          error={laborErrs?.camasReales?.message}
           {...register(`filas.${filaIndex}.labores.${laborIndex}.camasReales`, { valueAsNumber: true })}
         />
       </div>
@@ -112,6 +116,7 @@ export function LaborRow({ filaIndex, laborIndex, laborCatalog, isEditMode, onRe
           type="number"
           min={0}
           step="0.1"
+          error={laborErrs?.tiempoCamaEstimado?.message}
           {...register(`filas.${filaIndex}.labores.${laborIndex}.tiempoCamaEstimado`, { valueAsNumber: true })}
         />
         <Input
@@ -120,6 +125,7 @@ export function LaborRow({ filaIndex, laborIndex, laborCatalog, isEditMode, onRe
           min={0}
           step="0.1"
           placeholder={isEditMode ? '' : 'Al cierre'}
+          error={laborErrs?.tiempoCamaReal?.message}
           {...register(`filas.${filaIndex}.labores.${laborIndex}.tiempoCamaReal`, { valueAsNumber: true })}
         />
       </div>

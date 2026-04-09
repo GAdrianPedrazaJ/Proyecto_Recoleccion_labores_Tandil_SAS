@@ -75,10 +75,18 @@ export default function AreaDetalle() {
   const setVariedad = (idx: number, variedadId: string) =>
     setRows((prev) => prev.map((r, i) => (i === idx ? { ...r, variedadId } : r)))
 
+  const [intentoIniciar, setIntentoIniciar] = useState(false)
+
   const seleccionados = rows.filter((r) => r.incluido)
 
+  const sinBloque = (r: ColabRow) => r.incluido && !r.bloqueId && bloques.length > 0
+  const sinVariedad = (r: ColabRow) => r.incluido && !r.variedadId
+
   const handleIniciar = () => {
+    setIntentoIniciar(true)
     if (seleccionados.length === 0) return
+    const invalidos = seleccionados.filter((r) => sinBloque(r) || sinVariedad(r))
+    if (invalidos.length > 0) return
     const selecciones: SeleccionColaborador[] = seleccionados.map((r) => ({
       colaboradorId: r.colaborador.id,
       nombre: r.colaborador.nombre,
@@ -158,21 +166,33 @@ export default function AreaDetalle() {
 
                 {row.incluido && (
                   <div className="grid grid-cols-2 gap-2 pl-8">
-                    <Select
-                      label="Bloque"
-                      options={bloquesOpts}
-                      placeholder="Seleccionar..."
-                      value={row.bloqueId}
-                      onChange={(e) => setBloque(idx, e.target.value)}
-                    />
-                    <Select
-                      label="Variedad"
-                      options={getVarsOpts(row.bloqueId)}
-                      placeholder="Seleccionar..."
-                      value={row.variedadId}
-                      onChange={(e) => setVariedad(idx, e.target.value)}
-                      disabled={bloques.length > 0 && !row.bloqueId}
-                    />
+                    <div>
+                      <Select
+                        label="Bloque"
+                        options={bloquesOpts}
+                        placeholder="Seleccionar..."
+                        value={row.bloqueId}
+                        onChange={(e) => setBloque(idx, e.target.value)}
+                        className={intentoIniciar && sinBloque(row) ? 'border-red-400 ring-1 ring-red-400' : ''}
+                      />
+                      {intentoIniciar && sinBloque(row) && (
+                        <p className="mt-1 text-xs text-red-600">Requerido</p>
+                      )}
+                    </div>
+                    <div>
+                      <Select
+                        label="Variedad"
+                        options={getVarsOpts(row.bloqueId)}
+                        placeholder="Seleccionar..."
+                        value={row.variedadId}
+                        onChange={(e) => setVariedad(idx, e.target.value)}
+                        disabled={bloques.length > 0 && !row.bloqueId}
+                        className={intentoIniciar && sinVariedad(row) ? 'border-red-400 ring-1 ring-red-400' : ''}
+                      />
+                      {intentoIniciar && sinVariedad(row) && (
+                        <p className="mt-1 text-xs text-red-600">Requerido</p>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -181,11 +201,16 @@ export default function AreaDetalle() {
         )}
       </main>
 
-      {!loading && seleccionados.length > 0 && (
-        <div className="fixed bottom-16 inset-x-0 px-4 pb-2">
+      {!loading && (
+        <div className="fixed bottom-16 inset-x-0 px-4 pb-2 space-y-2">
+          {intentoIniciar && seleccionados.length === 0 && (
+            <p className="text-center text-sm font-medium text-red-600 bg-red-50 rounded-lg py-2">
+              Seleccioná al menos un colaborador
+            </p>
+          )}
           <Button className="w-full shadow-lg" size="lg" onClick={handleIniciar}>
-            Iniciar Formulario · {seleccionados.length} colaborador
-            {seleccionados.length !== 1 ? 'es' : ''}
+            Iniciar Formulario
+            {seleccionados.length > 0 && ` · ${seleccionados.length} colaborador${seleccionados.length !== 1 ? 'es' : ''}`}
           </Button>
         </div>
       )}

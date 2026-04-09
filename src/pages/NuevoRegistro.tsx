@@ -73,7 +73,7 @@ const TIPOS_LABOR = [
   { value: 'Labores', label: 'Labores' },
   { value: 'Corte', label: 'Corte' },
   { value: 'Siembra', label: 'Siembra' },
-  { value: 'FumigaciÃ³n', label: 'FumigaciÃ³n' },
+  { value: 'Fumigación', label: 'Fumigación' },
   { value: 'Otro', label: 'Otro' },
 ]
 
@@ -202,13 +202,67 @@ export default function NuevoRegistro() {
 
   // â”€â”€â”€ Save handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-  const handleSave = async (data: RegistroFV, estado: 'borrador' | 'completo') => {
+  const [validationErrors, setValidationErrors] = useState(0)
+
+  const validateFila = (
+    fila: RegistroFV['filas'][number],
+    estado: 'borrador' | 'completo',
+    index: number,
+  ): Array<{ field: string; message: string }> => {
+    const errs: Array<{ field: string; message: string }> = []
+    const req = (ok: boolean, field: string, msg = 'Campo requerido') => {
+      if (!ok) errs.push({ field: `filas.${index}.${field}`, message: msg })
+    }
+    // Estimados — siempre requeridos
+    req(fila.tiempoEstimadoMinutos > 0, 'tiempoEstimadoMinutos')
+    req(fila.tallosEstimados > 0, 'tallosEstimados')
+    req(!!fila.horaInicio, 'horaInicio')
+    req(!!fila.horaFinCorteEstimado, 'horaFinCorteEstimado')
+    req(fila.rendimientoCorteEstimado > 0, 'rendimientoCorteEstimado')
+    // Labores
+    fila.labores.forEach((labor, j) => {
+      req(!!labor.laborId, `labores.${j}.laborId`, 'Selecciona una labor')
+      req(labor.camasEstimadas > 0, `labores.${j}.camasEstimadas`)
+      req(labor.tiempoCamaEstimado > 0, `labores.${j}.tiempoCamaEstimado`)
+      if (estado === 'completo') {
+        req(labor.camasReales > 0, `labores.${j}.camasReales`)
+        req(labor.tiempoCamaReal > 0, `labores.${j}.tiempoCamaReal`)
+      }
+    })
+    // Reales — solo al completar
+    if (estado === 'completo') {
+      req(fila.tiempoRealMinutos > 0, 'tiempoRealMinutos')
+      req(fila.tallosReales > 0, 'tallosReales')
+      req(!!fila.horaFinCorteReal, 'horaFinCorteReal')
+      req(fila.rendimientoCorteReal > 0, 'rendimientoCorteReal')
+      req(!!fila.procesoSeguridad, 'procesoSeguridad')
+    }
+    return errs
+  }
+
+  const handleSave = async (estado: 'borrador' | 'completo') => {
+    methods.clearErrors()
+    setValidationErrors(0)
+    const data = methods.getValues()
     const filasActivas = data.filas
       .filter((f) => f._active)
       .map(({ _active: _, ...rest }) => rest)
 
-    if (filasActivas.length === 0) {
-      alert('No hay colaboradores activos en el formulario.')
+    if (filasActivas.length === 0) return
+
+    // Validar todos los campos requeridos según el estado
+    let allErrs: Array<{ field: string; message: string }> = []
+    data.filas.forEach((fila, i) => {
+      if (!fila._active) return
+      allErrs = [...allErrs, ...validateFila(fila, estado, i)]
+    })
+
+    if (allErrs.length > 0) {
+      allErrs.forEach(({ field, message }) =>
+        methods.setError(field as Parameters<typeof methods.setError>[0], { type: 'manual', message }),
+      )
+      setValidationErrors(allErrs.length)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
       return
     }
 
@@ -241,7 +295,7 @@ export default function NuevoRegistro() {
   if (success) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-gray-50 p-8 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-3xl">âœ…</div>
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-3xl">✅</div>
         <h2 className="text-xl font-bold text-green-700">
           {isEditMode ? 'Registro actualizado' : 'Registro guardado'}
         </h2>
@@ -251,8 +305,8 @@ export default function NuevoRegistro() {
   }
 
   const pageTitle = isEditMode
-    ? `Completar Â· ${area?.nombre ?? '...'}`
-    : `Registro Â· ${area?.nombre ?? '...'}`
+    ? `Completar · ${area?.nombre ?? '...'}`
+    : `Registro · ${area?.nombre ?? '...'}`
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
@@ -286,7 +340,7 @@ export default function NuevoRegistro() {
               {/* Colaboradores */}
               {fields.length === 0 && (
                 <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
-                  No hay colaboradores. Vuelve atrÃ¡s para seleccionarlos.
+                  No hay colaboradores. Vuelve atrás para seleccionarlos.
                 </div>
               )}
 
@@ -308,15 +362,20 @@ export default function NuevoRegistro() {
       {/* Bottom action bar */}
       {!loading && (
         <div className="fixed bottom-16 inset-x-0 px-4 py-3 bg-white border-t border-gray-200 shadow-lg space-y-2">
+          {validationErrors > 0 && (
+            <p className="text-center text-xs font-medium text-red-600 bg-red-50 rounded-lg py-2">
+              Hay {validationErrors} campo{validationErrors !== 1 ? 's' : ''} requerido{validationErrors !== 1 ? 's' : ''} sin completar
+            </p>
+          )}
           {isEditMode ? (
             <Button
               type="button"
               className="w-full"
               size="lg"
               loading={saving}
-              onClick={() => methods.handleSubmit((d) => handleSave(d, 'completo'))()}
+              onClick={() => handleSave('completo')}
             >
-              âœ… Guardar Registro Completo
+              Guardar Registro Completo
             </Button>
           ) : (
             <>
@@ -325,9 +384,9 @@ export default function NuevoRegistro() {
                 className="w-full"
                 size="lg"
                 loading={saving}
-                onClick={() => methods.handleSubmit((d) => handleSave(d, 'borrador'))()}
+                onClick={() => handleSave('borrador')}
               >
-                ðŸ’¾ Guardar Estimados (Borrador)
+                Guardar Estimados (Borrador)
               </Button>
               <Button
                 type="button"
@@ -335,9 +394,9 @@ export default function NuevoRegistro() {
                 className="w-full"
                 size="lg"
                 loading={saving}
-                onClick={() => methods.handleSubmit((d) => handleSave(d, 'completo'))()}
+                onClick={() => handleSave('completo')}
               >
-                âœ… Registro Completo
+                Guardar Registro Completo
               </Button>
             </>
           )}

@@ -23,7 +23,8 @@ function fmt2(n: number): string {
 }
 
 export function FilaColaboradorForm({ index, bloques, variedades, laborCatalog, isEditMode }: FilaColaboradorFormProps) {
-  const { register, control, setValue } = useFormContext<RegistroFV>()
+  const { register, control, setValue, formState: { errors } } = useFormContext<RegistroFV>()
+  const filaErrs = errors.filas?.[index]
 
   const { fields: laborFields, append: appendLabor, remove: removeLabor } = useFieldArray({
     control,
@@ -135,6 +136,7 @@ export function FilaColaboradorForm({ index, bloques, variedades, laborCatalog, 
               label="Tiempo estimado (min)"
               type="number"
               min={0}
+              error={filaErrs?.tiempoEstimadoMinutos?.message}
               {...register(`filas.${index}.tiempoEstimadoMinutos`, { valueAsNumber: true })}
             />
             <div className="flex flex-col gap-1">
@@ -152,6 +154,7 @@ export function FilaColaboradorForm({ index, bloques, variedades, laborCatalog, 
               type="number"
               min={0}
               placeholder={isEditMode ? '' : 'Al cierre'}
+              error={filaErrs?.tiempoRealMinutos?.message}
               {...register(`filas.${index}.tiempoRealMinutos`, { valueAsNumber: true })}
             />
             <div className="flex flex-col gap-1">
@@ -168,6 +171,7 @@ export function FilaColaboradorForm({ index, bloques, variedades, laborCatalog, 
               label="Tallos estimados"
               type="number"
               min={0}
+              error={filaErrs?.tallosEstimados?.message}
               {...register(`filas.${index}.tallosEstimados`, { valueAsNumber: true })}
             />
             <Input
@@ -175,6 +179,7 @@ export function FilaColaboradorForm({ index, bloques, variedades, laborCatalog, 
               type="number"
               min={0}
               placeholder={isEditMode ? '' : 'Al cierre'}
+              error={filaErrs?.tallosReales?.message}
               {...register(`filas.${index}.tallosReales`, { valueAsNumber: true })}
             />
           </div>
@@ -184,11 +189,13 @@ export function FilaColaboradorForm({ index, bloques, variedades, laborCatalog, 
             <Input
               label="Hora inicio corte"
               type="time"
+              error={filaErrs?.horaInicio?.message}
               {...register(`filas.${index}.horaInicio`)}
             />
             <Input
               label="Hora fin estimado"
               type="time"
+              error={filaErrs?.horaFinCorteEstimado?.message}
               {...register(`filas.${index}.horaFinCorteEstimado`)}
             />
           </div>
@@ -196,6 +203,7 @@ export function FilaColaboradorForm({ index, bloques, variedades, laborCatalog, 
             label="Hora fin real"
             type="time"
             placeholder={isEditMode ? '' : 'Al cierre'}
+            error={filaErrs?.horaFinCorteReal?.message}
             {...register(`filas.${index}.horaFinCorteReal`)}
           />
 
@@ -214,6 +222,7 @@ export function FilaColaboradorForm({ index, bloques, variedades, laborCatalog, 
               type="number"
               min={0}
               step="0.01"
+              error={filaErrs?.rendimientoCorteEstimado?.message}
               {...register(`filas.${index}.rendimientoCorteEstimado`, { valueAsNumber: true })}
             />
             <Input
@@ -222,6 +231,7 @@ export function FilaColaboradorForm({ index, bloques, variedades, laborCatalog, 
               min={0}
               step="0.01"
               placeholder={isEditMode ? '' : 'Al cierre'}
+              error={filaErrs?.rendimientoCorteReal?.message}
               {...register(`filas.${index}.rendimientoCorteReal`, { valueAsNumber: true })}
             />
           </div>
@@ -286,16 +296,22 @@ export function FilaColaboradorForm({ index, bloques, variedades, laborCatalog, 
         <div className="flex flex-col gap-1">
           <label className="text-sm font-medium text-gray-700">Proceso y Seguridad</label>
           <select
-            className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+            className={`rounded-lg border px-3 py-2 text-sm text-gray-900 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 ${
+              filaErrs?.procesoSeguridad ? 'border-red-400 bg-red-50' : 'border-gray-300 bg-white'
+            }`}
             {...register(`filas.${index}.procesoSeguridad`)}
           >
             <option value="">— Seleccionar —</option>
+            <option value="NO">NO</option>
             <option value="A">A. Uso de EPP&apos;s</option>
             <option value="B">B. Herramientas en buen estado</option>
             <option value="C">C. Etiquetas en buen estado</option>
             <option value="D">D. Recorrido en cama redonda</option>
             <option value="E">E. Orden y Aseo</option>
           </select>
+          {filaErrs?.procesoSeguridad && (
+            <p className="text-xs text-red-600">Campo requerido al completar</p>
+          )}
         </div>
 
         {/* Calidad / Cuadro */}
