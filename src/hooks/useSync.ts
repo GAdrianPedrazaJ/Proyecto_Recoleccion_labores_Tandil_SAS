@@ -1,40 +1,42 @@
-import { useCallback, useEffect, useRef } from 'react'
-import { getSyncIntervalMs } from '../utils/helpers'
+import { useCallback, useEffect, useState } from 'react'
+import { countNoSincronizados } from '../services/db'
 import { syncPendientes } from '../services/sync'
-import { useAppStore } from '../store/useAppStore'
 
 export function useSync() {
-  const isOnline = useAppStore((s) => s.isOnline)
-  const setIsSyncing = useAppStore((s) => s.setIsSyncing)
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [pendingCount, setPendingCount] = useState(0)
+  const [syncing, setSyncing] = useState(false)
 
-  const syncNow = useCallback(async () => {
-    if (!navigator.onLine) return
-    setIsSyncing(true)
+  const refresh = useCallback(async () => {
+    const count = await countNoSincronizados()
+    setPendingCount(count)
+  }, [])
+
+  const sync = useCallback(async () => {
+    if (syncing) return
+    setSyncing(true)
     try {
       await syncPendientes()
+      await refresh()
     } finally {
-      setIsSyncing(false)
-      window.dispatchEvent(new CustomEvent('labores:sync'))
+      setSyncing(false)
     }
-  }, [setIsSyncing])
+  }, [syncing, refresh])
 
   useEffect(() => {
-    if (!isOnline) {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current)
-        intervalRef.current = null
-      }
-      return
-    }
-    const ms = getSyncIntervalMs()
-    intervalRef.current = setInterval(() => {
-      void syncNow()
-    }, ms)
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current)
-    }
-  }, [isOnline, syncNow])
+    refresh()
 
-  return { syncNow }
+    const interval = setInterval(() => {
+      if (navigator.onLine) sync()
+    }, 30_000)
+
+    const handleOnline = () => sync()
+    window.addEventListener('online', handleOnline)
+
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('online', handleOnline)
+    }
+  }, [refresh, sync])
+
+  return { pendingCount, syncing, sync, refresh }
 }

@@ -1,90 +1,112 @@
 import axios from 'axios'
-import type { Area, Colaborador, RegistroColaborador } from '../types'
+import type { Area, Colaborador, Variedad, Formulario } from '../types'
 
-export interface RemoteColaborador extends Colaborador {
-  supervisorId: string
-}
+const BASE_URL =
+  (import.meta.env.VITE_AZURE_FUNCTION_URL as string) ||
+  'https://func-labores-tandil-gzepegarh7b4h6ax.eastus2-01.azurewebsites.net/api'
 
-export interface RemoteVariedad {
-  id: string
-  nombre: string
-}
-
-/** URL base de la Azure Function (variable de entorno Vite). */
-function getFunctionUrl(): string {
-  const url = import.meta.env.VITE_AZURE_FUNCTION_URL
-  if (!url || url.includes('TU-FUNCTION')) {
-    console.warn(
-      '[api] Configura VITE_AZURE_FUNCTION_URL en .env.local con tu endpoint real.',
-    )
-  }
-  return url ?? ''
-}
-
-function baseUrl() {
-  return getFunctionUrl().replace(/\/$/, '')
-}
-
-/** Cliente Axios reutilizable. */
-export const apiClient = axios.create({
-  timeout: 30_000,
-  headers: { 'Content-Type': 'application/json' },
+const client = axios.create({
+  baseURL: BASE_URL,
+  timeout: 120_000, // Azure cold start puede tardar ~60-90s
 })
 
-function handleAxiosError(err: unknown): never {
-  if (axios.isAxiosError(err)) {
-    const status = err.response?.status
-    const body = err.response?.data
-    throw new Error(
-      `API error ${status ?? 'network'}: ${body ? JSON.stringify(body) : err.message}`,
-    )
-  }
-  throw err
-}
-
-/** Envía un RegistroColaborador a la Azure Function (POST /registro). */
-export async function postRegistroLabores(
-  payload: RegistroColaborador,
-): Promise<{ status: number; data?: unknown }> {
-  try {
-    const res = await apiClient.post<unknown>(`${baseUrl()}/registro`, payload)
-    return { status: res.status, data: res.data }
-  } catch (err) {
-    handleAxiosError(err)
-  }
-}
-
-/** Asigna un supervisor a un área (PATCH /areas/{id}/assign). */
-export async function assignArea(
-  areaId: string,
-  supervisorId: string,
-  changedBy?: string,
-): Promise<{ status: number; data?: unknown }> {
-  try {
-    const res = await apiClient.patch(
-      `${baseUrl()}/areas/${encodeURIComponent(areaId)}/assign`,
-      { supervisorId, changedBy },
-    )
-    return { status: res.status, data: res.data }
-  } catch (err) {
-    handleAxiosError(err)
-  }
-}
-
-/** Descarga la lista de áreas desde Google Sheets (GET /areas). */
 export async function fetchAreas(): Promise<Area[]> {
-  const res = await apiClient.get<Area[]>(`${baseUrl()}/areas`, { timeout: 120_000 })
-  return res.data
+  const { data } = await client.get<Record<string, unknown>[]>('/areas')
+  return data.map((a) => ({
+    id: String(a.id ?? ''),
+    nombre: String(a.nombre ?? ''),
+    sede: String(a.sede ?? ''),
+    supervisorId: String(a.supervisorId ?? ''),
+    activo: a.activo !== false,
+  }))
 }
 
-/** Descarga la lista de colaboradores desde Google Sheets (GET /colaboradores). */
-export async function fetchColaboradores(): Promise<RemoteColaborador[]> {
-  const res = await apiClient.get<RemoteColaborador[]>(`${baseUrl()}/colaboradores`, { timeout: 120_000 })
-  return res.data
+export async function fetchColaboradores(): Promise<Colaborador[]> {
+  const { data } = await client.get<Record<string, unknown>[]>('/colaboradores')
+  return data.map((c) => ({
+    id: String(c.id ?? ''),
+    nombre: String(c.nombre ?? ''),
+    externo: c.externo === true,
+    areaId: String(c.areaId ?? ''),
+    activo: c.activo !== false,
+  }))
 }
 
-/** Descarga la lista de variedades desde Google Sheets (GET /variedades). */
-export async function fetchVariedades(): Promise<RemoteVariedad[]> {
-  const res = await apiClient.get<RemoteVariedad[]>(`${baseUrl()}/variedades`, { timeout: 120_000 })
-  return res.data
+export async function fetchVariedades(): Promise<Variedad[]> {
+  const { data } = await client.get<Record<string, unknown>[]>('/variedades')
+  return data.map((v) => ({
+    id: String(v.id ?? ''),
+    nombre: String(v.nombre ?? ''),
+  }))
+}
+
+interface RegistroPayload {
+  id: string
+  formularioId: string
+  fecha: string
+  areaId: string
+  supervisor: string
+  tipo: string
+  fechaCreacion: string
+  sincronizado: boolean
+  intentosSincronizacion: number
+  errorSincronizacionPermanente: boolean
+  ultimoError: string
+  no: number
+  colaborador: string
+  externo: boolean
+  variedad: string
+  tallosEstimados: number
+  tallosReales: number
+  horaInicio: string
+  labores: Formulario['filas'][number]['labores']
+  proceso: boolean
+  seguridad: boolean
+  calidad: boolean
+  cumplimiento: boolean
+  compromiso: boolean
+  observaciones: string
+}
+
+/**
+ * Envía el formulario al backend: una llamada por cada FilaColaborador.
+ * El backend guarda el encabezado del formulario sólo la primera vez (check por formularioId).
+ */
+export async function postRegistro(formulario: Formulario): Promise<void> {
+  const payloads: RegistroPayload[] = formulario.filas.map((fila, i) => ({
+    id: `${formulario.id}-${fila.colaboradorId}`,
+    formularioId: formulario.id,
+    fecha: formulario.fecha,
+    areaId: formulario.areaId,
+    supervisor: formulario.supervisorId,
+    tipo: formulario.tipo,
+    fechaCreacion: formulario.fechaCreacion,
+    sincronizado: formulario.sincronizado,
+    intentosSincronizacion: formulario.intentosSincronizacion,
+    errorSincronizacionPermanente: formulario.errorPermanente,
+    ultimoError: formulario.ultimoError ?? '',
+    no: i + 1,
+    colaborador: fila.nombre,
+    externo: fila.externo,
+    variedad: fila.variedad,
+    tallosEstimados: fila.tallosEstimados,
+    tallosReales: fila.tallosReales,
+    horaInicio: fila.horaInicio,
+    labores: fila.labores,
+    proceso: fila.proceso,
+    seguridad: fila.seguridad,
+    calidad: fila.calidad,
+    cumplimiento: fila.cumplimiento,
+    compromiso: fila.compromiso,
+    observaciones: fila.observaciones,
+  }))
+
+  // Envío secuencial para no saturar el cold-start de Azure Functions
+  for (const payload of payloads) {
+    await client.post('/registro', payload)
+  }
+}
+
+export async function patchAssignArea(areaId: string, supervisorId: string): Promise<void> {
+  await client.patch(`/areas/${encodeURIComponent(areaId)}/assign`, { supervisorId })
 }
