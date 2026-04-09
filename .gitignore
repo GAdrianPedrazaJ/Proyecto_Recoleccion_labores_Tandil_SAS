@@ -33,6 +33,11 @@ azure-function/local.settings.json
 functions/.env
 functions/.env.*
 
+# Supabase env (contain secrets/API keys - NEVER commit)
+.env
+.env.local
+.env.*.local
+
 # Google service account key files
 *.json
 !tsconfig*.json

@@ -1,187 +1,224 @@
-import axios from 'axios'
+import { supabase } from './supabase'
 import type { Area, Bloque, Colaborador, LaborCatalog, Sede, Supervisor, Variedad, VariedadBloque, Formulario } from '../types'
 
-const BASE_URL = import.meta.env.DEV
-  ? 'http://localhost:7071/api'
-  : 'https://func-labores-tandil-gzepegarh7b4h6ax.eastus2-01.azurewebsites.net/api'
-
-const client = axios.create({
-  baseURL: BASE_URL,
-  timeout: 120_000,
-})
-
 export async function fetchAreas(): Promise<Area[]> {
-  const { data } = await client.get<Record<string, unknown>[]>('/areas')
-  return data.map((a) => ({
-    id: String(a.id ?? ''),
-    nombre: String(a.nombre ?? ''),
-    sedeId: String(a.sedeId ?? a.sede ?? ''),
-    supervisorId: String(a.supervisorId ?? ''),
+  const { data, error } = await supabase
+    .from('areas')
+    .select('id_area, nom_area, sede, id_supervisor, activo')
+  if (error) throw new Error(error.message)
+  return (data ?? []).map((a) => ({
+    id: String(a.id_area ?? ''),
+    nombre: String(a.nom_area ?? ''),
+    sedeId: String(a.sede ?? ''),
+    supervisorId: String(a.id_supervisor ?? ''),
     activo: a.activo !== false,
   }))
 }
 
 export async function fetchSupervisores(): Promise<Supervisor[]> {
-  const { data } = await client.get<Record<string, unknown>[]>('/supervisores')
-  return data.map((s) => ({
-    id: String(s.id ?? ''),
-    nombre: String(s.nombre ?? ''),
-    areaId: String(s.areaId ?? ''),
-    sedeId: String(s.sedeId ?? ''),
+  const { data, error } = await supabase
+    .from('supervisors')
+    .select('id_supervisor, nom_supervisor, id_area, sede, activo')
+  if (error) throw new Error(error.message)
+  return (data ?? []).map((s) => ({
+    id: String(s.id_supervisor ?? ''),
+    nombre: String(s.nom_supervisor ?? ''),
+    areaId: String(s.id_area ?? ''),
+    sedeId: String(s.sede ?? ''),
     activo: s.activo !== false,
   }))
 }
 
 export async function fetchBloques(): Promise<Bloque[]> {
-  const { data } = await client.get<Record<string, unknown>[]>('/bloques')
-  return data.map((b) => ({
-    id: String(b.id ?? ''),
-    nombre: String(b.nombre ?? ''),
-    areaId: String(b.areaId ?? ''),
+  const { data, error } = await supabase
+    .from('bloques')
+    .select('id_bloque, nom_bloque, area')
+  if (error) throw new Error(error.message)
+  return (data ?? []).map((b) => ({
+    id: String(b.id_bloque ?? ''),
+    nombre: String(b.nom_bloque ?? ''),
+    areaId: String(b.area ?? ''),
   }))
 }
 
 export async function fetchSedes(): Promise<Sede[]> {
-  const { data } = await client.get<Record<string, unknown>[]>('/sedes')
-  return data.map((s) => ({
-    id: String(s.id ?? ''),
-    nombre: String(s.nombre ?? ''),
+  const { data, error } = await supabase
+    .from('sedes')
+    .select('id_sede, nom_sede')
+  if (error) throw new Error(error.message)
+  return (data ?? []).map((s) => ({
+    id: String(s.id_sede ?? ''),
+    nombre: String(s.nom_sede ?? ''),
   }))
 }
 
 export async function fetchColaboradores(): Promise<Colaborador[]> {
-  const { data } = await client.get<Record<string, unknown>[]>('/colaboradores')
-  return data.map((c) => ({
-    id: String(c.id ?? ''),
-    nombre: String(c.nombre ?? ''),
-    externo: c.externo === true,
-    areaId: String(c.areaId ?? ''),
-    supervisorId: String(c.supervisorId ?? ''),
-    asignado: c.asignado === true,
+  const { data, error } = await supabase
+    .from('colaboradores')
+    .select('id_colaborador, nom_colaborador, es_externo, area, supervisor, asignado, activo')
+  if (error) throw new Error(error.message)
+  return (data ?? []).map((c) => ({
+    id: String(c.id_colaborador ?? ''),
+    nombre: String(c.nom_colaborador ?? ''),
+    externo: c.es_externo === true,
+    areaId: String(c.area ?? ''),
+    supervisorId: String(c.supervisor ?? ''),
+    asignado: c.asignado !== false,
     activo: c.activo !== false,
   }))
 }
 
 export async function fetchVariedades(): Promise<Variedad[]> {
-  const { data } = await client.get<Record<string, unknown>[]>('/variedades')
-  return data.map((v) => ({
-    id: String(v.id ?? ''),
-    nombre: String(v.nombre ?? ''),
+  const { data, error } = await supabase
+    .from('variedades')
+    .select('id_variedad, nom_variedad')
+  if (error) throw new Error(error.message)
+  return (data ?? []).map((v) => ({
+    id: String(v.id_variedad ?? ''),
+    nombre: String(v.nom_variedad ?? ''),
   }))
 }
 
 export async function fetchVariedadesBloques(): Promise<VariedadBloque[]> {
-  const { data } = await client.get<Record<string, unknown>[]>('/variedadesBloques')
-  return data.map((vb) => {
-    const variedadId = String(vb.variedadId ?? '')
-    const bloqueId = String(vb.bloqueId ?? '')
+  const { data, error } = await supabase
+    .from('variedades_bloques')
+    .select('id_variedad, id_bloque')
+  if (error) throw new Error(error.message)
+  return (data ?? []).map((vb) => {
+    const variedadId = String(vb.id_variedad ?? '')
+    const bloqueId = String(vb.id_bloque ?? '')
     return { id: `${variedadId}_${bloqueId}`, variedadId, bloqueId }
   })
 }
 
 export async function fetchLabores(): Promise<LaborCatalog[]> {
-  const { data } = await client.get<Record<string, unknown>[]>('/labores')
-  return data.map((l) => ({
-    id: String(l.id ?? ''),
-    nombre: String(l.nombre ?? ''),
+  const { data, error } = await supabase
+    .from('labores')
+    .select('id_labor, nom_labor')
+  if (error) throw new Error(error.message)
+  return (data ?? []).map((l) => ({
+    id: String(l.id_labor ?? ''),
+    nombre: String(l.nom_labor ?? ''),
   }))
-}
-
-interface RegistroPayload {
-  id: string
-  formularioId: string
-  fecha: string
-  areaId: string
-  supervisorId: string
-  tipo: string
-  fechaCreacion: string
-  sincronizado: boolean
-  intentosSincronizacion: number
-  errorSincronizacionPermanente: boolean
-  ultimoError: string
-  colaboradorId: string
-  colaborador: string
-  externo: boolean
-  variedadId: string
-  bloqueId: string
-  tiempoEstimadoMinutos: number
-  tiempoEstimadoHoras: number
-  tiempoRealMinutos: number
-  tiempoRealHoras: number
-  tallosEstimados: number
-  tallosReales: number
-  horaInicio: string
-  horaFinCorteEstimado: string
-  horaFinCorteReal: string
-  horaCama: number
-  rendimientoCorteEstimado: number
-  rendimientoCorteReal: number
-  labores: Formulario['filas'][number]['labores']
-  desglossePiPc: boolean
-  procesoSeguridad: string
-  calidad1: boolean
-  calidad2: boolean
-  calidad3: boolean
-  calidad4: boolean
-  calidad5: boolean
-  cumplimientoCalidad: number
-  rendimientoPromedio: number
-  observaciones: string
 }
 
 /**
- * Envía el formulario al backend: una llamada por cada FilaColaborador.
- * El backend guarda el encabezado del formulario sólo la primera vez (check por formularioId).
+ * Envía el formulario a Supabase: upsert del encabezado + upsert de cada fila por colaborador.
  */
 export async function postRegistro(formulario: Formulario): Promise<void> {
-  const payloads: RegistroPayload[] = formulario.filas.map((fila) => ({
+  // 1. Upsert encabezado del formulario
+  const { error: errForm } = await supabase
+    .from('formularios')
+    .upsert({
+      id: formulario.id,
+      fecha: formulario.fecha,
+      area_id: formulario.areaId,
+      supervisor_id: formulario.supervisorId,
+      tipo: formulario.tipo,
+      estado: formulario.estado,
+      fecha_creacion: formulario.fechaCreacion,
+      sincronizado: formulario.sincronizado,
+      intentos_sincronizacion: formulario.intentosSincronizacion,
+      error_sincronizacion_permanente: formulario.errorPermanente,
+      ultimo_error: formulario.ultimoError ?? null,
+    }, { onConflict: 'id' })
+
+  if (errForm) throw new Error(errForm.message)
+
+  // 2. Upsert de cada fila por colaborador
+  const lab = (labores: Formulario['filas'][number]['labores'], i: number, field: string) =>
+    labores[i] ? (labores[i] as unknown as Record<string, unknown>)[field] ?? null : null
+
+  const rows = formulario.filas.map((fila) => ({
     id: `${formulario.id}-${fila.colaboradorId}`,
-    formularioId: formulario.id,
-    fecha: formulario.fecha,
-    areaId: formulario.areaId,
-    supervisorId: formulario.supervisorId,
-    tipo: formulario.tipo,
-    fechaCreacion: formulario.fechaCreacion,
-    sincronizado: formulario.sincronizado,
-    intentosSincronizacion: formulario.intentosSincronizacion,
-    errorSincronizacionPermanente: formulario.errorPermanente,
-    ultimoError: formulario.ultimoError ?? '',
-    colaboradorId: fila.colaboradorId,
-    colaborador: fila.nombre,
+    formulario_id: formulario.id,
+    id_colaborador: fila.colaboradorId,
+    nombre_colaborador: fila.nombre,
     externo: fila.externo,
-    variedadId: fila.variedadId,
-    bloqueId: fila.bloqueId,
-    tiempoEstimadoMinutos: fila.tiempoEstimadoMinutos,
-    tiempoEstimadoHoras: fila.tiempoEstimadoHoras,
-    tiempoRealMinutos: fila.tiempoRealMinutos,
-    tiempoRealHoras: fila.tiempoRealHoras,
-    tallosEstimados: fila.tallosEstimados,
-    tallosReales: fila.tallosReales,
-    horaInicio: fila.horaInicio,
-    horaFinCorteEstimado: fila.horaFinCorteEstimado,
-    horaFinCorteReal: fila.horaFinCorteReal,
-    horaCama: fila.horaCama,
-    rendimientoCorteEstimado: fila.rendimientoCorteEstimado,
-    rendimientoCorteReal: fila.rendimientoCorteReal,
-    labores: fila.labores,
-    desglossePiPc: fila.desglossePiPc,
-    procesoSeguridad: fila.procesoSeguridad,
-    calidad1: fila.calidad1,
-    calidad2: fila.calidad2,
-    calidad3: fila.calidad3,
-    calidad4: fila.calidad4,
-    calidad5: fila.calidad5,
-    cumplimientoCalidad: fila.cumplimientoCalidad,
-    rendimientoPromedio: fila.rendimientoPromedio,
-    observaciones: fila.observaciones,
+    id_area: formulario.areaId,
+    id_supervisor: formulario.supervisorId,
+    id_bloque: fila.bloqueId || null,
+    id_variedad: fila.variedadId || null,
+    // Corte
+    tiempo_estimado_horas: fila.tiempoEstimadoHoras || null,
+    tiempo_estimado_minutos: fila.tiempoEstimadoMinutos || null,
+    tiempo_real_horas: fila.tiempoRealHoras || null,
+    tiempo_real_minutos: fila.tiempoRealMinutos || null,
+    total_tallos_corte_estimado: fila.tallosEstimados || null,
+    total_tallos_corte_real: fila.tallosReales || null,
+    hora_inicio_corte: fila.horaInicio || null,
+    hora_fin_corte_estimado: fila.horaFinCorteEstimado || null,
+    hora_real_fin_corte: fila.horaFinCorteReal || null,
+    hora_cama: fila.horaCama || null,
+    rendimiento_corte_estimado: fila.rendimientoCorteEstimado || null,
+    rendimiento_corte_real: fila.rendimientoCorteReal || null,
+    // Labores 1-5
+    labor_1: lab(fila.labores, 0, 'laborId'),
+    labor_1_camas_estimado: lab(fila.labores, 0, 'camasEstimadas'),
+    labor_1_camas_real: lab(fila.labores, 0, 'camasReales'),
+    labor_1_tiempo_cama_estimado: lab(fila.labores, 0, 'tiempoCamaEstimado'),
+    labor_1_tiempo_cama_real: lab(fila.labores, 0, 'tiempoCamaReal'),
+    labor_1_rendimiento_horas_estimado: lab(fila.labores, 0, 'rendimientoHorasEstimado'),
+    labor_1_rendimiento_horas_real: lab(fila.labores, 0, 'rendimientoHorasReal'),
+    labor_1_rendimiento_pct: lab(fila.labores, 0, 'rendimientoPorcentaje'),
+    labor_2: lab(fila.labores, 1, 'laborId'),
+    labor_2_camas_estimado: lab(fila.labores, 1, 'camasEstimadas'),
+    labor_2_camas_real: lab(fila.labores, 1, 'camasReales'),
+    labor_2_tiempo_cama_estimado: lab(fila.labores, 1, 'tiempoCamaEstimado'),
+    labor_2_tiempo_cama_real: lab(fila.labores, 1, 'tiempoCamaReal'),
+    labor_2_rendimiento_horas_estimado: lab(fila.labores, 1, 'rendimientoHorasEstimado'),
+    labor_2_rendimiento_horas_real: lab(fila.labores, 1, 'rendimientoHorasReal'),
+    labor_2_rendimiento_pct: lab(fila.labores, 1, 'rendimientoPorcentaje'),
+    labor_3: lab(fila.labores, 2, 'laborId'),
+    labor_3_camas_estimado: lab(fila.labores, 2, 'camasEstimadas'),
+    labor_3_camas_real: lab(fila.labores, 2, 'camasReales'),
+    labor_3_tiempo_cama_estimado: lab(fila.labores, 2, 'tiempoCamaEstimado'),
+    labor_3_tiempo_cama_real: lab(fila.labores, 2, 'tiempoCamaReal'),
+    labor_3_rendimiento_horas_estimado: lab(fila.labores, 2, 'rendimientoHorasEstimado'),
+    labor_3_rendimiento_horas_real: lab(fila.labores, 2, 'rendimientoHorasReal'),
+    labor_3_rendimiento_pct: lab(fila.labores, 2, 'rendimientoPorcentaje'),
+    labor_4: lab(fila.labores, 3, 'laborId'),
+    labor_4_camas_estimado: lab(fila.labores, 3, 'camasEstimadas'),
+    labor_4_camas_real: lab(fila.labores, 3, 'camasReales'),
+    labor_4_tiempo_cama_estimado: lab(fila.labores, 3, 'tiempoCamaEstimado'),
+    labor_4_tiempo_cama_real: lab(fila.labores, 3, 'tiempoCamaReal'),
+    labor_4_rendimiento_horas_estimado: lab(fila.labores, 3, 'rendimientoHorasEstimado'),
+    labor_4_rendimiento_horas_real: lab(fila.labores, 3, 'rendimientoHorasReal'),
+    labor_4_rendimiento_pct: lab(fila.labores, 3, 'rendimientoPorcentaje'),
+    labor_5: lab(fila.labores, 4, 'laborId'),
+    labor_5_camas_estimado: lab(fila.labores, 4, 'camasEstimadas'),
+    labor_5_camas_real: lab(fila.labores, 4, 'camasReales'),
+    labor_5_tiempo_cama_estimado: lab(fila.labores, 4, 'tiempoCamaEstimado'),
+    labor_5_tiempo_cama_real: lab(fila.labores, 4, 'tiempoCamaReal'),
+    labor_5_rendimiento_horas_estimado: lab(fila.labores, 4, 'rendimientoHorasEstimado'),
+    labor_5_rendimiento_horas_real: lab(fila.labores, 4, 'rendimientoHorasReal'),
+    labor_5_rendimiento_pct: lab(fila.labores, 4, 'rendimientoPorcentaje'),
+    // Cierre
+    desglose_pipe: fila.desglossePiPc,
+    proceso_seguridad: fila.procesoSeguridad || null,
+    calidad_cuadro_1: fila.calidad1,
+    calidad_cuadro_2: fila.calidad2,
+    calidad_cuadro_3: fila.calidad3,
+    calidad_cuadro_4: fila.calidad4,
+    calidad_cuadro_5: fila.calidad5,
+    pct_cumplimiento: fila.cumplimientoCalidad || null,
+    pct_prom_rendimiento: fila.rendimientoPromedio || null,
+    observaciones: fila.observaciones || null,
   }))
 
-  // Envío secuencial para no saturar el cold-start de Azure Functions
-  for (const payload of payloads) {
-    await client.post('/registro', payload)
-  }
+  const { error: errRows } = await supabase
+    .from('formulario_rows')
+    .upsert(rows, { onConflict: 'id' })
+
+  if (errRows) throw new Error(errRows.message)
 }
 
 export async function patchAssignArea(areaId: string, supervisorId: string): Promise<void> {
-  await client.patch(`/areas/${encodeURIComponent(areaId)}/assign`, { supervisorId })
+  const { error } = await supabase
+    .from('areas')
+    .update({ id_supervisor: supervisorId })
+    .eq('id_area', areaId)
+  if (error) throw new Error(error.message)
 }
+
+
