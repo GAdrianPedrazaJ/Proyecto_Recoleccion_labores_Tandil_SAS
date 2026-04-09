@@ -54,12 +54,13 @@ interface WeekStats {
 // ─── links admin ──────────────────────────────────────────────────────────────
 
 const LINKS = [
-  { to: '/admin/areas',         icon: '🗺️',  label: 'Áreas' },
-  { to: '/admin/colaboradores', icon: '👥',  label: 'Colaboradores' },
-  { to: '/admin/supervisores',  icon: '🧑‍💼', label: 'Supervisores' },
-  { to: '/admin/bloques',       icon: '🟩',  label: 'Bloques' },
-  { to: '/admin/variedades',    icon: '🌸',  label: 'Variedades' },
-  { to: '/admin/labores',       icon: '🌿',  label: 'Labores' },
+  { to: '/admin/areas',          icon: '🗺️',  label: 'Áreas' },
+  { to: '/admin/colaboradores',  icon: '👥',  label: 'Colaboradores' },
+  { to: '/admin/supervisores',   icon: '🧑‍💼', label: 'Supervisores' },
+  { to: '/admin/bloques',        icon: '🟩',  label: 'Bloques' },
+  { to: '/admin/variedades',     icon: '🌸',  label: 'Variedades' },
+  { to: '/admin/labores',        icon: '🌿',  label: 'Labores' },
+  { to: '/admin/estadisticas',   icon: '📊',  label: 'Estadísticas' },
 ]
 
 export default function AdminDashboard() {

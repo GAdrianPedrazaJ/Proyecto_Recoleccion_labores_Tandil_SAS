@@ -75,6 +75,53 @@ export async function fetchDashboardFormularios(desde: string): Promise<Dashboar
   }))
 }
 
+// ─── Estadísticas de labores ──────────────────────────────────────────────────
+
+export interface LaborStatRow {
+  laborId: string
+  areaId: string
+  fecha: string
+  camasEstimadas: number
+  camasReales: number
+  rendimientoPct: number
+}
+
+export async function fetchLaborStats(desde: string): Promise<LaborStatRow[]> {
+  const { data, error } = await supabase
+    .from('formulario_rows')
+    .select(`
+      id_area,
+      formularios!formulario_rows_formulario_id_fkey(fecha),
+      labor_1, labor_1_camas_estimado, labor_1_camas_real, labor_1_rendimiento_pct,
+      labor_2, labor_2_camas_estimado, labor_2_camas_real, labor_2_rendimiento_pct,
+      labor_3, labor_3_camas_estimado, labor_3_camas_real, labor_3_rendimiento_pct,
+      labor_4, labor_4_camas_estimado, labor_4_camas_real, labor_4_rendimiento_pct,
+      labor_5, labor_5_camas_estimado, labor_5_camas_real, labor_5_rendimiento_pct
+    `)
+    .gte('formularios.fecha', desde)
+  if (error) throw new Error(error.message)
+
+  const rows: LaborStatRow[] = []
+  for (const r of data ?? []) {
+    const fecha = (r.formularios as { fecha?: string } | null)?.fecha ?? ''
+    if (!fecha || fecha < desde) continue
+    const areaId = String(r.id_area ?? '')
+    for (let i = 1; i <= 5; i++) {
+      const laborId = (r as Record<string, unknown>)[`labor_${i}`] as string | null
+      if (!laborId) continue
+      rows.push({
+        laborId,
+        areaId,
+        fecha,
+        camasEstimadas: Number((r as Record<string, unknown>)[`labor_${i}_camas_estimado`]) || 0,
+        camasReales: Number((r as Record<string, unknown>)[`labor_${i}_camas_real`]) || 0,
+        rendimientoPct: Number((r as Record<string, unknown>)[`labor_${i}_rendimiento_pct`]) || 0,
+      })
+    }
+  }
+  return rows
+}
+
 export async function fetchAreas(): Promise<Area[]> {
   const { data, error } = await supabase
     .from('areas')
