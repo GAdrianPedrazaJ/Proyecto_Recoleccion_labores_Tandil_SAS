@@ -96,9 +96,18 @@ interface RegistroPayload {
   externo: boolean
   variedadId: string
   bloqueId: string
+  tiempoEstimadoMinutos: number
+  tiempoEstimadoHoras: number
+  tiempoRealMinutos: number
+  tiempoRealHoras: number
   tallosEstimados: number
   tallosReales: number
   horaInicio: string
+  horaFinCorteEstimado: string
+  horaFinCorteReal: string
+  horaCama: number
+  rendimientoCorteEstimado: number
+  rendimientoCorteReal: number
   labores: Formulario['filas'][number]['labores']
 }
 
@@ -124,9 +133,18 @@ export async function postRegistro(formulario: Formulario): Promise<void> {
     externo: fila.externo,
     variedadId: fila.variedadId,
     bloqueId: fila.bloqueId,
+    tiempoEstimadoMinutos: fila.tiempoEstimadoMinutos,
+    tiempoEstimadoHoras: fila.tiempoEstimadoHoras,
+    tiempoRealMinutos: fila.tiempoRealMinutos,
+    tiempoRealHoras: fila.tiempoRealHoras,
     tallosEstimados: fila.tallosEstimados,
     tallosReales: fila.tallosReales,
     horaInicio: fila.horaInicio,
+    horaFinCorteEstimado: fila.horaFinCorteEstimado,
+    horaFinCorteReal: fila.horaFinCorteReal,
+    horaCama: fila.horaCama,
+    rendimientoCorteEstimado: fila.rendimientoCorteEstimado,
+    rendimientoCorteReal: fila.rendimientoCorteReal,
     labores: fila.labores,
   }))
 

@@ -25,3 +25,13 @@ dist-ssr
 
 # Publish profiles (contain credentials)
 *.PublishSettings
+
+# Azure Functions local settings (contain secrets/API keys - NEVER commit)
+azure-function/local.settings.json
+
+# Google service account key files
+*.json
+!tsconfig*.json
+!package*.json
+!public/manifest.json
+!public/staticwebapp.config.json
