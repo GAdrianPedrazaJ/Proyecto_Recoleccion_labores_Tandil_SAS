@@ -1,9 +1,10 @@
 const { readAllRows } = require('../shared/sheets')
+const { withCors } = require('../shared/cors')
 
 const SHEET_LABORES = process.env.SHEET_LABORES || 'Labores'
 
 // Excel columns: Id_Labor | Nom_Labor
-module.exports = async function (context, req) {
+module.exports = withCors(async function (context, req) {
   try {
     const rows = await readAllRows(SHEET_LABORES)
     const labores = rows.slice(1)

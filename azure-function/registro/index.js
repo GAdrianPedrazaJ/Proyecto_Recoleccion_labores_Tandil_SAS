@@ -1,10 +1,11 @@
 const { appendRows, readAllRows } = require('../shared/sheets')
+const { withCors } = require('../shared/cors')
 
 // Sheet names match the Excel file tabs
 const SHEET_FORMULARIOS = process.env.SHEET_FORMULARIOS || 'Formularios'
 const SHEET_ROWS = process.env.SHEET_ROWS || 'FormularioRows'
 
-module.exports = async function (context, req) {
+module.exports = withCors(async function (context, req) {
   context.log('Registro function called')
   const r = req.body
   if (!r || !r.id) {

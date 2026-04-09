@@ -1,10 +1,11 @@
 const { readAllRows, updateRow, appendRows } = require('../shared/sheets')
+const { withCors } = require('../shared/cors')
 
 // Sheet names match the Excel file tabs
 const SHEET_AREAS = process.env.SHEET_AREAS || 'Areas'
 const SHEET_AUDIT = process.env.SHEET_AUDIT || 'Asignaciones'
 
-module.exports = async function (context, req) {
+module.exports = withCors(async function (context, req) {
   const areaId = context.bindingData.id
   const { supervisorId, changedBy } = req.body || {}
 

@@ -1,9 +1,10 @@
 const { readAllRows } = require('../shared/sheets')
+const { withCors } = require('../shared/cors')
 
 const SHEET_AREAS = process.env.SHEET_AREAS || 'Areas'
 
 // Excel columns: Id_Area | Nom_Area | sede | id_supervisor
-module.exports = async function (context, req) {
+module.exports = withCors(async function (context, req) {
   try {
     const rows = await readAllRows(SHEET_AREAS)
     // Skip header row (index 0)
