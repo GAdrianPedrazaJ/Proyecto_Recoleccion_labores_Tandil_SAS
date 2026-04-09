@@ -5,7 +5,7 @@ const BASE_URL =
   (import.meta.env.VITE_AZURE_FUNCTION_URL as string) ||
   (import.meta.env.DEV
     ? 'http://localhost:7071/api'
-    : '/api')
+    : 'https://func-labores-tandil-gzepegarh7b4h6ax.eastus2-01.azurewebsites.net/api')
 
 const client = axios.create({
   baseURL: BASE_URL,
