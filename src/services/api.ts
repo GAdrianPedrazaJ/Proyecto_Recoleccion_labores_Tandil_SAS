@@ -3,7 +3,9 @@ import type { Area, Bloque, Colaborador, LaborCatalog, Sede, Supervisor, Varieda
 
 const BASE_URL =
   (import.meta.env.VITE_AZURE_FUNCTION_URL as string) ||
-  'https://func-labores-tandil-gzepegarh7b4h6ax.eastus2-01.azurewebsites.net/api'
+  (import.meta.env.DEV
+    ? 'http://localhost:7071/api'
+    : '/api')
 
 const client = axios.create({
   baseURL: BASE_URL,
