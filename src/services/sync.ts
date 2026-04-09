@@ -26,24 +26,33 @@ import type { Formulario } from '../types'
 
 const MAX_SYNC_ATTEMPTS = 5
 
+// Mutex: evita ejecuciones paralelas de syncFromRemote
+let syncInProgress = false
+
 /**
- * Descarga áreas, colaboradores y variedades desde el backend y los guarda en IDB.
- * Si no hay conexión, usa el caché local sin errores.
+ * Descarga datos maestros desde el backend y los guarda en IDB.
+ * Cada endpoint falla de forma independiente — un tab faltante no cancela los demás.
+ * Usa mutex para evitar llamadas concurrentes que disparen rate-limit en Sheets.
  */
 export async function syncFromRemote(): Promise<void> {
+  if (syncInProgress) return
+  syncInProgress = true
   try {
+    // Cada fetch es independiente: si un tab no existe en Sheets, los demás siguen
+    const safe = <T>(p: Promise<T[]>): Promise<T[]> => p.catch(() => [])
+
     const [sedes, areas, supervisores, bloques, colaboradores, variedades, variedadesBloques, labores] =
       await Promise.all([
-        fetchSedes(),
-        fetchAreas(),
-        fetchSupervisores(),
-        fetchBloques(),
-        fetchColaboradores(),
-        fetchVariedades(),
-        fetchVariedadesBloques(),
-        fetchLabores(),
+        safe(fetchSedes()),
+        safe(fetchAreas()),
+        safe(fetchSupervisores()),
+        safe(fetchBloques()),
+        safe(fetchColaboradores()),
+        safe(fetchVariedades()),
+        safe(fetchVariedadesBloques()),
+        safe(fetchLabores()),
       ])
-    // Limpiar junction antes de repoblar para reflejar borrados
+
     await clearVariedadesBloques()
     await Promise.all([
       ...sedes.map(putSede),
@@ -57,6 +66,8 @@ export async function syncFromRemote(): Promise<void> {
     ])
   } catch {
     // Sin conexión — usar caché IDB existente
+  } finally {
+    syncInProgress = false
   }
 }
 

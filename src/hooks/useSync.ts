@@ -16,6 +16,7 @@ export function useSync() {
     setSyncing(true)
     try {
       await syncFromRemote()
+      window.dispatchEvent(new Event('sync:remote:done'))
       await syncPendientes()
       await refresh()
     } finally {
@@ -25,7 +26,11 @@ export function useSync() {
 
   useEffect(() => {
     // Descargar datos maestros al iniciar si hay conexión
-    if (navigator.onLine) syncFromRemote().catch(() => {})
+    if (navigator.onLine) {
+      syncFromRemote()
+        .then(() => window.dispatchEvent(new Event('sync:remote:done')))
+        .catch(() => {})
+    }
     refresh()
 
     const interval = setInterval(() => {
