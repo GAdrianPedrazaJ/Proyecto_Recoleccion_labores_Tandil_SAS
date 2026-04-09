@@ -1,5 +1,5 @@
 import axios from 'axios'
-import type { Area, Colaborador, Variedad, Formulario } from '../types'
+import type { Area, Bloque, Colaborador, LaborCatalog, Sede, Supervisor, Variedad, Formulario } from '../types'
 
 const BASE_URL =
   (import.meta.env.VITE_AZURE_FUNCTION_URL as string) ||
@@ -15,9 +15,37 @@ export async function fetchAreas(): Promise<Area[]> {
   return data.map((a) => ({
     id: String(a.id ?? ''),
     nombre: String(a.nombre ?? ''),
-    sede: String(a.sede ?? ''),
+    sedeId: String(a.sedeId ?? a.sede ?? ''),
     supervisorId: String(a.supervisorId ?? ''),
     activo: a.activo !== false,
+  }))
+}
+
+export async function fetchSupervisores(): Promise<Supervisor[]> {
+  const { data } = await client.get<Record<string, unknown>[]>('/supervisores')
+  return data.map((s) => ({
+    id: String(s.id ?? ''),
+    nombre: String(s.nombre ?? ''),
+    areaId: String(s.areaId ?? ''),
+    sedeId: String(s.sedeId ?? ''),
+    activo: s.activo !== false,
+  }))
+}
+
+export async function fetchBloques(): Promise<Bloque[]> {
+  const { data } = await client.get<Record<string, unknown>[]>('/bloques')
+  return data.map((b) => ({
+    id: String(b.id ?? ''),
+    nombre: String(b.nombre ?? ''),
+    areaId: String(b.areaId ?? ''),
+  }))
+}
+
+export async function fetchSedes(): Promise<Sede[]> {
+  const { data } = await client.get<Record<string, unknown>[]>('/sedes')
+  return data.map((s) => ({
+    id: String(s.id ?? ''),
+    nombre: String(s.nombre ?? ''),
   }))
 }
 
@@ -28,6 +56,8 @@ export async function fetchColaboradores(): Promise<Colaborador[]> {
     nombre: String(c.nombre ?? ''),
     externo: c.externo === true,
     areaId: String(c.areaId ?? ''),
+    supervisorId: String(c.supervisorId ?? ''),
+    asignado: c.asignado === true,
     activo: c.activo !== false,
   }))
 }
@@ -37,6 +67,15 @@ export async function fetchVariedades(): Promise<Variedad[]> {
   return data.map((v) => ({
     id: String(v.id ?? ''),
     nombre: String(v.nombre ?? ''),
+    bloqueId: String(v.bloqueId ?? ''),
+  }))
+}
+
+export async function fetchLabores(): Promise<LaborCatalog[]> {
+  const { data } = await client.get<Record<string, unknown>[]>('/labores')
+  return data.map((l) => ({
+    id: String(l.id ?? ''),
+    nombre: String(l.nombre ?? ''),
   }))
 }
 
@@ -45,27 +84,22 @@ interface RegistroPayload {
   formularioId: string
   fecha: string
   areaId: string
-  supervisor: string
+  supervisorId: string
   tipo: string
   fechaCreacion: string
   sincronizado: boolean
   intentosSincronizacion: number
   errorSincronizacionPermanente: boolean
   ultimoError: string
-  no: number
+  colaboradorId: string
   colaborador: string
   externo: boolean
-  variedad: string
+  variedadId: string
+  bloqueId: string
   tallosEstimados: number
   tallosReales: number
   horaInicio: string
   labores: Formulario['filas'][number]['labores']
-  proceso: boolean
-  seguridad: boolean
-  calidad: boolean
-  cumplimiento: boolean
-  compromiso: boolean
-  observaciones: string
 }
 
 /**
@@ -73,32 +107,27 @@ interface RegistroPayload {
  * El backend guarda el encabezado del formulario sólo la primera vez (check por formularioId).
  */
 export async function postRegistro(formulario: Formulario): Promise<void> {
-  const payloads: RegistroPayload[] = formulario.filas.map((fila, i) => ({
+  const payloads: RegistroPayload[] = formulario.filas.map((fila) => ({
     id: `${formulario.id}-${fila.colaboradorId}`,
     formularioId: formulario.id,
     fecha: formulario.fecha,
     areaId: formulario.areaId,
-    supervisor: formulario.supervisorId,
+    supervisorId: formulario.supervisorId,
     tipo: formulario.tipo,
     fechaCreacion: formulario.fechaCreacion,
     sincronizado: formulario.sincronizado,
     intentosSincronizacion: formulario.intentosSincronizacion,
     errorSincronizacionPermanente: formulario.errorPermanente,
     ultimoError: formulario.ultimoError ?? '',
-    no: i + 1,
+    colaboradorId: fila.colaboradorId,
     colaborador: fila.nombre,
     externo: fila.externo,
-    variedad: fila.variedad,
+    variedadId: fila.variedadId,
+    bloqueId: fila.bloqueId,
     tallosEstimados: fila.tallosEstimados,
     tallosReales: fila.tallosReales,
     horaInicio: fila.horaInicio,
     labores: fila.labores,
-    proceso: fila.proceso,
-    seguridad: fila.seguridad,
-    calidad: fila.calidad,
-    cumplimiento: fila.cumplimiento,
-    compromiso: fila.compromiso,
-    observaciones: fila.observaciones,
   }))
 
   // Envío secuencial para no saturar el cold-start de Azure Functions

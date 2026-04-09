@@ -1,9 +1,22 @@
-import { fetchAreas, fetchColaboradores, fetchVariedades, postRegistro } from './api'
+import {
+  fetchAreas,
+  fetchBloques,
+  fetchColaboradores,
+  fetchLabores,
+  fetchSedes,
+  fetchSupervisores,
+  fetchVariedades,
+  postRegistro,
+} from './api'
 import {
   getPendientesSincronizacion,
   putArea,
+  putBloque,
   putColaborador,
   putFormulario,
+  putLabor,
+  putSede,
+  putSupervisor,
   putVariedad,
 } from './db'
 import type { Formulario } from '../types'
@@ -16,15 +29,24 @@ const MAX_SYNC_ATTEMPTS = 5
  */
 export async function syncFromRemote(): Promise<void> {
   try {
-    const [areas, colaboradores, variedades] = await Promise.all([
-      fetchAreas(),
-      fetchColaboradores(),
-      fetchVariedades(),
-    ])
+    const [sedes, areas, supervisores, bloques, colaboradores, variedades, labores] =
+      await Promise.all([
+        fetchSedes(),
+        fetchAreas(),
+        fetchSupervisores(),
+        fetchBloques(),
+        fetchColaboradores(),
+        fetchVariedades(),
+        fetchLabores(),
+      ])
     await Promise.all([
+      ...sedes.map(putSede),
       ...areas.map(putArea),
+      ...supervisores.map(putSupervisor),
+      ...bloques.map(putBloque),
       ...colaboradores.map(putColaborador),
       ...variedades.map(putVariedad),
+      ...labores.map(putLabor),
     ])
   } catch {
     // Sin conexión — usar caché IDB existente

@@ -15,7 +15,7 @@ import { Spinner } from '../../components/ui/Spinner'
 
 const areaSchema = z.object({
   nombre: z.string().min(1, 'Requerido'),
-  sede: z.string(),
+  sedeId: z.string(),
   supervisorId: z.string(),
   activo: z.boolean(),
 })
@@ -32,7 +32,7 @@ export default function AdminAreas() {
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<AreaForm>({
     resolver: zodResolver(areaSchema),
-    defaultValues: { nombre: '', sede: '', supervisorId: '', activo: true },
+    defaultValues: { nombre: '', sedeId: '', supervisorId: '', activo: true },
   })
 
   const load = async () => {
@@ -45,13 +45,13 @@ export default function AdminAreas() {
 
   const openAdd = () => {
     setEditing(null)
-    reset({ nombre: '', sede: '', supervisorId: '', activo: true })
+    reset({ nombre: '', sedeId: '', supervisorId: '', activo: true })
     setMode('add')
   }
 
   const openEdit = (area: Area) => {
     setEditing(area)
-    reset({ nombre: area.nombre, sede: area.sede, supervisorId: area.supervisorId, activo: area.activo })
+    reset({ nombre: area.nombre, sedeId: area.sedeId, supervisorId: area.supervisorId, activo: area.activo })
     setMode('edit')
   }
 
@@ -103,7 +103,7 @@ export default function AdminAreas() {
                     <div className="min-w-0 flex-1">
                       <p className="font-medium text-gray-900 truncate">{area.nombre}</p>
                       <p className="text-xs text-gray-500">
-                        {area.sede && `Sede: ${area.sede}`}
+                        {area.sedeId && `Sede: ${area.sedeId}`}
                         {area.supervisorId && ` · Supervisor: ${area.supervisorId}`}
                       </p>
                     </div>
@@ -152,7 +152,7 @@ export default function AdminAreas() {
 
             <div className="rounded-xl bg-white p-4 shadow-sm border border-gray-100 space-y-4">
               <Input label="Nombre" error={errors.nombre?.message} {...register('nombre')} />
-              <Input label="Sede" {...register('sede')} />
+              <Input label="Sede" {...register('sedeId')} />
               <Input
                 label="ID Supervisor"
                 placeholder="ID del supervisor asignado"

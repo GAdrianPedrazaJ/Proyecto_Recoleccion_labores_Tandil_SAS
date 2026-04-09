@@ -1,26 +1,25 @@
 const { readAllRows } = require('../shared/sheets')
 
-const SHEET_VARIEDADES = process.env.SHEET_VARIEDADES || 'Variedades'
+const SHEET_LABORES = process.env.SHEET_LABORES || 'Labores'
 
-// Excel columns: Id_Variedad | Nom_Variedad | id_bloque
+// Excel columns: Id_Labor | Nom_Labor
 module.exports = async function (context, req) {
   try {
-    const rows = await readAllRows(SHEET_VARIEDADES)
-    const variedades = rows.slice(1)
+    const rows = await readAllRows(SHEET_LABORES)
+    const labores = rows.slice(1)
       .filter((r) => r[0])
       .map((r) => ({
         id: r[0] || '',
         nombre: r[1] || '',
-        bloqueId: r[2] || '',
       }))
 
     context.res = {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
-      body: variedades,
+      body: labores,
     }
   } catch (err) {
-    context.log.error('getVariedades error', err)
+    context.log.error('getLabores error', err)
     context.res = { status: 500, body: { error: String(err) } }
   }
 }

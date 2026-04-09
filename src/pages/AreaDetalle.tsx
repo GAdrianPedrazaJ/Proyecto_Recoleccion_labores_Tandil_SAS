@@ -1,53 +1,107 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useColaboradores } from '../hooks/useColaboradores'
-import { getAreaById } from '../services/db'
-import type { Area } from '../types'
+import { getAreaById, getBloquesByArea, getAllVariedades, getColaboradoresByArea } from '../services/db'
+import { syncFromRemote } from '../services/sync'
+import type { Area, Bloque, Colaborador, SeleccionColaborador, Variedad } from '../types'
 import { Header } from '../components/layout/Header'
 import { BottomNav } from '../components/layout/BottomNav'
 import { Button } from '../components/ui/Button'
-import { Card } from '../components/ui/Card'
-import { Spinner } from '../components/ui/Spinner'
+import { Select } from '../components/ui/Select'
 import { Badge } from '../components/ui/Badge'
+import { Spinner } from '../components/ui/Spinner'
+
+interface ColabRow {
+  colaborador: Colaborador
+  incluido: boolean
+  bloqueId: string
+  variedadId: string
+}
 
 export default function AreaDetalle() {
   const { areaId } = useParams<{ areaId: string }>()
   const navigate = useNavigate()
-  const { colaboradores, loading } = useColaboradores(areaId ?? '')
   const [area, setArea] = useState<Area | null>(null)
+  const [rows, setRows] = useState<ColabRow[]>([])
+  const [bloques, setBloques] = useState<Bloque[]>([])
+  const [variedades, setVariedades] = useState<Variedad[]>([])
+  const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
+  const load = async () => {
     if (!areaId) return
-    getAreaById(decodeURIComponent(areaId)).then((a) => setArea(a ?? null))
-  }, [areaId])
+    const id = decodeURIComponent(areaId)
+    setLoading(true)
+    let [areaData, colabs, bloquesData, varsData] = await Promise.all([
+      getAreaById(id),
+      getColaboradoresByArea(id),
+      getBloquesByArea(id),
+      getAllVariedades(),
+    ])
+    // If no data, try syncing once
+    if (colabs.length === 0 && bloquesData.length === 0) {
+      await syncFromRemote()
+      ;[areaData, colabs, bloquesData, varsData] = await Promise.all([
+        getAreaById(id),
+        getColaboradoresByArea(id),
+        getBloquesByArea(id),
+        getAllVariedades(),
+      ])
+    }
+    setArea(areaData ?? null)
+    setBloques(bloquesData)
+    setVariedades(varsData)
+    setRows(
+      colabs.map((c) => ({
+        colaborador: c,
+        incluido: true,
+        bloqueId: bloquesData[0]?.id ?? '',
+        variedadId: '',
+      })),
+    )
+    setLoading(false)
+  }
 
-  const activos = colaboradores.filter((c) => c.activo !== false)
+  useEffect(() => { load() }, [areaId])
+
+  const toggle = (idx: number) =>
+    setRows((prev) => prev.map((r, i) => (i === idx ? { ...r, incluido: !r.incluido } : r)))
+
+  const setBloque = (idx: number, bloqueId: string) =>
+    setRows((prev) => prev.map((r, i) => (i === idx ? { ...r, bloqueId, variedadId: '' } : r)))
+
+  const setVariedad = (idx: number, variedadId: string) =>
+    setRows((prev) => prev.map((r, i) => (i === idx ? { ...r, variedadId } : r)))
+
+  const seleccionados = rows.filter((r) => r.incluido)
+
+  const handleIniciar = () => {
+    if (seleccionados.length === 0) return
+    const selecciones: SeleccionColaborador[] = seleccionados.map((r) => ({
+      colaboradorId: r.colaborador.id,
+      nombre: r.colaborador.nombre,
+      externo: r.colaborador.externo,
+      bloqueId: r.bloqueId,
+      variedadId: r.variedadId,
+    }))
+    navigate(`/area/${areaId}/registro`, { state: { selecciones } })
+  }
+
+  const bloquesOpts = bloques.map((b) => ({ value: b.id, label: b.nombre }))
+  const getVarsOpts = (bloqueId: string) =>
+    variedades
+      .filter((v) => !bloqueId || v.bloqueId === bloqueId || !v.bloqueId)
+      .map((v) => ({ value: v.id, label: v.nombre }))
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
       <Header title={area?.nombre ?? 'Área'} showBack showSync />
 
-      <main className="flex-1 px-4 py-6 pb-24 space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">{area?.nombre ?? '...'}</h1>
-            {area?.sede && <p className="text-sm text-gray-500">Sede: {area.sede}</p>}
+      <main className="flex-1 px-4 py-6 pb-32 space-y-4">
+        {area && (
+          <div className="rounded-xl bg-white border border-gray-100 shadow-sm p-4">
+            <h1 className="text-lg font-bold text-gray-900">{area.nombre}</h1>
+            {area.sedeId && <p className="text-sm text-gray-500">Sede: {area.sedeId}</p>}
           </div>
-          <Badge variant="green">{activos.length} colaboradores</Badge>
-        </div>
-
-        <Button
-          className="w-full"
-          size="lg"
-          onClick={() => navigate(`/area/${areaId}/registro`)}
-        >
-          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-          </svg>
-          Nuevo Registro
-        </Button>
-
-        <h2 className="font-semibold text-gray-700">Colaboradores del área</h2>
+        )}
 
         {loading && (
           <div className="flex justify-center py-8">
@@ -55,30 +109,74 @@ export default function AreaDetalle() {
           </div>
         )}
 
-        {!loading && activos.length === 0 && (
+        {!loading && rows.length === 0 && (
           <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
-            No hay colaboradores en esta área. Sincroniza para actualizar.
+            No hay colaboradores. Sincroniza para actualizar.
           </div>
         )}
 
-        <div className="grid gap-2">
-          {activos.map((c) => (
-            <Card key={c.id}>
-              <div className="flex items-center gap-3">
-                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-green-100 text-sm font-bold text-green-700">
-                  {c.nombre.charAt(0)}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-gray-900">{c.nombre}</p>
-                </div>
-                {c.externo && (
-                  <Badge variant="blue">Externo</Badge>
+        {!loading && rows.length > 0 && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold text-gray-700">Colaboradores</h2>
+              <span className="text-xs text-gray-500">{seleccionados.length} seleccionados</span>
+            </div>
+
+            {rows.map((row, idx) => (
+              <div
+                key={row.colaborador.id}
+                className={`rounded-xl border p-3 space-y-3 transition-colors ${
+                  row.incluido
+                    ? 'border-green-200 bg-green-50'
+                    : 'border-gray-200 bg-white opacity-60'
+                }`}
+              >
+                <label className="flex cursor-pointer items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={row.incluido}
+                    onChange={() => toggle(idx)}
+                    className="h-5 w-5 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                  />
+                  <span className="flex-1 font-medium text-gray-900 text-sm">
+                    {row.colaborador.nombre}
+                  </span>
+                  {row.colaborador.externo && <Badge variant="blue">Externo</Badge>}
+                </label>
+
+                {row.incluido && (
+                  <div className="grid grid-cols-2 gap-2 pl-8">
+                    <Select
+                      label="Bloque"
+                      options={bloquesOpts}
+                      placeholder="Seleccionar..."
+                      value={row.bloqueId}
+                      onChange={(e) => setBloque(idx, e.target.value)}
+                    />
+                    <Select
+                      label="Variedad"
+                      options={getVarsOpts(row.bloqueId)}
+                      placeholder="Seleccionar..."
+                      value={row.variedadId}
+                      onChange={(e) => setVariedad(idx, e.target.value)}
+                      disabled={!row.bloqueId}
+                    />
+                  </div>
                 )}
               </div>
-            </Card>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </main>
+
+      {!loading && seleccionados.length > 0 && (
+        <div className="fixed bottom-16 inset-x-0 px-4 pb-2">
+          <Button className="w-full shadow-lg" size="lg" onClick={handleIniciar}>
+            Iniciar Formulario · {seleccionados.length} colaborador
+            {seleccionados.length !== 1 ? 'es' : ''}
+          </Button>
+        </div>
+      )}
 
       <BottomNav />
     </div>

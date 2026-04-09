@@ -14,7 +14,8 @@ module.exports = async function (context, req) {
         externo: (r[2] || '').toString().toUpperCase() === 'TRUE' || r[2] === '1',
         areaId: r[3] || '',
         supervisorId: r[4] || '',
-        activo: (r[5] || '').toString().toUpperCase() !== 'FALSE',
+        asignado: (r[5] || '').toString().toUpperCase() === 'TRUE' || r[5] === '1',
+        activo: true,
       }))
 
     context.res = {

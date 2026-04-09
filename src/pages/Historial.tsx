@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { getAllFormularios, deleteFormulario } from '../services/db'
 import { syncPendientes } from '../services/sync'
 import type { Formulario } from '../types'
@@ -13,6 +14,7 @@ export default function Historial() {
   const [formularios, setFormularios] = useState<Formulario[]>([])
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
+  const navigate = useNavigate()
 
   const load = async () => {
     setLoading(true)
@@ -33,7 +35,7 @@ export default function Historial() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('¿Eliminar este registro del historial local?')) return
+    if (!confirm('Â¿Eliminar este registro del historial local?')) return
     await deleteFormulario(id)
     setFormularios((prev) => prev.filter((f) => f.id !== id))
   }
@@ -62,7 +64,7 @@ export default function Historial() {
 
         {!loading && formularios.length === 0 && (
           <div className="rounded-lg border border-gray-200 bg-white p-8 text-center text-sm text-gray-500">
-            No hay registros guardados todavía.
+            No hay registros guardados todavÃ­a.
           </div>
         )}
 
@@ -73,15 +75,28 @@ export default function Historial() {
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold text-gray-900 truncate">{f.areaNombre}</p>
                   <p className="text-xs text-gray-500">
-                    {f.fecha} · {f.tipo} · {f.filas.length} colaborador{f.filas.length !== 1 ? 'es' : ''}
+                    {f.fecha} Â· {f.tipo} Â· {f.filas.length} colaborador{f.filas.length !== 1 ? 'es' : ''}
                   </p>
                   {f.ultimoError && (
                     <p className="mt-1 text-xs text-red-500 truncate">{f.ultimoError}</p>
                   )}
                 </div>
-                <SyncBadge formulario={f} />
+                <div className="flex flex-col items-end gap-1.5">
+                  <EstadoBadge formulario={f} />
+                  <SyncBadge formulario={f} />
+                </div>
               </div>
-              <div className="mt-3 flex justify-end">
+              <div className="mt-3 flex items-center justify-between">
+                {f.estado === 'borrador' && (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => navigate(`/registro/${f.id}`)}
+                  >
+                    Completar
+                  </Button>
+                )}
+                {f.estado !== 'borrador' && <span />}
                 <button
                   type="button"
                   onClick={() => handleDelete(f.id)}
@@ -98,6 +113,11 @@ export default function Historial() {
       <BottomNav />
     </div>
   )
+}
+
+function EstadoBadge({ formulario }: { formulario: Formulario }) {
+  if (!formulario.estado || formulario.estado === 'completo') return null
+  return <Badge variant="yellow">Borrador</Badge>
 }
 
 function SyncBadge({ formulario }: { formulario: Formulario }) {

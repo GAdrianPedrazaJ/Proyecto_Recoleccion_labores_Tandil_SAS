@@ -23,6 +23,7 @@ export default function App() {
       <Route path="/" element={<AreaSelector />} />
       <Route path="/area/:areaId" element={<AreaDetalle />} />
       <Route path="/area/:areaId/registro" element={<NuevoRegistro />} />
+      <Route path="/registro/:formularioId" element={<NuevoRegistro />} />
       <Route path="/historial" element={<Historial />} />
 
       {/* Flujo admin */}

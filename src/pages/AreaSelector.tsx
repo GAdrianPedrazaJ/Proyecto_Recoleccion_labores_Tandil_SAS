@@ -49,8 +49,8 @@ export default function AreaSelector() {
                 </div>
                 <div className="min-w-0">
                   <p className="font-semibold text-gray-900 truncate">{area.nombre}</p>
-                  {area.sede && (
-                    <p className="text-xs text-gray-500">Sede: {area.sede}</p>
+                  {area.sedeId && (
+                    <p className="text-xs text-gray-500">Sede: {area.sedeId}</p>
                   )}
                 </div>
                 <svg

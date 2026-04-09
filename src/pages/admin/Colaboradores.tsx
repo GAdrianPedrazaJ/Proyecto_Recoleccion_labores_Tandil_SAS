@@ -16,7 +16,9 @@ import { Spinner } from '../../components/ui/Spinner'
 const colabSchema = z.object({
   nombre: z.string().min(1, 'Requerido'),
   areaId: z.string().min(1, 'Requerido'),
+  supervisorId: z.string(),
   externo: z.boolean(),
+  asignado: z.boolean(),
   activo: z.boolean(),
 })
 type ColabForm = z.infer<typeof colabSchema>
@@ -33,7 +35,7 @@ export default function AdminColaboradores() {
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<ColabForm>({
     resolver: zodResolver(colabSchema),
-    defaultValues: { nombre: '', areaId: '', externo: false, activo: true },
+    defaultValues: { nombre: '', areaId: '', supervisorId: '', externo: false, asignado: false, activo: true },
   })
 
   const load = async () => {
@@ -48,13 +50,13 @@ export default function AdminColaboradores() {
 
   const openAdd = () => {
     setEditing(null)
-    reset({ nombre: '', areaId: areas[0]?.id ?? '', externo: false, activo: true })
+    reset({ nombre: '', areaId: areas[0]?.id ?? '', supervisorId: '', externo: false, asignado: false, activo: true })
     setMode('add')
   }
 
   const openEdit = (c: Colaborador) => {
     setEditing(c)
-    reset({ nombre: c.nombre, areaId: c.areaId, externo: c.externo, activo: c.activo })
+    reset({ nombre: c.nombre, areaId: c.areaId, supervisorId: c.supervisorId, externo: c.externo, asignado: c.asignado, activo: c.activo })
     setMode('edit')
   }
 
