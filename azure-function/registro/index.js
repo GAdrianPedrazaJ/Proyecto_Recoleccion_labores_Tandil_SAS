@@ -121,6 +121,17 @@ module.exports = async function (context, req) {
       lab(4, 'rendimientoHorasEstimado'),
       lab(4, 'rendimientoHorasReal'),
       lab(4, 'rendimientoPorcentaje'),
+      // Cierre
+      r.desglossePiPc ? 'TRUE' : 'FALSE',
+      r.procesoSeguridad ?? '',
+      r.calidad1 ? 'TRUE' : 'FALSE',
+      r.calidad2 ? 'TRUE' : 'FALSE',
+      r.calidad3 ? 'TRUE' : 'FALSE',
+      r.calidad4 ? 'TRUE' : 'FALSE',
+      r.calidad5 ? 'TRUE' : 'FALSE',
+      r.cumplimientoCalidad ?? '',
+      r.rendimientoPromedio ?? '',
+      r.observaciones ?? '',
     ]])
 
     context.res = { status: 200, body: { ok: true } }

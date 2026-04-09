@@ -84,11 +84,15 @@ export interface FilaColaborador {
   rendimientoCorteReal: number
   labores: Labor[]
   // Cierre
-  proceso: boolean
-  seguridad: boolean
-  calidad: boolean
-  cumplimiento: boolean
-  compromiso: boolean
+  desglossePiPc: boolean
+  procesoSeguridad: string
+  calidad1: boolean
+  calidad2: boolean
+  calidad3: boolean
+  calidad4: boolean
+  calidad5: boolean
+  cumplimientoCalidad: number
+  rendimientoPromedio: number
   observaciones: string
 }
 
@@ -159,11 +163,15 @@ export interface FilaFV {
   rendimientoCorteEstimado: number
   rendimientoCorteReal: number
   labores: LaborFV[]
-  proceso: boolean
-  seguridad: boolean
-  calidad: boolean
-  cumplimiento: boolean
-  compromiso: boolean
+  desglossePiPc: boolean
+  procesoSeguridad: string
+  calidad1: boolean
+  calidad2: boolean
+  calidad3: boolean
+  calidad4: boolean
+  calidad5: boolean
+  cumplimientoCalidad: number
+  rendimientoPromedio: number
   observaciones: string
 }
 

@@ -117,6 +117,16 @@ interface RegistroPayload {
   rendimientoCorteEstimado: number
   rendimientoCorteReal: number
   labores: Formulario['filas'][number]['labores']
+  desglossePiPc: boolean
+  procesoSeguridad: string
+  calidad1: boolean
+  calidad2: boolean
+  calidad3: boolean
+  calidad4: boolean
+  calidad5: boolean
+  cumplimientoCalidad: number
+  rendimientoPromedio: number
+  observaciones: string
 }
 
 /**
@@ -154,6 +164,16 @@ export async function postRegistro(formulario: Formulario): Promise<void> {
     rendimientoCorteEstimado: fila.rendimientoCorteEstimado,
     rendimientoCorteReal: fila.rendimientoCorteReal,
     labores: fila.labores,
+    desglossePiPc: fila.desglossePiPc,
+    procesoSeguridad: fila.procesoSeguridad,
+    calidad1: fila.calidad1,
+    calidad2: fila.calidad2,
+    calidad3: fila.calidad3,
+    calidad4: fila.calidad4,
+    calidad5: fila.calidad5,
+    cumplimientoCalidad: fila.cumplimientoCalidad,
+    rendimientoPromedio: fila.rendimientoPromedio,
+    observaciones: fila.observaciones,
   }))
 
   // Envío secuencial para no saturar el cold-start de Azure Functions

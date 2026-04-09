@@ -37,6 +37,12 @@ export function FilaColaboradorForm({ index, bloques, variedades, laborCatalog, 
   const tiempoEstimadoMinutos = useWatch({ control, name: `filas.${index}.tiempoEstimadoMinutos` })
   const tiempoRealMinutos = useWatch({ control, name: `filas.${index}.tiempoRealMinutos` })
   const horaInicio = useWatch({ control, name: `filas.${index}.horaInicio` })
+  const calidad1 = useWatch({ control, name: `filas.${index}.calidad1` })
+  const calidad2 = useWatch({ control, name: `filas.${index}.calidad2` })
+  const calidad3 = useWatch({ control, name: `filas.${index}.calidad3` })
+  const calidad4 = useWatch({ control, name: `filas.${index}.calidad4` })
+  const calidad5 = useWatch({ control, name: `filas.${index}.calidad5` })
+  const labores = useWatch({ control, name: `filas.${index}.labores` })
 
   // tiempoEstimadoHoras = tiempoEstimadoMinutos / 60
   useEffect(() => {
@@ -64,6 +70,23 @@ export function FilaColaboradorForm({ index, bloques, variedades, laborCatalog, 
     const d = horaToDecimal(horaInicio ?? '')
     return d > 0 ? (tiempoRealH / d) * 24 : 0
   })()
+
+  // Computed cierre values
+  const checkedCount = [calidad1, calidad2, calidad3, calidad4, calidad5].filter(Boolean).length
+  const cumplimientoCalidadPct = (checkedCount / 5) * 100
+  const activoLabores = (labores ?? []).filter((l) => l.laborId)
+  const rendimientoPromedio =
+    activoLabores.length > 0
+      ? activoLabores.reduce((sum, l) => sum + (l.rendimientoPorcentaje ?? 0), 0) / activoLabores.length
+      : 0
+
+  useEffect(() => {
+    setValue(`filas.${index}.cumplimientoCalidad`, parseFloat(fmt2(cumplimientoCalidadPct)), { shouldValidate: false })
+  }, [cumplimientoCalidadPct, index, setValue])
+
+  useEffect(() => {
+    setValue(`filas.${index}.rendimientoPromedio`, parseFloat(fmt2(rendimientoPromedio)), { shouldValidate: false })
+  }, [rendimientoPromedio, index, setValue])
 
   const bloqueName = bloques.find((b) => b.id === bloqueId)?.nombre ?? ''
   const variedadName = variedades.find((v) => v.id === variedadId)?.nombre ?? ''
@@ -246,20 +269,69 @@ export function FilaColaboradorForm({ index, bloques, variedades, laborCatalog, 
       </div>
 
       {/* CIERRE */}
-      <div className="px-4 py-4 space-y-3">
+      <div className="px-4 py-4 space-y-4">
         <p className="text-xs font-bold uppercase text-gray-500">CIERRE</p>
-        <div className="flex flex-wrap gap-4">
-          {(['proceso', 'seguridad', 'calidad', 'cumplimiento', 'compromiso'] as const).map((key) => (
-            <label key={key} className="flex cursor-pointer items-center gap-1.5 text-sm text-gray-700">
-              <input
-                type="checkbox"
-                className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
-                {...register(`filas.${index}.${key}`)}
-              />
-              <span className="capitalize">{key}</span>
-            </label>
-          ))}
+
+        {/* Desglose PI.PC */}
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-700">
+          <input
+            type="checkbox"
+            className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
+            {...register(`filas.${index}.desglossePiPc`)}
+          />
+          <span className="font-medium">Desglose PI.PC</span>
+        </label>
+
+        {/* Proceso y Seguridad */}
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium text-gray-700">Proceso y Seguridad</label>
+          <select
+            className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+            {...register(`filas.${index}.procesoSeguridad`)}
+          >
+            <option value="">— Seleccionar —</option>
+            <option value="A">A. Uso de EPP&apos;s</option>
+            <option value="B">B. Herramientas en buen estado</option>
+            <option value="C">C. Etiquetas en buen estado</option>
+            <option value="D">D. Recorrido en cama redonda</option>
+            <option value="E">E. Orden y Aseo</option>
+          </select>
         </div>
+
+        {/* Calidad / Cuadro */}
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-gray-700">Calidad / Cuadro</p>
+          <div className="flex items-end gap-5">
+            {([1, 2, 3, 4, 5] as const).map((n) => (
+              <label key={n} className="flex cursor-pointer flex-col items-center gap-1 text-sm text-gray-700">
+                <span className="text-xs font-semibold text-gray-500">{n}</span>
+                <input
+                  type="checkbox"
+                  className="h-5 w-5 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                  {...register(`filas.${index}.calidad${n}` as `filas.${number}.calidad1`)}
+                />
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* Porcentajes calculados */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-col gap-1">
+            <p className="text-xs font-medium text-gray-600">% Cumplimiento</p>
+            <div className="flex h-9 items-center rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm font-semibold text-gray-700">
+              {fmt2(cumplimientoCalidadPct)} %
+            </div>
+          </div>
+          <div className="flex flex-col gap-1">
+            <p className="text-xs font-medium text-gray-600">% Prom. Rendimiento</p>
+            <div className="flex h-9 items-center rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm font-semibold text-gray-700">
+              {fmt2(rendimientoPromedio)} %
+            </div>
+          </div>
+        </div>
+
+        {/* Observaciones */}
         <textarea
           placeholder="Observaciones..."
           rows={2}
