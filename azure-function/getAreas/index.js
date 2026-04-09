@@ -26,4 +26,4 @@ module.exports = withCors(async function (context, req) {
     context.log.error('getAreas error', err)
     context.res = { status: 500, body: { error: String(err) } }
   }
-}
+}))

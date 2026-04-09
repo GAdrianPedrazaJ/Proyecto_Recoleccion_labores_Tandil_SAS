@@ -23,4 +23,4 @@ module.exports = withCors(async function (context, req) {
     context.log.error('getSedes error', err)
     context.res = { status: 500, body: { error: String(err) } }
   }
-}
+}))
