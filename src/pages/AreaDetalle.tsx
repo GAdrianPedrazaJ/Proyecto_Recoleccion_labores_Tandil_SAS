@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { getAreaById, getBloquesByArea, getAllVariedades, getColaboradoresByArea } from '../services/db'
+import { getAreaById, getBloquesByArea, getAllVariedades, getAllVariedadesBloques, getColaboradoresByArea } from '../services/db'
 import { syncFromRemote } from '../services/sync'
-import type { Area, Bloque, Colaborador, SeleccionColaborador, Variedad } from '../types'
+import type { Area, Bloque, Colaborador, SeleccionColaborador, Variedad, VariedadBloque } from '../types'
 import { Header } from '../components/layout/Header'
 import { BottomNav } from '../components/layout/BottomNav'
 import { Button } from '../components/ui/Button'
@@ -24,31 +24,35 @@ export default function AreaDetalle() {
   const [rows, setRows] = useState<ColabRow[]>([])
   const [bloques, setBloques] = useState<Bloque[]>([])
   const [variedades, setVariedades] = useState<Variedad[]>([])
+  const [variedadesBloques, setVariedadesBloques] = useState<VariedadBloque[]>([])
   const [loading, setLoading] = useState(true)
 
   const load = async () => {
     if (!areaId) return
     const id = decodeURIComponent(areaId)
     setLoading(true)
-    let [areaData, colabs, bloquesData, varsData] = await Promise.all([
+    let [areaData, colabs, bloquesData, varsData, vbData] = await Promise.all([
       getAreaById(id),
       getColaboradoresByArea(id),
       getBloquesByArea(id),
       getAllVariedades(),
+      getAllVariedadesBloques(),
     ])
     // If no data, try syncing once
     if (colabs.length === 0 && bloquesData.length === 0) {
       await syncFromRemote()
-      ;[areaData, colabs, bloquesData, varsData] = await Promise.all([
+      ;[areaData, colabs, bloquesData, varsData, vbData] = await Promise.all([
         getAreaById(id),
         getColaboradoresByArea(id),
         getBloquesByArea(id),
         getAllVariedades(),
+        getAllVariedadesBloques(),
       ])
     }
     setArea(areaData ?? null)
     setBloques(bloquesData)
     setVariedades(varsData)
+    setVariedadesBloques(vbData)
     setRows(
       colabs.map((c) => ({
         colaborador: c,
@@ -86,10 +90,15 @@ export default function AreaDetalle() {
   }
 
   const bloquesOpts = bloques.map((b) => ({ value: b.id, label: b.nombre }))
-  const getVarsOpts = (bloqueId: string) =>
-    variedades
-      .filter((v) => !bloqueId || v.bloqueId === bloqueId || !v.bloqueId)
+  const getVarsOpts = (bloqueId: string) => {
+    if (!bloqueId) return variedades.map((v) => ({ value: v.id, label: v.nombre }))
+    const idsEnBloque = new Set(
+      variedadesBloques.filter((vb) => vb.bloqueId === bloqueId).map((vb) => vb.variedadId)
+    )
+    return variedades
+      .filter((v) => idsEnBloque.has(v.id))
       .map((v) => ({ value: v.id, label: v.nombre }))
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">

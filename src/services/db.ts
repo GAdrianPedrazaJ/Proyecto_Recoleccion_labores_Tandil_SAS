@@ -1,8 +1,8 @@
 ﻿import { openDB } from 'idb'
-import type { Area, Bloque, Colaborador, LaborCatalog, Sede, Supervisor, Variedad, Formulario, Usuario } from '../types'
+import type { Area, Bloque, Colaborador, LaborCatalog, Sede, Supervisor, Variedad, VariedadBloque, Formulario, Usuario } from '../types'
 
 const DB_NAME = 'labores-db'
-const DB_VERSION = 5
+const DB_VERSION = 6
 const MAX_SYNC_ATTEMPTS = 5
 
 const SEED_USUARIOS: Usuario[] = [
@@ -66,16 +66,25 @@ const SEED_COLABORADORES: Colaborador[] = [
 ]
 
 const SEED_VARIEDADES: Variedad[] = [
-  { id: 'v1',  nombre: 'Freedom',     bloqueId: 'b1' },
-  { id: 'v2',  nombre: 'Explorer',    bloqueId: 'b1' },
-  { id: 'v3',  nombre: 'Vendela',     bloqueId: 'b2' },
-  { id: 'v4',  nombre: 'Blush',       bloqueId: 'b2' },
-  { id: 'v5',  nombre: 'Mondial',     bloqueId: 'b3' },
-  { id: 'v6',  nombre: 'High & Magic',bloqueId: 'b3' },
-  { id: 'v7',  nombre: 'Nena',        bloqueId: '' },
-  { id: 'v8',  nombre: 'Topaz',       bloqueId: '' },
-  { id: 'v9',  nombre: 'Iguana',      bloqueId: '' },
-  { id: 'v10', nombre: 'Lemon Zest',  bloqueId: '' },
+  { id: 'v1',  nombre: 'Freedom'      },
+  { id: 'v2',  nombre: 'Explorer'     },
+  { id: 'v3',  nombre: 'Vendela'      },
+  { id: 'v4',  nombre: 'Blush'        },
+  { id: 'v5',  nombre: 'Mondial'      },
+  { id: 'v6',  nombre: 'High & Magic' },
+  { id: 'v7',  nombre: 'Nena'         },
+  { id: 'v8',  nombre: 'Topaz'        },
+  { id: 'v9',  nombre: 'Iguana'       },
+  { id: 'v10', nombre: 'Lemon Zest'   },
+]
+
+const SEED_VARIEDADES_BLOQUES: VariedadBloque[] = [
+  { id: 'v1_b1', variedadId: 'v1', bloqueId: 'b1' },
+  { id: 'v2_b1', variedadId: 'v2', bloqueId: 'b1' },
+  { id: 'v3_b2', variedadId: 'v3', bloqueId: 'b2' },
+  { id: 'v4_b2', variedadId: 'v4', bloqueId: 'b2' },
+  { id: 'v5_b3', variedadId: 'v5', bloqueId: 'b3' },
+  { id: 'v6_b3', variedadId: 'v6', bloqueId: 'b3' },
 ]
 
 const SEED_LABORES: LaborCatalog[] = [
@@ -103,6 +112,7 @@ function openDb() {
       const colabStore = database.createObjectStore('colaboradores', { keyPath: 'id' })
       colabStore.createIndex('by-areaId', 'areaId')
       database.createObjectStore('variedades', { keyPath: 'id' })
+      database.createObjectStore('variedadesBloques', { keyPath: 'id' })
       database.createObjectStore('labores', { keyPath: 'id' })
       const formStore = database.createObjectStore('formularios', { keyPath: 'id' })
       formStore.createIndex('by-fecha', 'fecha')
@@ -121,7 +131,7 @@ export async function seedIfEmpty(): Promise<void> {
   const nUsers = await db.count('usuarios')
   if (nUsers === 0) {
     const tx = db.transaction(
-      ['usuarios', 'sedes', 'areas', 'supervisores', 'bloques', 'colaboradores', 'variedades', 'labores'],
+      ['usuarios', 'sedes', 'areas', 'supervisores', 'bloques', 'colaboradores', 'variedades', 'variedadesBloques', 'labores'],
       'readwrite',
     )
     for (const u of SEED_USUARIOS) await tx.objectStore('usuarios').put(u)
@@ -131,6 +141,7 @@ export async function seedIfEmpty(): Promise<void> {
     for (const b of SEED_BLOQUES) await tx.objectStore('bloques').put(b)
     for (const c of SEED_COLABORADORES) await tx.objectStore('colaboradores').put(c)
     for (const v of SEED_VARIEDADES) await tx.objectStore('variedades').put(v)
+    for (const vb of SEED_VARIEDADES_BLOQUES) await tx.objectStore('variedadesBloques').put(vb)
     for (const l of SEED_LABORES) await tx.objectStore('labores').put(l)
     await tx.done
   }
@@ -210,6 +221,30 @@ export async function getAllVariedades(): Promise<Variedad[]> {
 export async function putVariedad(v: Variedad): Promise<void> {
   const db = await getDb()
   await db.put('variedades', v)
+}
+
+/** --- VariedadesBloques (junction) --- */
+export async function getAllVariedadesBloques(): Promise<VariedadBloque[]> {
+  const db = await getDb()
+  return db.getAll('variedadesBloques')
+}
+
+export async function getVariedadesByBloque(bloqueId: string): Promise<Variedad[]> {
+  const db = await getDb()
+  const junction = await db.getAll('variedadesBloques')
+  const variedadIds = new Set(junction.filter((vb) => vb.bloqueId === bloqueId).map((vb) => vb.variedadId))
+  const all = await db.getAll('variedades')
+  return all.filter((v) => variedadIds.has(v.id))
+}
+
+export async function putVariedadBloque(vb: VariedadBloque): Promise<void> {
+  const db = await getDb()
+  await db.put('variedadesBloques', vb)
+}
+
+export async function clearVariedadesBloques(): Promise<void> {
+  const db = await getDb()
+  await db.clear('variedadesBloques')
 }
 
 /** --- Formularios --- */
@@ -307,11 +342,4 @@ export async function getAllLabores(): Promise<LaborCatalog[]> {
 export async function putLabor(l: LaborCatalog): Promise<void> {
   const db = await getDb()
   await db.put('labores', l)
-}
-
-/** --- Variedades por bloque --- */
-export async function getVariedadesByBloque(bloqueId: string): Promise<Variedad[]> {
-  const db = await getDb()
-  const all = await db.getAll('variedades')
-  return all.filter((v) => !bloqueId || v.bloqueId === bloqueId || !v.bloqueId)
 }

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { countNoSincronizados } from '../services/db'
-import { syncPendientes } from '../services/sync'
+import { syncFromRemote, syncPendientes } from '../services/sync'
 
 export function useSync() {
   const [pendingCount, setPendingCount] = useState(0)
@@ -15,6 +15,7 @@ export function useSync() {
     if (syncing) return
     setSyncing(true)
     try {
+      await syncFromRemote()
       await syncPendientes()
       await refresh()
     } finally {
@@ -23,6 +24,8 @@ export function useSync() {
   }, [syncing, refresh])
 
   useEffect(() => {
+    // Descargar datos maestros al iniciar si hay conexión
+    if (navigator.onLine) syncFromRemote().catch(() => {})
     refresh()
 
     const interval = setInterval(() => {

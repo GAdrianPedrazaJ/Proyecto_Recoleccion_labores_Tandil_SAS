@@ -6,9 +6,11 @@ import {
   fetchSedes,
   fetchSupervisores,
   fetchVariedades,
+  fetchVariedadesBloques,
   postRegistro,
 } from './api'
 import {
+  clearVariedadesBloques,
   getPendientesSincronizacion,
   putArea,
   putBloque,
@@ -18,6 +20,7 @@ import {
   putSede,
   putSupervisor,
   putVariedad,
+  putVariedadBloque,
 } from './db'
 import type { Formulario } from '../types'
 
@@ -29,7 +32,7 @@ const MAX_SYNC_ATTEMPTS = 5
  */
 export async function syncFromRemote(): Promise<void> {
   try {
-    const [sedes, areas, supervisores, bloques, colaboradores, variedades, labores] =
+    const [sedes, areas, supervisores, bloques, colaboradores, variedades, variedadesBloques, labores] =
       await Promise.all([
         fetchSedes(),
         fetchAreas(),
@@ -37,8 +40,11 @@ export async function syncFromRemote(): Promise<void> {
         fetchBloques(),
         fetchColaboradores(),
         fetchVariedades(),
+        fetchVariedadesBloques(),
         fetchLabores(),
       ])
+    // Limpiar junction antes de repoblar para reflejar borrados
+    await clearVariedadesBloques()
     await Promise.all([
       ...sedes.map(putSede),
       ...areas.map(putArea),
@@ -46,6 +52,7 @@ export async function syncFromRemote(): Promise<void> {
       ...bloques.map(putBloque),
       ...colaboradores.map(putColaborador),
       ...variedades.map(putVariedad),
+      ...variedadesBloques.map(putVariedadBloque),
       ...labores.map(putLabor),
     ])
   } catch {

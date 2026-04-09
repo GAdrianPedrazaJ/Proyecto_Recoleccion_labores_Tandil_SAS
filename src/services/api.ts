@@ -1,5 +1,5 @@
 import axios from 'axios'
-import type { Area, Bloque, Colaborador, LaborCatalog, Sede, Supervisor, Variedad, Formulario } from '../types'
+import type { Area, Bloque, Colaborador, LaborCatalog, Sede, Supervisor, Variedad, VariedadBloque, Formulario } from '../types'
 
 const BASE_URL =
   (import.meta.env.VITE_AZURE_FUNCTION_URL as string) ||
@@ -67,8 +67,16 @@ export async function fetchVariedades(): Promise<Variedad[]> {
   return data.map((v) => ({
     id: String(v.id ?? ''),
     nombre: String(v.nombre ?? ''),
-    bloqueId: String(v.bloqueId ?? ''),
   }))
+}
+
+export async function fetchVariedadesBloques(): Promise<VariedadBloque[]> {
+  const { data } = await client.get<Record<string, unknown>[]>('/variedadesBloques')
+  return data.map((vb) => {
+    const variedadId = String(vb.variedadId ?? '')
+    const bloqueId = String(vb.bloqueId ?? '')
+    return { id: `${variedadId}_${bloqueId}`, variedadId, bloqueId }
+  })
 }
 
 export async function fetchLabores(): Promise<LaborCatalog[]> {

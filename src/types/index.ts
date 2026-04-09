@@ -38,6 +38,11 @@ export interface Colaborador {
 export interface Variedad {
   id: string
   nombre: string
+}
+
+export interface VariedadBloque {
+  id: string       // `${variedadId}_${bloqueId}`
+  variedadId: string
   bloqueId: string
 }
 

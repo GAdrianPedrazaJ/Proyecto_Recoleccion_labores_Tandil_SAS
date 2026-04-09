@@ -2,7 +2,7 @@ const { readAllRows } = require('../shared/sheets')
 
 const SHEET_VARIEDADES = process.env.SHEET_VARIEDADES || 'Variedades'
 
-// Excel columns: Id_Variedad | Nom_Variedad | id_bloque
+// Sheet columns: Id_Variedad | Nom_Variedad  (id_bloque ya no se usa aquí, ver VariedadesBloques)
 module.exports = async function (context, req) {
   try {
     const rows = await readAllRows(SHEET_VARIEDADES)
@@ -11,7 +11,6 @@ module.exports = async function (context, req) {
       .map((r) => ({
         id: r[0] || '',
         nombre: r[1] || '',
-        bloqueId: r[2] || '',
       }))
 
     context.res = {
