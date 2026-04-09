@@ -1,15 +1,13 @@
 import axios from 'axios'
 import type { Area, Bloque, Colaborador, LaborCatalog, Sede, Supervisor, Variedad, VariedadBloque, Formulario } from '../types'
 
-const BASE_URL =
-  (import.meta.env.VITE_AZURE_FUNCTION_URL as string) ||
-  (import.meta.env.DEV
-    ? 'http://localhost:7071/api'
-    : 'https://func-labores-tandil-gzepegarh7b4h6ax.eastus2-01.azurewebsites.net/api')
+const BASE_URL = import.meta.env.DEV
+  ? 'http://localhost:7071/api'
+  : 'https://func-labores-tandil-gzepegarh7b4h6ax.eastus2-01.azurewebsites.net/api'
 
 const client = axios.create({
   baseURL: BASE_URL,
-  timeout: 120_000, // Azure cold start puede tardar ~60-90s
+  timeout: 120_000,
 })
 
 export async function fetchAreas(): Promise<Area[]> {

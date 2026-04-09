@@ -29,6 +29,10 @@ dist-ssr
 # Azure Functions local settings (contain secrets/API keys - NEVER commit)
 azure-function/local.settings.json
 
+# Firebase Functions env (contain secrets/API keys - NEVER commit)
+functions/.env
+functions/.env.*
+
 # Google service account key files
 *.json
 !tsconfig*.json

@@ -1,4 +1,6 @@
 const ALLOWED_ORIGINS = [
+  'https://labores-tandil.web.app',
+  'https://labores-tandil.firebaseapp.com',
   'https://jolly-moss-0d6b7e40f1.azurestaticapps.net',
   'http://localhost:5173',
   'http://localhost:5174',
