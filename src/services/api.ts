@@ -1,6 +1,80 @@
 import { supabase } from './supabase'
 import type { Area, Bloque, Colaborador, LaborCatalog, Sede, Supervisor, Variedad, VariedadBloque, Formulario } from '../types'
 
+// ─── Supabase CRUD helpers ────────────────────────────────────────────────────
+
+export async function upsertBloque(b: Bloque): Promise<void> {
+  const { error } = await supabase.from('bloques').upsert(
+    { id_bloque: b.id, nom_bloque: b.nombre, area: b.areaId },
+    { onConflict: 'id_bloque' }
+  )
+  if (error) throw new Error(error.message)
+}
+export async function deleteBloqueSupa(id: string): Promise<void> {
+  const { error } = await supabase.from('bloques').delete().eq('id_bloque', id)
+  if (error) throw new Error(error.message)
+}
+
+export async function upsertVariedad(v: Variedad): Promise<void> {
+  const { error } = await supabase.from('variedades').upsert(
+    { id_variedad: v.id, nom_variedad: v.nombre },
+    { onConflict: 'id_variedad' }
+  )
+  if (error) throw new Error(error.message)
+}
+export async function deleteVariedadSupa(id: string): Promise<void> {
+  const { error } = await supabase.from('variedades').delete().eq('id_variedad', id)
+  if (error) throw new Error(error.message)
+}
+
+export async function upsertSupervisor(s: Supervisor): Promise<void> {
+  const { error } = await supabase.from('supervisors').upsert(
+    { id_supervisor: s.id, nom_supervisor: s.nombre, id_area: s.areaId, sede: s.sedeId, activo: s.activo },
+    { onConflict: 'id_supervisor' }
+  )
+  if (error) throw new Error(error.message)
+}
+export async function deleteSupervisorSupa(id: string): Promise<void> {
+  const { error } = await supabase.from('supervisors').delete().eq('id_supervisor', id)
+  if (error) throw new Error(error.message)
+}
+
+export async function upsertLabor(l: LaborCatalog): Promise<void> {
+  const { error } = await supabase.from('labores').upsert(
+    { id_labor: l.id, nom_labor: l.nombre },
+    { onConflict: 'id_labor' }
+  )
+  if (error) throw new Error(error.message)
+}
+export async function deleteLaborSupa(id: string): Promise<void> {
+  const { error } = await supabase.from('labores').delete().eq('id_labor', id)
+  if (error) throw new Error(error.message)
+}
+
+// ─── Dashboard metrics ────────────────────────────────────────────────────────
+
+export interface DashboardFormulario {
+  id: string
+  fecha: string
+  areaId: string
+  estado: string
+}
+
+export async function fetchDashboardFormularios(desde: string): Promise<DashboardFormulario[]> {
+  const { data, error } = await supabase
+    .from('formularios')
+    .select('id, fecha, area_id, estado')
+    .gte('fecha', desde)
+    .order('fecha', { ascending: false })
+  if (error) throw new Error(error.message)
+  return (data ?? []).map((f) => ({
+    id: String(f.id),
+    fecha: String(f.fecha),
+    areaId: String(f.area_id ?? ''),
+    estado: String(f.estado ?? ''),
+  }))
+}
+
 export async function fetchAreas(): Promise<Area[]> {
   const { data, error } = await supabase
     .from('areas')

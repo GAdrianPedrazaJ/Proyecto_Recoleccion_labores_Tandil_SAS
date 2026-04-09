@@ -9,6 +9,10 @@ import AdminLogin from './pages/admin/Login'
 import AdminDashboard from './pages/admin/Dashboard'
 import AdminAreas from './pages/admin/Areas'
 import AdminColaboradores from './pages/admin/Colaboradores'
+import AdminBloques from './pages/admin/Bloques'
+import AdminVariedades from './pages/admin/Variedades'
+import AdminSupervisores from './pages/admin/Supervisores'
+import AdminLabores from './pages/admin/Labores'
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
@@ -28,33 +32,17 @@ export default function App() {
 
       {/* Flujo admin */}
       <Route path="/admin/login" element={<AdminLogin />} />
-      <Route
-        path="/admin"
-        element={
-          <ProtectedRoute>
-            <AdminDashboard />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/areas"
-        element={
-          <ProtectedRoute>
-            <AdminAreas />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/colaboradores"
-        element={
-          <ProtectedRoute>
-            <AdminColaboradores />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+      <Route path="/admin/areas" element={<ProtectedRoute><AdminAreas /></ProtectedRoute>} />
+      <Route path="/admin/colaboradores" element={<ProtectedRoute><AdminColaboradores /></ProtectedRoute>} />
+      <Route path="/admin/bloques" element={<ProtectedRoute><AdminBloques /></ProtectedRoute>} />
+      <Route path="/admin/variedades" element={<ProtectedRoute><AdminVariedades /></ProtectedRoute>} />
+      <Route path="/admin/supervisores" element={<ProtectedRoute><AdminSupervisores /></ProtectedRoute>} />
+      <Route path="/admin/labores" element={<ProtectedRoute><AdminLabores /></ProtectedRoute>} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }
+

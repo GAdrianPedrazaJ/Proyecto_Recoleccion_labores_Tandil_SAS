@@ -337,6 +337,11 @@ export async function putBloque(b: Bloque): Promise<void> {
   await db.put('bloques', b)
 }
 
+export async function deleteBloque(id: string): Promise<void> {
+  const db = await getDb()
+  await db.delete('bloques', id)
+}
+
 /** --- Labores (catálogo) --- */
 export async function getAllLabores(): Promise<LaborCatalog[]> {
   const db = await getDb()
@@ -346,4 +351,19 @@ export async function getAllLabores(): Promise<LaborCatalog[]> {
 export async function putLabor(l: LaborCatalog): Promise<void> {
   const db = await getDb()
   await db.put('labores', l)
+}
+
+export async function deleteLabor(id: string): Promise<void> {
+  const db = await getDb()
+  await db.delete('labores', id)
+}
+
+export async function deleteSupervisor(id: string): Promise<void> {
+  const db = await getDb()
+  await db.delete('supervisores', id)
+}
+
+export async function deleteVariedad(id: string): Promise<void> {
+  const db = await getDb()
+  await db.delete('variedades', id)
 }
