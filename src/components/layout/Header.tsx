@@ -4,10 +4,9 @@ import { SyncIndicator } from '../ui/SyncIndicator'
 interface HeaderProps {
   title: string
   showBack?: boolean
-  showSync?: boolean
 }
 
-export function Header({ title, showBack = false, showSync = false }: HeaderProps) {
+export function Header({ title, showBack = false }: HeaderProps) {
   const navigate = useNavigate()
 
   return (

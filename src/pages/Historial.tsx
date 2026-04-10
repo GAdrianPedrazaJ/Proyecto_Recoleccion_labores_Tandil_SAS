@@ -44,7 +44,7 @@ export default function Historial() {
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
-      <Header title="Historial" showBack showSync />
+      <Header title="Historial" showBack />
 
       <main className="flex-1 px-4 py-6 pb-24 space-y-4">
         <div className="flex items-center justify-between">

@@ -310,7 +310,7 @@ export default function NuevoRegistro() {
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
-      <Header title={pageTitle} showBack showSync />
+      <Header title={pageTitle} showBack />
 
       <main className="flex-1 px-4 py-6 pb-40 space-y-4">
         {loading && (

@@ -13,7 +13,7 @@ export default function AreaSelector() {
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
-      <Header title="Labores Tandil" showSync />
+      <Header title="Labores Tandil" />
 
       <main className="flex-1 px-4 py-6 pb-24">
         <h1 className="mb-1 text-xl font-bold text-gray-900">Seleccionar Área</h1>
