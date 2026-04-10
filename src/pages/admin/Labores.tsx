@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { putLabor, deleteLabor } from '../../services/db'
-import { fetchLabores, fetchLabores, upsertLabor, deleteLaborSupa } from '../../services/api'
+import { fetchLabores, upsertLabor, deleteLaborSupa } from '../../services/api'
 import type { LaborCatalog } from '../../types'
 import { AdminLayout } from '../../components/layout/AdminLayout'
 import { Button } from '../../components/ui/Button'
@@ -43,27 +43,6 @@ export default function AdminLabores() {
   const openEdit = (item: LaborCatalog) => { setEditing(item); reset({ nombre: item.nombre }); setModalOpen(true) }
 
   const onSubmit = async (data: FormData) => {
-    setSaving(true); setError(null)
-    try {
-      const l: LaborCatalog = editing ? { ...editing, ...data } : { id: `lab${Date.now()}`, ...data }
-      await upsertLabor(l)
-      await putLabor(l)
-      await load(); setModalOpen(false)
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Error al guardar')
-    } finally { setSaving(false) }
-  }
-
-  const handleDelete = async (id: string, nombre: string) => {
-    if (!confirm(`¿Eliminar labor "${nombre}"?`)) return
-    setError(null)
-    try {
-      await deleteLaborSupa(id)
-      await deleteLabor(id)
-      setItems((prev) => prev.filter((l) => l.id !== id))
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Error al eliminar')
-    }
     setSaving(true); setError(null)
     try {
       const l: LaborCatalog = editing ? { ...editing, ...data } : { id: `lab${Date.now()}`, ...data }
