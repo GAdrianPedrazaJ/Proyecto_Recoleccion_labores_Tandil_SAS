@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { putVariedad, deleteVariedad } from '../../services/db'
-import { fetchVariedades, upsertVariedad, deleteVariedadSupa } from '../../services/api'
+import { fetchVariedades, fetchVariedades, upsertVariedad, deleteVariedadSupa } from '../../services/api'
 import type { Variedad } from '../../types'
 import { AdminLayout } from '../../components/layout/AdminLayout'
 import { Button } from '../../components/ui/Button'
@@ -50,6 +50,33 @@ export default function AdminVariedades() {
       await putVariedad(v)
       await load(); setModalOpen(false)
     } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Error al guardar')
+    } finally { setSaving(false) }
+  }
+
+  const handleDelete = async (id: string, nombre: string) => {
+    if (!confirm(`¿Eliminar variedad "${nombre}"?`)) return
+    setError(null)
+    try {
+      await deleteVariedadSupa(id)
+      await deleteVariedad(id)
+      setItems((prev) => prev.filter((v) => v.id !== id))
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Error al eliminar')
+    }
+    setSaving(true); setError(null)
+    try {
+      const v: Variedad = editing ? { ...editing, ...data } : { id: `v${Date.now()}`, ...data }
+      await upsertVariedad(v)
+      await putVariedad(v)
+      await load(); setModalOpen(false)
+    } {error && (
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-start gap-2">
+          <span className="font-semibold">Error:</span> {error}
+          <button onClick={() => setError(null)} className="ml-auto text-red-400 hover:text-red-600">✕</button>
+        </div>
+      )}
+      catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Error al guardar')
     } finally { setSaving(false) }
   }
