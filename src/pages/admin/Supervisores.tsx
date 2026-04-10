@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { getAllSupervisores, getAllAreas, putSupervisor, deleteSupervisor } from '../../services/db'
-import { upsertSupervisor, deleteSupervisorSupa } from '../../services/api'
+import { putSupervisor, deleteSupervisor, putArea } from '../../services/db'
+import { fetchSupervisores, fetchAreas, upsertSupervisor, deleteSupervisorSupa } from '../../services/api'
 import type { Supervisor, Area } from '../../types'
 import { AdminLayout } from '../../components/layout/AdminLayout'
 import { Button } from '../../components/ui/Button'
@@ -27,6 +27,7 @@ export default function AdminSupervisores() {
   const [editing, setEditing] = useState<Supervisor | null>(null)
   const [saving, setSaving] = useState(false)
   const [search, setSearch] = useState('')
+  const [error, setError] = useState<string | null>(null)
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -34,9 +35,14 @@ export default function AdminSupervisores() {
   })
 
   const load = async () => {
-    setLoading(true)
-    const [s, a] = await Promise.all([getAllSupervisores(), getAllAreas()])
-    setItems(s); setAreas(a); setLoading(false)
+    setLoading(true); setError(null)
+    try {
+      const [s, a] = await Promise.all([fetchSupervisores(), fetchAreas()])
+      setItems(s); setAreas(a)
+      await Promise.all([...s.map(putSupervisor), ...a.map(putArea)])
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Error al cargar')
+    } finally { setLoading(false) }
   }
   useEffect(() => { load() }, [])
 
@@ -44,16 +50,27 @@ export default function AdminSupervisores() {
   const openEdit = (item: Supervisor) => { setEditing(item); reset({ nombre: item.nombre, areaId: item.areaId, sedeId: item.sedeId, activo: item.activo }); setModalOpen(true) }
 
   const onSubmit = async (data: FormData) => {
-    setSaving(true)
-    const s: Supervisor = editing ? { ...editing, ...data } : { id: crypto.randomUUID(), ...data }
-    try { await Promise.all([putSupervisor(s), upsertSupervisor(s)]) } catch { await putSupervisor(s) }
-    await load(); setModalOpen(false); setSaving(false)
+    setSaving(true); setError(null)
+    try {
+      const s: Supervisor = editing ? { ...editing, ...data } : { id: crypto.randomUUID(), ...data }
+      await upsertSupervisor(s)
+      await putSupervisor(s)
+      await load(); setModalOpen(false)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Error al guardar')
+    } finally { setSaving(false) }
   }
 
   const handleDelete = async (id: string, nombre: string) => {
     if (!confirm(`¿Eliminar supervisor "${nombre}"?`)) return
-    try { await Promise.all([deleteSupervisor(id), deleteSupervisorSupa(id)]) } catch { await deleteSupervisor(id) }
-    setItems((prev) => prev.filter((s) => s.id !== id))
+    setError(null)
+    try {
+      await deleteSupervisorSupa(id)
+      await deleteSupervisor(id)
+      setItems((prev) => prev.filter((s) => s.id !== id))
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Error al eliminar')
+    }
   }
 
   const getAreaNombre = (id: string) => areas.find((a) => a.id === id)?.nombre ?? id
@@ -62,6 +79,12 @@ export default function AdminSupervisores() {
 
   return (
     <AdminLayout>
+      {error && (
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-start gap-2">
+          <span className="font-semibold">Error:</span> {error}
+          <button onClick={() => setError(null)} className="ml-auto text-red-400 hover:text-red-600">✕</button>
+        </div>
+      )}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Supervisores</h1>

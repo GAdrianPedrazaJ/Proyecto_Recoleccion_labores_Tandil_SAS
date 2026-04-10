@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { getAllAreas, getAllColaboradores, putColaborador, deleteColaborador } from '../../services/db'
-import { upsertColaborador, deleteColaboradorSupa } from '../../services/api'
+import { putColaborador, deleteColaborador, putArea } from '../../services/db'
+import { fetchColaboradores, fetchAreas, upsertColaborador, deleteColaboradorSupa } from '../../services/api'
 import type { Area, Colaborador } from '../../types'
 import { AdminLayout } from '../../components/layout/AdminLayout'
 import { Button } from '../../components/ui/Button'
@@ -29,6 +29,7 @@ export default function AdminColaboradores() {
   const [editing, setEditing] = useState<Colaborador | null>(null)
   const [saving, setSaving] = useState(false)
   const [search, setSearch] = useState('')
+  const [error, setError] = useState<string | null>(null)
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -36,9 +37,14 @@ export default function AdminColaboradores() {
   })
 
   const load = async () => {
-    setLoading(true)
-    const [c, a] = await Promise.all([getAllColaboradores(), getAllAreas()])
-    setColaboradores(c); setAreas(a); setLoading(false)
+    setLoading(true); setError(null)
+    try {
+      const [c, a] = await Promise.all([fetchColaboradores(), fetchAreas()])
+      setColaboradores(c); setAreas(a)
+      await Promise.all([...c.map(putColaborador), ...a.map(putArea)])
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Error al cargar')
+    } finally { setLoading(false) }
   }
   useEffect(() => { load() }, [])
 
@@ -46,16 +52,27 @@ export default function AdminColaboradores() {
   const openEdit = (c: Colaborador) => { setEditing(c); reset({ nombre: c.nombre, areaId: c.areaId, supervisorId: c.supervisorId, externo: c.externo, asignado: c.asignado, activo: c.activo }); setModalOpen(true) }
 
   const onSubmit = async (data: FormData) => {
-    setSaving(true)
-    const colab: Colaborador = editing ? { ...editing, ...data } : { id: crypto.randomUUID(), ...data }
-    try { await Promise.all([putColaborador(colab), upsertColaborador(colab)]) } catch { await putColaborador(colab) }
-    await load(); setModalOpen(false); setSaving(false)
+    setSaving(true); setError(null)
+    try {
+      const colab: Colaborador = editing ? { ...editing, ...data } : { id: crypto.randomUUID(), ...data }
+      await upsertColaborador(colab)
+      await putColaborador(colab)
+      await load(); setModalOpen(false)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Error al guardar')
+    } finally { setSaving(false) }
   }
 
   const handleDelete = async (id: string) => {
     if (!confirm('¿Eliminar este colaborador?')) return
-    try { await Promise.all([deleteColaborador(id), deleteColaboradorSupa(id)]) } catch { await deleteColaborador(id) }
-    setColaboradores((prev) => prev.filter((c) => c.id !== id))
+    setError(null)
+    try {
+      await deleteColaboradorSupa(id)
+      await deleteColaborador(id)
+      setColaboradores((prev) => prev.filter((c) => c.id !== id))
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Error al eliminar')
+    }
   }
 
   const getAreaNombre = (id: string) => areas.find((a) => a.id === id)?.nombre ?? id
@@ -64,6 +81,12 @@ export default function AdminColaboradores() {
 
   return (
     <AdminLayout>
+      {error && (
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-start gap-2">
+          <span className="font-semibold">Error:</span> {error}
+          <button onClick={() => setError(null)} className="ml-auto text-red-400 hover:text-red-600">✕</button>
+        </div>
+      )}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Colaboradores</h1>

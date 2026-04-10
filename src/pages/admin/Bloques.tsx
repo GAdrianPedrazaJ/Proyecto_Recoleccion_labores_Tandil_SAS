@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { getAllBloques, getAllAreas, putBloque, deleteBloque } from '../../services/db'
-import { upsertBloque, deleteBloqueSupa } from '../../services/api'
+import { putBloque, deleteBloque, putArea } from '../../services/db'
+import { fetchBloques, fetchAreas, upsertBloque, deleteBloqueSupa } from '../../services/api'
 import type { Bloque, Area } from '../../types'
 import { AdminLayout } from '../../components/layout/AdminLayout'
 import { Button } from '../../components/ui/Button'
@@ -26,6 +26,7 @@ export default function AdminBloques() {
   const [saving, setSaving] = useState(false)
   const [search, setSearch] = useState('')
   const [filterArea, setFilterArea] = useState('')
+  const [error, setError] = useState<string | null>(null)
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -33,9 +34,14 @@ export default function AdminBloques() {
   })
 
   const load = async () => {
-    setLoading(true)
-    const [b, a] = await Promise.all([getAllBloques(), getAllAreas()])
-    setItems(b); setAreas(a); setLoading(false)
+    setLoading(true); setError(null)
+    try {
+      const [b, a] = await Promise.all([fetchBloques(), fetchAreas()])
+      setItems(b); setAreas(a)
+      await Promise.all([...b.map(putBloque), ...a.map(putArea)])
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Error al cargar')
+    } finally { setLoading(false) }
   }
   useEffect(() => { load() }, [])
 
@@ -43,16 +49,27 @@ export default function AdminBloques() {
   const openEdit = (item: Bloque) => { setEditing(item); reset({ nombre: item.nombre, areaId: item.areaId }); setModalOpen(true) }
 
   const onSubmit = async (data: FormData) => {
-    setSaving(true)
-    const bloque: Bloque = editing ? { ...editing, ...data } : { id: crypto.randomUUID(), ...data }
-    try { await Promise.all([putBloque(bloque), upsertBloque(bloque)]) } catch { await putBloque(bloque) }
-    await load(); setModalOpen(false); setSaving(false)
+    setSaving(true); setError(null)
+    try {
+      const bloque: Bloque = editing ? { ...editing, ...data } : { id: crypto.randomUUID(), ...data }
+      await upsertBloque(bloque)
+      await putBloque(bloque)
+      await load(); setModalOpen(false)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Error al guardar')
+    } finally { setSaving(false) }
   }
 
   const handleDelete = async (id: string, nombre: string) => {
     if (!confirm(`¿Eliminar bloque "${nombre}"?`)) return
-    try { await Promise.all([deleteBloque(id), deleteBloqueSupa(id)]) } catch { await deleteBloque(id) }
-    setItems((prev) => prev.filter((b) => b.id !== id))
+    setError(null)
+    try {
+      await deleteBloqueSupa(id)
+      await deleteBloque(id)
+      setItems((prev) => prev.filter((b) => b.id !== id))
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Error al eliminar')
+    }
   }
 
   const getAreaNombre = (id: string) => areas.find((a) => a.id === id)?.nombre ?? id
@@ -65,6 +82,12 @@ export default function AdminBloques() {
 
   return (
     <AdminLayout>
+      {error && (
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-start gap-2">
+          <span className="font-semibold">Error:</span> {error}
+          <button onClick={() => setError(null)} className="ml-auto text-red-400 hover:text-red-600">✕</button>
+        </div>
+      )}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Bloques</h1>

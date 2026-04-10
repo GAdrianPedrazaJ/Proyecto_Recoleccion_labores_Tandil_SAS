@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { getAllVariedades, putVariedad, deleteVariedad } from '../../services/db'
-import { upsertVariedad, deleteVariedadSupa } from '../../services/api'
+import { putVariedad, deleteVariedad } from '../../services/db'
+import { fetchVariedades, upsertVariedad, deleteVariedadSupa } from '../../services/api'
 import type { Variedad } from '../../types'
 import { AdminLayout } from '../../components/layout/AdminLayout'
 import { Button } from '../../components/ui/Button'
@@ -20,35 +20,62 @@ export default function AdminVariedades() {
   const [editing, setEditing] = useState<Variedad | null>(null)
   const [saving, setSaving] = useState(false)
   const [search, setSearch] = useState('')
+  const [error, setError] = useState<string | null>(null)
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: { nombre: '' },
   })
 
-  const load = async () => { setLoading(true); setItems(await getAllVariedades()); setLoading(false) }
+  const load = async () => {
+    setLoading(true); setError(null)
+    try {
+      const data = await fetchVariedades()
+      setItems(data)
+      await Promise.all(data.map(putVariedad))
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Error al cargar')
+    } finally { setLoading(false) }
+  }
   useEffect(() => { load() }, [])
 
   const openAdd = () => { setEditing(null); reset({ nombre: '' }); setModalOpen(true) }
   const openEdit = (item: Variedad) => { setEditing(item); reset({ nombre: item.nombre }); setModalOpen(true) }
 
   const onSubmit = async (data: FormData) => {
-    setSaving(true)
-    const v: Variedad = editing ? { ...editing, ...data } : { id: `v${Date.now()}`, ...data }
-    try { await Promise.all([putVariedad(v), upsertVariedad(v)]) } catch { await putVariedad(v) }
-    await load(); setModalOpen(false); setSaving(false)
+    setSaving(true); setError(null)
+    try {
+      const v: Variedad = editing ? { ...editing, ...data } : { id: `v${Date.now()}`, ...data }
+      await upsertVariedad(v)
+      await putVariedad(v)
+      await load(); setModalOpen(false)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Error al guardar')
+    } finally { setSaving(false) }
   }
 
   const handleDelete = async (id: string, nombre: string) => {
     if (!confirm(`¿Eliminar variedad "${nombre}"?`)) return
-    try { await Promise.all([deleteVariedad(id), deleteVariedadSupa(id)]) } catch { await deleteVariedad(id) }
-    setItems((prev) => prev.filter((v) => v.id !== id))
+    setError(null)
+    try {
+      await deleteVariedadSupa(id)
+      await deleteVariedad(id)
+      setItems((prev) => prev.filter((v) => v.id !== id))
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Error al eliminar')
+    }
   }
 
   const filtered = search ? items.filter((v) => v.nombre.toLowerCase().includes(search.toLowerCase())) : items
 
   return (
     <AdminLayout>
+      {error && (
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-start gap-2">
+          <span className="font-semibold">Error:</span> {error}
+          <button onClick={() => setError(null)} className="ml-auto text-red-400 hover:text-red-600">✕</button>
+        </div>
+      )}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Variedades</h1>
