@@ -11,6 +11,7 @@ import {
   type DragEndEvent,
 } from '@dnd-kit/core'
 import { getAllAreas, getAllColaboradores, getAllBloques, putColaborador } from '../../services/db'
+import { patchColaboradorAsignacion } from '../../services/api'
 import type { Area, Bloque, Colaborador } from '../../types'
 import { AdminLayout } from '../../components/layout/AdminLayout'
 import { Spinner } from '../../components/ui/Spinner'
@@ -110,32 +111,29 @@ export default function AdminAsignaciones() {
     const colabId = String(active.id)
     const destId = String(over.id)
 
-    setColaboradores((prev) =>
-      prev.map((c) => {
-        if (c.id !== colabId) return c
-        // Determinar si drop en área o bloque
-        if (destId === 'sin-asignar') {
-          return { ...c, areaId: '', asignado: false }
-        }
-        // Es un área: actualizar areaId
-        const area = areas.find((a) => a.id === destId)
-        if (area) return { ...c, areaId: area.id, asignado: true }
-        // Es un bloque: mantener área del bloque pero no cambia el areaId directamente
-        return c
-      })
-    )
+    // Calcular el nuevo estado antes de actualizar UI
+    const original = colaboradores.find((c) => c.id === colabId)
+    if (!original) return
 
-    // Persistir en IDB
-    const updated = colaboradores.find((c) => c.id === colabId)
-    if (updated) {
-      const area = areas.find((a) => a.id === destId)
-      const updatedColab: Colaborador = area
-        ? { ...updated, areaId: area.id, asignado: true }
-        : destId === 'sin-asignar'
-        ? { ...updated, areaId: '', asignado: false }
-        : updated
-      await putColaborador(updatedColab)
-    }
+    const isSinAsignar = destId === 'sin-asignar'
+    const targetArea = areas.find((a) => a.id === destId)
+
+    // Solo reaccionar a drops en áreas conocidas o en "sin-asignar"
+    if (!isSinAsignar && !targetArea) return
+
+    const newAreaId = isSinAsignar ? '' : targetArea!.id
+    const newAsignado = !isSinAsignar
+
+    const updatedColab: Colaborador = { ...original, areaId: newAreaId, asignado: newAsignado }
+
+    // 1. Actualizar UI optimistamente
+    setColaboradores((prev) => prev.map((c) => c.id === colabId ? updatedColab : c))
+
+    // 2. Persistir en IDB local
+    await putColaborador(updatedColab)
+
+    // 3. Persistir en Supabase (fuente de verdad)
+    await patchColaboradorAsignacion(colabId, newAreaId, newAsignado)
   }, [colaboradores, areas])
 
   // Organizar por área/bloque

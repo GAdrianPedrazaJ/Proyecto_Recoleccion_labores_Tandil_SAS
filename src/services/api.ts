@@ -173,6 +173,18 @@ export async function fetchSedes(): Promise<Sede[]> {
   }))
 }
 
+export async function patchColaboradorAsignacion(
+  id: string,
+  areaId: string,
+  asignado: boolean
+): Promise<void> {
+  const { error } = await supabase
+    .from('colaboradores')
+    .update({ area: areaId || null, asignado })
+    .eq('id_colaborador', id)
+  if (error) throw new Error(error.message)
+}
+
 export async function fetchColaboradores(): Promise<Colaborador[]> {
   const { data, error } = await supabase
     .from('colaboradores')
