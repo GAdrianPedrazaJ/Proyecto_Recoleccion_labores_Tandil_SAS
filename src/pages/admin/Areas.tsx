@@ -82,21 +82,21 @@ export default function AdminAreas() {
           <button onClick={() => setError(null)} className="ml-auto text-red-400 hover:text-red-600">✕</button>
         </div>
       )}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Áreas</h1>
           <p className="text-sm text-gray-500 mt-0.5">{areas.length} área{areas.length !== 1 ? 's' : ''} en total</p>
         </div>
-        <Button onClick={openAdd}>+ Nueva área</Button>
+        <Button onClick={openAdd} size="lg" className="w-full sm:w-auto">+ Nueva área</Button>
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         {/* Toolbar */}
-        <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-3">
+        <div className="px-3 sm:px-4 py-3 border-b border-gray-100 flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
           <input
             type="search" placeholder="Buscar área..."
             value={search} onChange={(e) => setSearch(e.target.value)}
-            className="w-72 rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+            className="w-full sm:w-72 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
           />
           <span className="text-xs text-gray-400">{filtered.length} resultado{filtered.length !== 1 ? 's' : ''}</span>
         </div>

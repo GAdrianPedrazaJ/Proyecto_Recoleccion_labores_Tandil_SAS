@@ -56,14 +56,14 @@ export function AdminLayout({ children }: { children: ReactNode }) {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* ── Top Navbar ── */}
       <header className="bg-green-700 shadow-md sticky top-0 z-40">
-        <div className="max-w-screen-xl mx-auto px-4 h-14 flex items-center gap-4">
+        <div className="w-full max-w-screen-xl mx-auto px-2 sm:px-4 h-14 flex items-center gap-2 sm:gap-4">
           {/* Brand */}
-          <Link to="/admin" className="flex items-center gap-2 text-white font-bold text-base whitespace-nowrap mr-4">
-            🌿 <span>Labores Admin</span>
+          <Link to="/admin" className="flex items-center gap-1 sm:gap-2 text-white font-bold text-sm sm:text-base whitespace-nowrap">
+            🌿 <span className="hidden sm:inline">Labores Admin</span>
           </Link>
 
-          {/* Nav principal */}
-          <nav className="flex items-center gap-1 flex-1">
+          {/* Nav principal - hidden on mobile */}
+          <nav className="hidden md:flex items-center gap-1 flex-1">
             {navLink('/admin', 'Dashboard')}
             {navLink('/admin/estadisticas', 'Estadísticas')}
             {navLink('/admin/asignaciones', 'Asignaciones')}
@@ -72,7 +72,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
             <div ref={dropdownRef} className="relative">
               <button
                 onClick={() => setMenuOpen((v) => !v)}
-                className={`flex items-center gap-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`flex items-center gap-1 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
                   isAdminSection
                     ? 'bg-white/20 text-white'
                     : 'text-green-100 hover:bg-white/10 hover:text-white'
@@ -109,11 +109,11 @@ export function AdminLayout({ children }: { children: ReactNode }) {
           </nav>
 
           {/* Usuario + Salir */}
-          <div className="flex items-center gap-3 ml-auto">
-            <span className="text-green-100 text-sm hidden sm:block">{username}</span>
+          <div className="flex items-center gap-2 sm:gap-3 ml-auto">
+            <span className="text-green-100 text-xs sm:text-sm hidden sm:block">{username}</span>
             <button
               onClick={logout}
-              className="text-sm text-green-100 hover:text-white border border-green-500 hover:border-white rounded-lg px-3 py-1.5 transition-colors"
+              className="text-xs sm:text-sm text-green-100 hover:text-white border border-green-500 hover:border-white rounded-lg px-2 sm:px-3 py-1.5 transition-colors whitespace-nowrap"
             >
               Salir
             </button>
@@ -122,15 +122,15 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 
         {/* Sub-navbar cuando está en sección Administrar */}
         {isAdminSection && (
-          <div className="bg-green-800 border-t border-green-600">
-            <div className="max-w-screen-xl mx-auto px-4 h-10 flex items-center gap-1 overflow-x-auto">
+          <div className="bg-green-800 border-t border-green-600 overflow-x-auto">
+            <div className="w-full max-w-screen-xl mx-auto px-2 sm:px-4 h-10 flex items-center gap-1">
               {ADMIN_ITEMS.map(({ to, label }) => {
                 const active = path === to
                 return (
                   <Link
                     key={to}
                     to={to}
-                    className={`px-3 py-1 rounded text-xs font-medium whitespace-nowrap transition-colors ${
+                    className={`px-2 sm:px-3 py-1 rounded text-xs font-medium whitespace-nowrap transition-colors ${
                       active
                         ? 'bg-white text-green-800'
                         : 'text-green-200 hover:bg-green-700 hover:text-white'
@@ -146,7 +146,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
       </header>
 
       {/* ── Contenido ── */}
-      <main className="flex-1 max-w-screen-xl w-full mx-auto px-4 py-8">
+      <main className="flex-1 w-full max-w-screen-xl mx-auto px-2 sm:px-4 py-4 sm:py-8">
         {children}
       </main>
     </div>

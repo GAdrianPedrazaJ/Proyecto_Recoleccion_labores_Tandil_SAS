@@ -131,7 +131,7 @@ export function FilaColaboradorForm({ index, bloques, variedades, laborCatalog, 
         </p>
         <div className="px-4 pb-4 pt-2 space-y-3">
           {/* Tiempo estimado */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Input
               label="Tiempo estimado (min)"
               type="number"
@@ -148,7 +148,7 @@ export function FilaColaboradorForm({ index, bloques, variedades, laborCatalog, 
           </div>
 
           {/* Tiempo real */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Input
               label="Tiempo real (min)"
               type="number"
@@ -166,7 +166,7 @@ export function FilaColaboradorForm({ index, bloques, variedades, laborCatalog, 
           </div>
 
           {/* Tallos */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Input
               label="Tallos estimados"
               type="number"
@@ -185,7 +185,7 @@ export function FilaColaboradorForm({ index, bloques, variedades, laborCatalog, 
           </div>
 
           {/* Horas corte */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Input
               label="Hora inicio corte"
               type="time"
@@ -216,7 +216,7 @@ export function FilaColaboradorForm({ index, bloques, variedades, laborCatalog, 
           </div>
 
           {/* Rendimiento corte */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Input
               label="Rend. corte estimado"
               type="number"

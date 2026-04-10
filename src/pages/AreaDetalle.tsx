@@ -165,7 +165,7 @@ export default function AreaDetalle() {
                 </label>
 
                 {row.incluido && (
-                  <div className="grid grid-cols-2 gap-2 pl-8">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-0 sm:pl-8">
                     <div>
                       <Select
                         label="Bloque"
