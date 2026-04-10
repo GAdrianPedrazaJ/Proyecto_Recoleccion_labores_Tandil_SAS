@@ -55,7 +55,7 @@ export default function AdminVariedades() {
   }
 
   const handleDelete = async (id: string, nombre: string) => {
-    if (!confirm(`¿Eliminar variedad "${nombre}"?`)) return
+    if (!confirm(`ï¿½Eliminar variedad "${nombre}"?`)) return
     setError(null)
     try {
       await deleteVariedadSupa(id)

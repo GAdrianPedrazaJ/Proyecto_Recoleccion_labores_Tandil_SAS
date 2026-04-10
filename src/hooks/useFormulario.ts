@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { Formulario } from '../types'
 import { putFormulario } from '../services/db'
-import { postRegistro } from '../services/api'
+import { queueFormularioRow } from '../services/syncQueue'
 
 export type FormularioInput = Omit<
   Formulario,
@@ -25,16 +25,12 @@ export function useFormulario() {
         fechaCreacion: new Date().toISOString(),
       }
 
+      // Guardar localmente en IndexedDB
       await putFormulario(formulario)
 
-      // Intentar sincronizar inmediatamente si hay conexión y está completo
-      if (navigator.onLine && formulario.estado === 'completo') {
-        try {
-          await postRegistro(formulario)
-          await putFormulario({ ...formulario, sincronizado: true })
-        } catch {
-          // Quedará pendiente para sync en background
-        }
+      // Encolar para sincronización si está completo
+      if (formulario.estado === 'completo') {
+        await queueFormularioRow(formulario)
       }
 
       return formulario.id
@@ -51,16 +47,12 @@ export function useFormulario() {
     setSaving(true)
     setError(null)
     try {
+      // Guardar localmente en IndexedDB
       await putFormulario(formulario)
 
-      // Intentar sincronizar si está completo y hay conexión
-      if (navigator.onLine && formulario.estado === 'completo') {
-        try {
-          await postRegistro(formulario)
-          await putFormulario({ ...formulario, sincronizado: true })
-        } catch {
-          // Quedará pendiente para sync en background
-        }
+      // Encolar para sincronización si está completo
+      if (formulario.estado === 'completo') {
+        await queueFormularioRow(formulario)
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error actualizando formulario'
