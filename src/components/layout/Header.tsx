@@ -30,7 +30,7 @@ export function Header({ title, showBack = false, showSync = false }: HeaderProp
         <span className="truncate font-semibold text-lg">{title}</span>
       </Link>
 
-      {showSync && <SyncIndicator />}
+      <SyncIndicator />
     </header>
   )
 }
