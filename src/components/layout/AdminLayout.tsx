@@ -17,7 +17,7 @@ const ADMIN_PATHS = ADMIN_ITEMS.map((i) => i.to)
 export function AdminLayout({ children }: { children: ReactNode }) {
   const location = useLocation()
   const logout = useAuthStore((s) => s.logout)
-  const username = useAuthStore((s) => s.username)
+  const usuario = useAuthStore((s) => s.usuario)
   const [menuOpen, setMenuOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -110,7 +110,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 
           {/* Usuario + Salir */}
           <div className="flex items-center gap-2 sm:gap-3 ml-auto">
-            <span className="text-green-100 text-xs sm:text-sm hidden sm:block">{username}</span>
+            <span className="text-green-100 text-xs sm:text-sm hidden sm:block">{usuario?.nombre}</span>
             <button
               onClick={logout}
               className="text-xs sm:text-sm text-green-100 hover:text-white border border-green-500 hover:border-white rounded-lg px-2 sm:px-3 py-1.5 transition-colors whitespace-nowrap"

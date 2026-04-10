@@ -31,7 +31,7 @@ interface AreaStats { areaId: string; nombre: string; total: number; completos: 
 interface WeekStats { label: string; total: number; completos: number }
 
 export default function AdminDashboard() {
-  const username = useAuthStore((s) => s.username)
+  const usuario = useAuthStore((s) => s.usuario)
   const [areas, setAreas] = useState<Area[]>([])
   const [formularios, setFormularios] = useState<DashboardFormulario[]>([])
   const [pendingCount, setPendingCount] = useState(0)
@@ -95,7 +95,7 @@ export default function AdminDashboard() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            Bienvenido/a, {username} · {new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}
+            Bienvenido/a, {usuario?.nombre} · {new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
         </div>
         {pendingCount > 0 && (
