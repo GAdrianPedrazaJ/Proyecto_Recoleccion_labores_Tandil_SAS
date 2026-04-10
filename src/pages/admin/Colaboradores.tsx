@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { getAllAreas, getAllColaboradores, putColaborador, deleteColaborador } from '../../services/db'
+import { upsertColaborador, deleteColaboradorSupa } from '../../services/api'
 import type { Area, Colaborador } from '../../types'
 import { AdminLayout } from '../../components/layout/AdminLayout'
 import { Button } from '../../components/ui/Button'
@@ -47,13 +48,13 @@ export default function AdminColaboradores() {
   const onSubmit = async (data: FormData) => {
     setSaving(true)
     const colab: Colaborador = editing ? { ...editing, ...data } : { id: crypto.randomUUID(), ...data }
-    await putColaborador(colab)
+    try { await Promise.all([putColaborador(colab), upsertColaborador(colab)]) } catch { await putColaborador(colab) }
     await load(); setModalOpen(false); setSaving(false)
   }
 
   const handleDelete = async (id: string) => {
     if (!confirm('¿Eliminar este colaborador?')) return
-    await deleteColaborador(id)
+    try { await Promise.all([deleteColaborador(id), deleteColaboradorSupa(id)]) } catch { await deleteColaborador(id) }
     setColaboradores((prev) => prev.filter((c) => c.id !== id))
   }
 

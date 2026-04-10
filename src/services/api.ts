@@ -3,6 +3,38 @@ import type { Area, Bloque, Colaborador, LaborCatalog, Sede, Supervisor, Varieda
 
 // ─── Supabase CRUD helpers ────────────────────────────────────────────────────
 
+export async function upsertArea(a: Area): Promise<void> {
+  const { error } = await supabase.from('areas').upsert(
+    { id_area: a.id, nom_area: a.nombre, sede: a.sedeId, id_supervisor: a.supervisorId || null, activo: a.activo },
+    { onConflict: 'id_area' }
+  )
+  if (error) throw new Error(error.message)
+}
+export async function deleteAreaSupa(id: string): Promise<void> {
+  const { error } = await supabase.from('areas').delete().eq('id_area', id)
+  if (error) throw new Error(error.message)
+}
+
+export async function upsertColaborador(c: Colaborador): Promise<void> {
+  const { error } = await supabase.from('colaboradores').upsert(
+    {
+      id_colaborador: c.id,
+      nom_colaborador: c.nombre,
+      es_externo: c.externo,
+      area: c.areaId || null,
+      supervisor: c.supervisorId || null,
+      asignado: c.asignado,
+      activo: c.activo,
+    },
+    { onConflict: 'id_colaborador' }
+  )
+  if (error) throw new Error(error.message)
+}
+export async function deleteColaboradorSupa(id: string): Promise<void> {
+  const { error } = await supabase.from('colaboradores').delete().eq('id_colaborador', id)
+  if (error) throw new Error(error.message)
+}
+
 export async function upsertBloque(b: Bloque): Promise<void> {
   const { error } = await supabase.from('bloques').upsert(
     { id_bloque: b.id, nom_bloque: b.nombre, area: b.areaId },

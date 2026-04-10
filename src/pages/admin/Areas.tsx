@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { getAllAreas, putArea, deleteArea } from '../../services/db'
-import { patchAssignArea } from '../../services/api'
+import { upsertArea, deleteAreaSupa } from '../../services/api'
 import type { Area } from '../../types'
 import { AdminLayout } from '../../components/layout/AdminLayout'
 import { Button } from '../../components/ui/Button'
@@ -40,10 +40,7 @@ export default function AdminAreas() {
   const onSubmit = async (data: FormData) => {
     setSaving(true)
     const area: Area = editing ? { ...editing, ...data } : { id: crypto.randomUUID(), ...data }
-    await putArea(area)
-    if (editing && data.supervisorId !== editing.supervisorId) {
-      try { await patchAssignArea(area.id, data.supervisorId) } catch { /* offline ok */ }
-    }
+    try { await Promise.all([putArea(area), upsertArea(area)]) } catch { await putArea(area) }
     await load()
     setModalOpen(false)
     setSaving(false)
@@ -51,7 +48,7 @@ export default function AdminAreas() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('¿Eliminar esta área?')) return
-    await deleteArea(id)
+    try { await Promise.all([deleteArea(id), deleteAreaSupa(id)]) } catch { await deleteArea(id) }
     setAreas((prev) => prev.filter((a) => a.id !== id))
   }
 
