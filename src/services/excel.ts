@@ -4,7 +4,7 @@
  */
 
 // Instalar con: npm install xlsx
-import { write, utils } from 'xlsx'
+import * as XLSX from 'xlsx'
 
 interface ReporteCorte {
   fecha: string
@@ -62,7 +62,7 @@ interface ReporteAseguramiento {
  * Crea y descarga un Excel con datos de Corte
  */
 export function descargarReporteCorte(datos: ReporteCorte[], nombreArchivo = 'reporte_corte.xlsx'): void {
-  const worksheet = utils.json_to_sheet(datos.map(d => ({
+  const worksheet = XLSX.utils.json_to_sheet(datos.map((d: any) => ({
     Fecha: d.fecha,
     Área: d.areaNombre,
     Supervisor: d.supervisorNombre,
@@ -76,23 +76,23 @@ export function descargarReporteCorte(datos: ReporteCorte[], nombreArchivo = 're
     'Hora Inicio': d.horaInicio,
     'Hora Fin': d.horaFin,
     'Rendimiento (%)': d.rendimientoCorteReal,
-  })), { header: 1 })
+  })) as any[])
 
-  const workbook = utils.book_new()
-  utils.book_append_sheet(workbook, worksheet, 'Corte')
+  const workbook = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Corte')
 
   // Ajustar ancho de columnas
   const colWidths = [12, 15, 18, 20, 12, 15, 18, 18, 16, 16, 12, 12, 16]
   worksheet['!cols'] = colWidths.map(w => ({ wch: w }))
 
-  write(workbook, { out: 'write', file: nombreArchivo })
+  XLSX.writeFile(workbook, nombreArchivo)
 }
 
 /**
  * Crea y descarga un Excel con datos de Labores
  */
 export function descargarReporteLabores(datos: ReporteLabores[], nombreArchivo = 'reporte_labores.xlsx'): void {
-  const worksheet = utils.json_to_sheet(datos.map(d => ({
+  const worksheet = XLSX.utils.json_to_sheet(datos.map((d: any) => ({
     Fecha: d.fecha,
     Área: d.areaNombre,
     Supervisor: d.supervisorNombre,
@@ -107,22 +107,22 @@ export function descargarReporteLabores(datos: ReporteLabores[], nombreArchivo =
     'Tiempo/Cama Real': d.tiempoCamaReal,
     'Rendimiento (h)': d.rendimientoHoras,
     'Rendimiento (%)': d.rendimientoPct,
-  })), { header: 1 })
+  })) as any[])
 
-  const workbook = utils.book_new()
-  utils.book_append_sheet(workbook, worksheet, 'Labores')
+  const workbook = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Labores')
 
   const colWidths = [12, 15, 18, 20, 12, 15, 8, 18, 16, 16, 18, 18, 16, 16]
   worksheet['!cols'] = colWidths.map(w => ({ wch: w }))
 
-  write(workbook, { out: 'write', file: nombreArchivo })
+  XLSX.writeFile(workbook, nombreArchivo)
 }
 
 /**
  * Crea y descarga un Excel con datos de Aseguramiento
  */
 export function descargarReporteAseguramiento(datos: ReporteAseguramiento[], nombreArchivo = 'reporte_aseguramiento.xlsx'): void {
-  const worksheet = utils.json_to_sheet(datos.map(d => ({
+  const worksheet = XLSX.utils.json_to_sheet(datos.map((d: any) => ({
     Fecha: d.fecha,
     Área: d.areaNombre,
     Supervisor: d.supervisorNombre,
@@ -139,15 +139,15 @@ export function descargarReporteAseguramiento(datos: ReporteAseguramiento[], nom
     '% Cumplimiento': d.pctCumplimiento,
     '% Promedio Rendimiento': d.pctPromRendimiento,
     Observaciones: d.observaciones,
-  })), { header: 1 })
+  })) as any[])
 
-  const workbook = utils.book_new()
-  utils.book_append_sheet(workbook, worksheet, 'Aseguramiento')
+  const workbook = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Aseguramiento')
 
   const colWidths = [12, 15, 18, 20, 12, 15, 15, 18, 14, 14, 14, 14, 14, 18, 22, 25]
   worksheet['!cols'] = colWidths.map(w => ({ wch: w }))
 
-  write(workbook, { out: 'write', file: nombreArchivo })
+  XLSX.writeFile(workbook, nombreArchivo)
 }
 
 /**
@@ -159,10 +159,10 @@ export function descargarReporteCompleto(
   aseguramiento: ReporteAseguramiento[],
   nombreArchivo = 'reporte_completo.xlsx'
 ): void {
-  const workbook = utils.book_new()
+  const workbook = XLSX.utils.book_new()
 
   // Hoja 1: Corte
-  const wsCorte = utils.json_to_sheet(corte.map(d => ({
+  const wsCorte = XLSX.utils.json_to_sheet(corte.map((d: any) => ({
     Fecha: d.fecha,
     Área: d.areaNombre,
     Supervisor: d.supervisorNombre,
@@ -176,12 +176,12 @@ export function descargarReporteCompleto(
     'Hora Inicio': d.horaInicio,
     'Hora Fin': d.horaFin,
     'Rendimiento (%)': d.rendimientoCorteReal,
-  })))
+  })) as any[])
   wsCorte['!cols'] = [12, 15, 18, 20, 12, 15, 18, 18, 16, 16, 12, 12, 16].map(w => ({ wch: w }))
-  utils.book_append_sheet(workbook, wsCorte, 'Corte')
+  XLSX.utils.book_append_sheet(workbook, wsCorte, 'Corte')
 
   // Hoja 2: Labores
-  const wsLabores = utils.json_to_sheet(labores.map(d => ({
+  const wsLabores = XLSX.utils.json_to_sheet(labores.map((d: any) => ({
     Fecha: d.fecha,
     Área: d.areaNombre,
     Supervisor: d.supervisorNombre,
@@ -196,12 +196,12 @@ export function descargarReporteCompleto(
     'Tiempo/Cama Real': d.tiempoCamaReal,
     'Rendimiento (h)': d.rendimientoHoras,
     'Rendimiento (%)': d.rendimientoPct,
-  })))
+  })) as any[])
   wsLabores['!cols'] = [12, 15, 18, 20, 12, 15, 8, 18, 16, 16, 18, 18, 16, 16].map(w => ({ wch: w }))
-  utils.book_append_sheet(workbook, wsLabores, 'Labores')
+  XLSX.utils.book_append_sheet(workbook, wsLabores, 'Labores')
 
   // Hoja 3: Aseguramiento
-  const wsAseguramiento = utils.json_to_sheet(aseguramiento.map(d => ({
+  const wsAseguramiento = XLSX.utils.json_to_sheet(aseguramiento.map((d: any) => ({
     Fecha: d.fecha,
     Área: d.areaNombre,
     Supervisor: d.supervisorNombre,
@@ -218,19 +218,19 @@ export function descargarReporteCompleto(
     '% Cumplimiento': d.pctCumplimiento,
     '% Promedio Rendimiento': d.pctPromRendimiento,
     Observaciones: d.observaciones,
-  })))
+  })) as any[])
   wsAseguramiento['!cols'] = [12, 15, 18, 20, 12, 15, 15, 18, 14, 14, 14, 14, 14, 18, 22, 25].map(w => ({ wch: w }))
-  utils.book_append_sheet(workbook, wsAseguramiento, 'Aseguramiento')
+  XLSX.utils.book_append_sheet(workbook, wsAseguramiento, 'Aseguramiento')
 
-  write(workbook, { out: 'write', file: nombreArchivo })
+  XLSX.writeFile(workbook, nombreArchivo)
 }
 
 /**
  * Función auxiliar para exportar directamente a Excel desde objeto genérico
  */
 export function crearExcelDesdeJSON(datos: Record<string, unknown>[], nombreHoja = 'Datos', nombreArchivo = 'export.xlsx'): void {
-  const worksheet = utils.json_to_sheet(datos)
-  const workbook = utils.book_new()
-  utils.book_append_sheet(workbook, worksheet, nombreHoja)
-  write(workbook, { out: 'write', file: nombreArchivo })
+  const worksheet = XLSX.utils.json_to_sheet(datos as any[])
+  const workbook = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(workbook, worksheet, nombreHoja)
+  XLSX.writeFile(workbook, nombreArchivo)
 }

@@ -87,7 +87,7 @@ export async function getCorteData(desde: string, hasta: string): Promise<DashDa
 
   if (error) throw new Error(error.message)
 
-  return (data ?? []).map((row: any) => ({
+  return ((data ?? []) as any[]).map((row: any) => ({
     fecha: row.fecha_creacion?.split('T')[0] || '',
     area: row.areas?.nom_area || '—',
     supervisor: row.supervisors?.nom_supervisor || '—',
@@ -129,7 +129,7 @@ export async function getLaboresData(desde: string, hasta: string): Promise<Dash
 
   if (error) throw new Error(error.message)
 
-  return (data ?? []).map((row: any) => ({
+  return ((data ?? []) as any[]).map((row: any) => ({
     fecha: row.formulario_rows_labores?.fecha_creacion?.split('T')[0] || '',
     area: row.formulario_rows_labores?.areas?.nom_area || '—',
     colaborador: row.formulario_rows_labores?.nombre_colaborador || '—',
@@ -162,7 +162,7 @@ export async function getAseguramientoData(desde: string, hasta: string): Promis
 
   if (error) throw new Error(error.message)
 
-  return (data ?? []).map((row: any) => ({
+  return ((data ?? []) as any[]).map((row: any) => ({
     fecha: row.fecha_creacion?.split('T')[0] || '',
     area: row.areas?.nom_area || '—',
     colaborador: row.nombre_colaborador || '—',
@@ -189,9 +189,9 @@ export async function getStatsPorArea(desde: string): Promise<StatsPorArea[]> {
 
   // Agrupar por área
   const grouped: Record<string, any> = {}
-  for (const row of data ?? []) {
+  for (const row of (data ?? []) as any[]) {
     const areaId = row.id_area
-    const areaNombre = row.areas?.nom_area || '—'
+    const areaNombre = (row.areas as any)?.nom_area || '—'
     if (!grouped[areaId]) {
       grouped[areaId] = {
         area: areaNombre,
@@ -236,7 +236,7 @@ export async function getStatsPorColaborador(desde: string): Promise<StatsPorCol
   // Combinar
   const grouped: Record<string, any> = {}
   
-  for (const row of corteData ?? []) {
+  for (const row of (corteData ?? []) as any[]) {
     const colabId = row.id_colaborador
     if (!grouped[colabId]) {
       grouped[colabId] = {
@@ -250,7 +250,7 @@ export async function getStatsPorColaborador(desde: string): Promise<StatsPorCol
     grouped[colabId].rendimientoTotal += row.rendimiento_corte_real || 0
   }
 
-  for (const row of asegData ?? []) {
+  for (const row of (asegData ?? []) as any[]) {
     const colabId = row.id_colaborador
     if (grouped[colabId]) {
       grouped[colabId].cumplimientoTotal += row.pct_cumplimiento || 0

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-import { getCorteData, getLaboresData, getAseguramientoData, getStatsPorArea, getStatsPorColaborador, getKPIData } from '../../services/dashboard'
+import { getCorteData, getLaboresData, getAseguramientoData, getStatsPorArea, getStatsPorColaborador, getKPIData, type DashDataCorte, type DashDataLabores, type DashDataAseguramiento, type StatsPorArea, type StatsPorColaborador } from '../../services/dashboard'
 import { AdminLayout } from '../../components/layout/AdminLayout'
 import { Button } from '../../components/ui/Button'
 import { Spinner } from '../../components/ui/Spinner'
@@ -19,11 +19,11 @@ function todayIso(): string {
 const COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6']
 
 export default function DashboardWithRecharts() {
-  const [corteData, setCorteData] = useState([])
-  const [laboresData, setLaboresData] = useState([])
-  const [asegData, setAsegData] = useState([])
-  const [statsPorArea, setStatsPorArea] = useState([])
-  const [stasPorColab, setStatsPorColab] = useState([])
+  const [corteData, setCorteData] = useState<DashDataCorte[]>([])
+  const [laboresData, setLaboresData] = useState<DashDataLabores[]>([])
+  const [asegData, setAsegData] = useState<DashDataAseguramiento[]>([])
+  const [statsPorArea, setStatsPorArea] = useState<StatsPorArea[]>([])
+  const [stasPorColab, setStatsPorColab] = useState<StatsPorColaborador[]>([])
   const [kpis, setKpis] = useState({ totalRegistros: 0, promRendimiento: 0, promCumplimiento: 0, totalHoras: 0 })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
