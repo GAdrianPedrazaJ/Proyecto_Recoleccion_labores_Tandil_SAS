@@ -28,6 +28,8 @@ dist-ssr
 
 # Azure Functions local settings (contain secrets/API keys - NEVER commit)
 azure-function/local.settings.json
+# Allow example file for reference (NO real credentials)
+!azure-function/local.settings.example.json
 
 # Firebase Functions env (contain secrets/API keys - NEVER commit)
 functions/.env
