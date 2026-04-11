@@ -63,8 +63,8 @@ export const useAuthStore = create<AuthStore>()(
           isAuthenticated: false,
           error: null,
         })
-        // Navegar a login
-        window.location.href = '/login'
+        // Navegar a login (recarga limpia para resetear el navigation store)
+        window.location.href = '/'
       },
 
       restoreSession: () => {

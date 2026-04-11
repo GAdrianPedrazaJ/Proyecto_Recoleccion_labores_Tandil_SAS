@@ -1,21 +1,21 @@
 import { useState, useRef, useEffect, type ReactNode } from 'react'
-import { Link, useLocation } from 'react-router-dom'
 import { useAuthStore } from '../../store/useAuthStore'
+import { useNavigationStore, type PageName } from '../../store/useNavigationStore'
 
 // ─── sub-items de "Administrar" ───────────────────────────────────────────────
-const ADMIN_ITEMS = [
-  { to: '/admin/areas',         label: 'Áreas' },
-  { to: '/admin/colaboradores', label: 'Colaboradores' },
-  { to: '/admin/supervisores',  label: 'Supervisores' },
-  { to: '/admin/bloques',       label: 'Bloques' },
-  { to: '/admin/variedades',    label: 'Variedades' },
-  { to: '/admin/labores',       label: 'Labores' },
+const ADMIN_ITEMS: { page: PageName; label: string }[] = [
+  { page: 'admin-areas',         label: 'Áreas' },
+  { page: 'admin-colaboradores', label: 'Colaboradores' },
+  { page: 'admin-supervisores',  label: 'Supervisores' },
+  { page: 'admin-bloques',       label: 'Bloques' },
+  { page: 'admin-variedades',    label: 'Variedades' },
+  { page: 'admin-labores',       label: 'Labores' },
 ]
 
-const ADMIN_PATHS = ADMIN_ITEMS.map((i) => i.to)
+const ADMIN_PAGES = ADMIN_ITEMS.map((i) => i.page)
 
 export function AdminLayout({ children }: { children: ReactNode }) {
-  const location = useLocation()
+  const { currentPage, goTo } = useNavigationStore()
   const logout = useAuthStore((s) => s.logout)
   const usuario = useAuthStore((s) => s.usuario)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -23,8 +23,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
   const [expandAdminMobile, setExpandAdminMobile] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  const path = location.pathname
-  const isAdminSection = ADMIN_PATHS.includes(path)
+  const isAdminSection = (ADMIN_PAGES as string[]).includes(currentPage)
 
   // Cerrar dropdown al hacer click fuera
   useEffect(() => {
@@ -37,17 +36,17 @@ export function AdminLayout({ children }: { children: ReactNode }) {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
-  // Cerrar menú móvil al cambiar de ruta
+  // Cerrar menú móvil al cambiar de página
   useEffect(() => {
     setMobileMenuOpen(false)
-  }, [path])
+  }, [currentPage])
 
-  const navLink = (to: string, label: string) => {
-    const active = path === to
+  const navButton = (page: PageName, label: string) => {
+    const active = currentPage === page
     return (
-      <Link
-        key={to}
-        to={to}
+      <button
+        key={page}
+        onClick={() => goTo(page)}
         className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
           active
             ? 'bg-white/20 text-white'
@@ -55,7 +54,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
         }`}
       >
         {label}
-      </Link>
+      </button>
     )
   }
 
@@ -65,9 +64,9 @@ export function AdminLayout({ children }: { children: ReactNode }) {
       <header className="bg-green-700 shadow-md sticky top-0 z-40">
         <div className="w-full max-w-screen-xl mx-auto px-2 sm:px-4 h-14 flex items-center gap-2 sm:gap-4">
           {/* Brand */}
-          <Link to="/admin" className="flex items-center gap-1 sm:gap-2 text-white font-bold text-sm sm:text-base whitespace-nowrap">
+          <button onClick={() => goTo('admin-dashboard')} className="flex items-center gap-1 sm:gap-2 text-white font-bold text-sm sm:text-base whitespace-nowrap">
             🌿 <span className="hidden sm:inline">Labores Admin</span>
-          </Link>
+          </button>
 
           {/* Hamburger menu button - visible on mobile */}
           <button
@@ -81,9 +80,9 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 
           {/* Nav principal - hidden on mobile */}
           <nav className="hidden md:flex items-center gap-1 flex-1">
-            {navLink('/admin', 'Dashboard')}
-            {navLink('/admin/estadisticas', 'Estadísticas')}
-            {navLink('/admin/asignaciones', 'Asignaciones')}
+            {navButton('admin-dashboard', 'Dashboard')}
+            {navButton('admin-estadisticas', 'Estadísticas')}
+            {navButton('admin-asignaciones', 'Asignaciones')}
 
             {/* Administrar dropdown */}
             <div ref={dropdownRef} className="relative">
@@ -103,21 +102,20 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 
               {menuOpen && (
                 <div className="absolute top-full left-0 mt-1 w-44 bg-white rounded-xl shadow-xl border border-gray-100 py-1 z-50">
-                  {ADMIN_ITEMS.map(({ to, label }) => {
-                    const active = path === to
+                  {ADMIN_ITEMS.map(({ page, label }) => {
+                    const active = currentPage === page
                     return (
-                      <Link
-                        key={to}
-                        to={to}
-                        onClick={() => setMenuOpen(false)}
-                        className={`flex items-center px-4 py-2 text-sm transition-colors ${
+                      <button
+                        key={page}
+                        onClick={() => { goTo(page); setMenuOpen(false) }}
+                        className={`w-full text-left flex items-center px-4 py-2 text-sm transition-colors ${
                           active
                             ? 'bg-green-50 text-green-700 font-semibold'
                             : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                         }`}
                       >
                         {label}
-                      </Link>
+                      </button>
                     )
                   })}
                 </div>
@@ -141,12 +139,12 @@ export function AdminLayout({ children }: { children: ReactNode }) {
         {isAdminSection && (
           <div className="bg-green-800 border-t border-green-600 overflow-x-auto">
             <div className="w-full max-w-screen-xl mx-auto px-2 sm:px-4 h-10 flex items-center gap-1">
-              {ADMIN_ITEMS.map(({ to, label }) => {
-                const active = path === to
+              {ADMIN_ITEMS.map(({ page, label }) => {
+                const active = currentPage === page
                 return (
-                  <Link
-                    key={to}
-                    to={to}
+                  <button
+                    key={page}
+                    onClick={() => goTo(page)}
                     className={`px-2 sm:px-3 py-1 rounded text-xs font-medium whitespace-nowrap transition-colors ${
                       active
                         ? 'bg-white text-green-800'
@@ -154,7 +152,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
                     }`}
                   >
                     {label}
-                  </Link>
+                  </button>
                 )
               })}
             </div>
@@ -187,43 +185,40 @@ export function AdminLayout({ children }: { children: ReactNode }) {
               {/* Navigation Links */}
               <div className="space-y-1 mt-8">
                 {/* Dashboard */}
-                <Link
-                  to="/admin"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`block px-4 py-2 rounded-lg font-medium transition-colors ${
-                    path === '/admin'
+                <button
+                  onClick={() => { goTo('admin-dashboard'); setMobileMenuOpen(false) }}
+                  className={`w-full text-left block px-4 py-2 rounded-lg font-medium transition-colors ${
+                    currentPage === 'admin-dashboard'
                       ? 'bg-green-100 text-green-700'
                       : 'text-gray-700 hover:bg-gray-100'
                   }`}
                 >
                   📊 Dashboard
-                </Link>
+                </button>
 
                 {/* Estadísticas */}
-                <Link
-                  to="/admin/estadisticas"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`block px-4 py-2 rounded-lg font-medium transition-colors ${
-                    path === '/admin/estadisticas'
+                <button
+                  onClick={() => { goTo('admin-estadisticas'); setMobileMenuOpen(false) }}
+                  className={`w-full text-left block px-4 py-2 rounded-lg font-medium transition-colors ${
+                    currentPage === 'admin-estadisticas'
                       ? 'bg-green-100 text-green-700'
                       : 'text-gray-700 hover:bg-gray-100'
                   }`}
                 >
                   📈 Estadísticas
-                </Link>
+                </button>
 
                 {/* Asignaciones */}
-                <Link
-                  to="/admin/asignaciones"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`block px-4 py-2 rounded-lg font-medium transition-colors ${
-                    path === '/admin/asignaciones'
+                <button
+                  onClick={() => { goTo('admin-asignaciones'); setMobileMenuOpen(false) }}
+                  className={`w-full text-left block px-4 py-2 rounded-lg font-medium transition-colors ${
+                    currentPage === 'admin-asignaciones'
                       ? 'bg-green-100 text-green-700'
                       : 'text-gray-700 hover:bg-gray-100'
                   }`}
                 >
                   📋 Asignaciones
-                </Link>
+                </button>
 
                 {/* Divider */}
                 <div className="border-t border-gray-200 my-2" />
@@ -247,19 +242,18 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 
                 {expandAdminMobile && (
                   <div className="pl-4 space-y-1">
-                    {ADMIN_ITEMS.map(({ to, label }) => (
-                      <Link
-                        key={to}
-                        to={to}
-                        onClick={() => setMobileMenuOpen(false)}
-                        className={`block px-4 py-2 rounded-lg text-sm transition-colors ${
-                          path === to
+                    {ADMIN_ITEMS.map(({ page, label }) => (
+                      <button
+                        key={page}
+                        onClick={() => { goTo(page); setMobileMenuOpen(false) }}
+                        className={`w-full text-left block px-4 py-2 rounded-lg text-sm transition-colors ${
+                          currentPage === page
                             ? 'bg-green-50 text-green-700 font-semibold'
                             : 'text-gray-600 hover:bg-gray-100'
                         }`}
                       >
                         {label}
-                      </Link>
+                      </button>
                     ))}
                   </div>
                 )}
