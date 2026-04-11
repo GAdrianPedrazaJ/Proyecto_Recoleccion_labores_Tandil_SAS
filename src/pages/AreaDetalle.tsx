@@ -21,6 +21,7 @@ interface ColabRow {
 export default function AreaDetalle() {
   const { params } = useNavigationStore()
   const areaId = String(params.areaId)
+  const sedeId = String(params.sedeId ?? '')
   const navigate = useNavigation()
   const [area, setArea] = useState<Area | null>(null)
   const [rows, setRows] = useState<ColabRow[]>([])
@@ -96,7 +97,7 @@ export default function AreaDetalle() {
       bloqueId: r.bloqueId,
       variedadId: r.variedadId,
     }))
-    navigate('nuevo-registro', { areaId, selecciones })
+    navigate('nuevo-registro', { areaId, sedeId: sedeId || '', selecciones })
   }
 
   const bloquesOpts = bloques.map((b) => ({ value: b.id, label: b.nombre }))

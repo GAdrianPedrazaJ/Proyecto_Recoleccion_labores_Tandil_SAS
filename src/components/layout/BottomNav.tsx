@@ -1,19 +1,22 @@
-import { NavLink } from 'react-router-dom'
 import { useAuthStore } from '../../store/useAuthStore'
+import { useNavigation } from '../../hooks/useNavigation'
+import { useNavigationStore } from '../../store/useNavigationStore'
 
 interface NavItem {
-  to: string
+  page: string
   label: string
   icon: React.ReactNode
 }
 
 export function BottomNav() {
   const { usuario } = useAuthStore()
+  const navigate = useNavigation()
+  const { currentPage } = useNavigationStore()
 
   // Items comunes para todos los roles
   const commonItems: NavItem[] = [
     {
-      to: '/',
+      page: 'areas',
       label: 'Áreas',
       icon: (
         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -22,7 +25,7 @@ export function BottomNav() {
       ),
     },
     {
-      to: '/historial',
+      page: 'historial',
       label: 'Historial',
       icon: (
         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -36,7 +39,7 @@ export function BottomNav() {
   const roleSpecificItem: NavItem | null =
     usuario?.rol === 'administrador'
       ? {
-          to: '/admin',
+          page: 'admin-dashboard',
           label: 'Admin',
           icon: (
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -47,7 +50,7 @@ export function BottomNav() {
         }
       : usuario?.rol === 'supervisor'
         ? {
-            to: '/supervisor/gestionar',
+            page: 'supervisor-gestionar',
             label: 'Gestionar',
             icon: (
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -61,21 +64,21 @@ export function BottomNav() {
 
   return (
     <nav className="fixed bottom-0 inset-x-0 z-30 flex border-t border-gray-200 bg-white safe-area-bottom">
-      {items.map((item) => (
-        <NavLink
-          key={item.to}
-          to={item.to}
-          end={item.to === '/'}
-          className={({ isActive }) =>
-            `flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-xs transition-colors ${
+      {items.map((item) => {
+        const isActive = currentPage === item.page || (item.page === 'areas' && currentPage === 'area-detail') || (item.page === 'areas' && currentPage === 'nuevo-registro')
+        return (
+          <button
+            key={item.page}
+            onClick={() => navigate(item.page as any)}
+            className={`flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-xs transition-colors ${
               isActive ? 'text-green-600' : 'text-gray-500 hover:text-gray-700'
-            }`
-          }
-        >
-          {item.icon}
-          <span>{item.label}</span>
-        </NavLink>
-      ))}
+            }`}
+          >
+            {item.icon}
+            <span>{item.label}</span>
+          </button>
+        )
+      })}
     </nav>
   )
 }
