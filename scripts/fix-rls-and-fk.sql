@@ -65,23 +65,27 @@ CREATE POLICY "allow_all_formularios" ON formularios
   FOR ALL TO anon, authenticated
   USING (true) WITH CHECK (true);
 
--- ── 9. FORMULARIO_ROWS ──────────────────────────────────────────────────────
-ALTER TABLE formulario_rows ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "allow_all_formulario_rows" ON formulario_rows;
-CREATE POLICY "allow_all_formulario_rows" ON formulario_rows
-  FOR ALL TO anon, authenticated
-  USING (true) WITH CHECK (true);
+-- ── 9. FORMULARIO_ROWS (es una VISTA — no soporta RLS) ─────────────────────
+-- RLS no aplica a views. El acceso se controla desde la tabla base (formularios).
+-- No se hace nada aquí.
 
 -- ── 10. FORMULARIO_ROWS_ASEGURAMIENTO ───────────────────────────────────────
-ALTER TABLE formulario_rows_aseguramiento ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "allow_all_aseguramiento" ON formulario_rows_aseguramiento;
-CREATE POLICY "allow_all_aseguramiento" ON formulario_rows_aseguramiento
-  FOR ALL TO anon, authenticated
-  USING (true) WITH CHECK (true);
-
--- Eliminar FK problemática que falla cuando el id_variedad local no existe en Supabase
-ALTER TABLE formulario_rows_aseguramiento
-  DROP CONSTRAINT IF EXISTS formulario_rows_aseguramiento_id_variedad_fkey;
+-- Si también es vista, omitir las líneas de RLS y dejar sólo el DROP CONSTRAINT.
+DO $$
+DECLARE
+  relkind_val char;
+BEGIN
+  SELECT relkind INTO relkind_val FROM pg_class WHERE relname = 'formulario_rows_aseguramiento';
+  IF relkind_val = 'r' THEN
+    -- Es tabla: habilitar RLS
+    EXECUTE 'ALTER TABLE formulario_rows_aseguramiento ENABLE ROW LEVEL SECURITY';
+    EXECUTE 'DROP POLICY IF EXISTS "allow_all_aseguramiento" ON formulario_rows_aseguramiento';
+    EXECUTE $p$CREATE POLICY "allow_all_aseguramiento" ON formulario_rows_aseguramiento
+      FOR ALL TO anon, authenticated USING (true) WITH CHECK (true)$p$;
+    -- Eliminar FK problemática
+    EXECUTE 'ALTER TABLE formulario_rows_aseguramiento DROP CONSTRAINT IF EXISTS formulario_rows_aseguramiento_id_variedad_fkey';
+  END IF;
+END $$;
 
 -- ── 11. VARIEDADES_BLOQUES ──────────────────────────────────────────────────
 ALTER TABLE variedades_bloques ENABLE ROW LEVEL SECURITY;
@@ -94,3 +98,32 @@ CREATE POLICY "allow_all_variedades_bloques" ON variedades_bloques
 -- Nota: las columnas en PostgreSQL se almacenan en minúsculas sin comillas.
 -- La tabla fue creada con tableName → almacenada como tablename, etc.
 -- El código ya fue corregido para usar los nombres en minúsculas.
+
+-- ── 13. ELIMINAR FK CONSTRAINTS PROBLEMÁTICAS (offline-first) ───────────────
+-- Para una app offline-first, las claves foráneas entre formularios y tablas de
+-- referencia (areas, bloques, variedades, supervisors) no se pueden garantizar
+-- porque el dispositivo off-line puede tener IDs locales diferentes.
+-- Se eliminan estas constraints de referencia conservando solo el vínculo
+-- formulario_rows_* → formularios que sí podemos garantizar.
+
+-- formularios
+ALTER TABLE formularios DROP CONSTRAINT IF EXISTS formularios_area_id_fkey;
+ALTER TABLE formularios DROP CONSTRAINT IF EXISTS formularios_supervisor_id_fkey;
+
+-- formulario_rows_corte  
+ALTER TABLE formulario_rows_corte DROP CONSTRAINT IF EXISTS formulario_rows_corte_id_area_fkey;
+ALTER TABLE formulario_rows_corte DROP CONSTRAINT IF EXISTS formulario_rows_corte_id_supervisor_fkey;
+ALTER TABLE formulario_rows_corte DROP CONSTRAINT IF EXISTS formulario_rows_corte_id_bloque_fkey;
+ALTER TABLE formulario_rows_corte DROP CONSTRAINT IF EXISTS formulario_rows_corte_id_variedad_fkey;
+
+-- formulario_rows_labores
+ALTER TABLE formulario_rows_labores DROP CONSTRAINT IF EXISTS formulario_rows_labores_id_area_fkey;
+ALTER TABLE formulario_rows_labores DROP CONSTRAINT IF EXISTS formulario_rows_labores_id_supervisor_fkey;
+ALTER TABLE formulario_rows_labores DROP CONSTRAINT IF EXISTS formulario_rows_labores_id_bloque_fkey;
+ALTER TABLE formulario_rows_labores DROP CONSTRAINT IF EXISTS formulario_rows_labores_id_variedad_fkey;
+
+-- formulario_rows_aseguramiento
+ALTER TABLE formulario_rows_aseguramiento DROP CONSTRAINT IF EXISTS formulario_rows_aseguramiento_id_area_fkey;
+ALTER TABLE formulario_rows_aseguramiento DROP CONSTRAINT IF EXISTS formulario_rows_aseguramiento_id_supervisor_fkey;
+ALTER TABLE formulario_rows_aseguramiento DROP CONSTRAINT IF EXISTS formulario_rows_aseguramiento_id_bloque_fkey;
+ALTER TABLE formulario_rows_aseguramiento DROP CONSTRAINT IF EXISTS formulario_rows_aseguramiento_id_variedad_fkey;

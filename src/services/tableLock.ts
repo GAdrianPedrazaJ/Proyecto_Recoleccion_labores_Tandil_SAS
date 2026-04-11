@@ -33,9 +33,9 @@ export async function acquireLock(tableName: string): Promise<boolean> {
       .eq('tablename', tableName)
       .neq('deviceid', DEVICE_ID)
       .gte('expiresat', now.toISOString())
-      .single()
+      .maybeSingle()
 
-    if (checkError && checkError.code !== 'PGRST116') throw checkError
+    if (checkError) throw checkError
     if (existingLock) return false // Otra instancia tiene el lock
 
     // Insertar o actualizar nuestro lock

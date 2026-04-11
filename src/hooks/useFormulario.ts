@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import type { Formulario } from '../types'
 import { putFormulario } from '../services/db'
-import { queueFormularioRow } from '../services/syncQueue'
 import { saveFormularioCompleto } from '../services/api'
 
 export type FormularioInput = Omit<
@@ -29,10 +28,8 @@ export function useFormulario() {
       // Guardar localmente en IndexedDB
       await putFormulario(formulario)
 
-      // Encolar para sincronización si está completo
+      // Sincronizar a Supabase si está completo
       if (formulario.estado === 'completo') {
-        await queueFormularioRow(formulario)
-        // NUEVO: También guardar directamente a Supabase con la nueva estructura por tipo
         try {
           await saveFormularioCompleto({
             id: formulario.id,
@@ -98,10 +95,8 @@ export function useFormulario() {
       // Guardar localmente en IndexedDB
       await putFormulario(formulario)
 
-      // Encolar para sincronización si está completo
+      // Actualizar en Supabase si está completo
       if (formulario.estado === 'completo') {
-        await queueFormularioRow(formulario)
-        // NUEVO: También actualizar en Supabase con la nueva estructura por tipo
         try {
           await saveFormularioCompleto({
             id: formulario.id,
