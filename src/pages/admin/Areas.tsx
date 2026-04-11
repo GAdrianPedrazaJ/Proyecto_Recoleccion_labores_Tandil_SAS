@@ -3,11 +3,12 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { putArea, deleteArea } from '../../services/db'
-import { fetchAreas, upsertArea, deleteAreaSupa } from '../../services/api'
-import type { Area } from '../../types'
+import { fetchAreas, fetchSedes, fetchSupervisores, upsertArea, deleteAreaSupa } from '../../services/api'
+import type { Area, Sede, Supervisor } from '../../types'
 import { AdminLayout } from '../../components/layout/AdminLayout'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
+import { Select } from '../../components/ui/Select'
 import { Spinner } from '../../components/ui/Spinner'
 
 const schema = z.object({
@@ -20,6 +21,8 @@ type FormData = z.infer<typeof schema>
 
 export default function AdminAreas() {
   const [areas, setAreas] = useState<Area[]>([])
+  const [sedes, setSedes] = useState<Sede[]>([])
+  const [supervisores, setSupervisores] = useState<Supervisor[]>([])
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<Area | null>(null)
@@ -35,14 +38,21 @@ export default function AdminAreas() {
   const load = async () => {
     setLoading(true); setError(null)
     try {
-      const data = await fetchAreas()
+      const [data, sedesData, supervisoresData] = await Promise.all([fetchAreas(), fetchSedes(), fetchSupervisores()])
       setAreas(data)
+      setSedes(sedesData)
+      setSupervisores(supervisoresData)
       await Promise.all(data.map(putArea))
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Error al cargar áreas')
     } finally { setLoading(false) }
   }
   useEffect(() => { load() }, [])
+
+  const getSedeNombre = (id: string) => sedes.find((s) => s.id === id)?.nombre ?? id
+  const getSupervisorNombre = (id: string) => supervisores.find((s) => s.id === id)?.nombre ?? id
+  const sedeOptions = sedes.map((s) => ({ value: s.id, label: s.nombre }))
+  const supervisorOptions = [{ value: '', label: '— Sin supervisor —' }, ...supervisores.map((s) => ({ value: s.id, label: s.nombre }))]
 
   const openAdd = () => { setEditing(null); reset({ nombre: '', sedeId: '', supervisorId: '', activo: true }); setModalOpen(true) }
   const openEdit = (a: Area) => { setEditing(a); reset({ nombre: a.nombre, sedeId: a.sedeId, supervisorId: a.supervisorId, activo: a.activo }); setModalOpen(true) }
@@ -123,8 +133,8 @@ export default function AdminAreas() {
                 {filtered.map((a, i) => (
                   <tr key={a.id} className={`border-b border-gray-100 hover:bg-green-50/40 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/60'}`}>
                     <td className="px-4 py-3 font-medium text-gray-900">{a.nombre}</td>
-                    <td className="px-4 py-3 text-gray-600">{a.sedeId || '—'}</td>
-                    <td className="px-4 py-3 text-gray-600">{a.supervisorId || '—'}</td>
+                    <td className="px-4 py-3 text-gray-600">{a.sedeId ? getSedeNombre(a.sedeId) : '—'}</td>
+                    <td className="px-4 py-3 text-gray-600">{a.supervisorId ? getSupervisorNombre(a.supervisorId) : '—'}</td>
                     <td className="px-4 py-3 text-center">
                       <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${a.activo ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
                         {a.activo ? 'Activa' : 'Inactiva'}
@@ -155,8 +165,8 @@ export default function AdminAreas() {
             <h2 className="text-lg font-bold text-gray-900 mb-5">{editing ? 'Editar área' : 'Nueva área'}</h2>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <Input label="Nombre" {...register('nombre')} error={errors.nombre?.message} />
-              <Input label="Sede" {...register('sedeId')} />
-              <Input label="Supervisor ID" {...register('supervisorId')} />
+              <Select label="Sede" options={sedeOptions} {...register('sedeId')} />
+              <Select label="Supervisor" options={supervisorOptions} {...register('supervisorId')} />
               <label className="flex items-center gap-2 text-sm text-gray-700">
                 <input type="checkbox" {...register('activo')} className="rounded border-gray-300" />
                 Activa

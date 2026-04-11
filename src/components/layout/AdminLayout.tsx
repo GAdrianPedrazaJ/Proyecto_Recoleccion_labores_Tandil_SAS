@@ -84,7 +84,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
           <nav className="hidden md:flex items-center gap-1 flex-1">
             {navButton('admin-dashboard', 'Dashboard')}
             {navButton('admin-asignaciones', 'Asignaciones')}
-            {navButton('superadmin-usuarios', '👥 Usuarios')}
+            {navButton('superadmin-usuarios', 'Usuarios')}
 
             {/* Administrar dropdown */}
             <div ref={dropdownRef} className="relative">
@@ -223,7 +223,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
                         : 'text-gray-700 hover:bg-gray-100'
                     }`}
                   >
-                    👥 Usuarios
+                    Usuarios
                   </button>
                 )}
 

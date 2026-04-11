@@ -2,10 +2,10 @@ import { supabase } from './supabase'
 
 export interface TableLock {
   id: string
-  tableName: string
-  deviceId: string
-  lockedAt: string
-  expiresAt: string
+  tablename: string
+  deviceid: string
+  lockedat: string
+  expiresat: string
 }
 
 const LOCK_TTL_SECONDS = 30
@@ -24,15 +24,15 @@ export async function acquireLock(tableName: string): Promise<boolean> {
     await supabase
       .from('table_locks')
       .delete()
-      .lt('expiresAt', now.toISOString())
+      .lt('expiresat', now.toISOString())
 
     // Verificar si hay otro lock activo
     const { data: existingLock, error: checkError } = await supabase
       .from('table_locks')
       .select('*')
-      .eq('tableName', tableName)
-      .neq('deviceId', DEVICE_ID)
-      .gte('expiresAt', now.toISOString())
+      .eq('tablename', tableName)
+      .neq('deviceid', DEVICE_ID)
+      .gte('expiresat', now.toISOString())
       .single()
 
     if (checkError && checkError.code !== 'PGRST116') throw checkError
@@ -43,12 +43,12 @@ export async function acquireLock(tableName: string): Promise<boolean> {
       .from('table_locks')
       .upsert(
         {
-          tableName,
-          deviceId: DEVICE_ID,
-          lockedAt: now.toISOString(),
-          expiresAt: expiresAt.toISOString(),
+          tablename: tableName,
+          deviceid: DEVICE_ID,
+          lockedat: now.toISOString(),
+          expiresat: expiresAt.toISOString(),
         },
-        { onConflict: 'tableName,deviceId' }
+        { onConflict: 'tablename,deviceid' }
       )
 
     return !upsertError
@@ -63,8 +63,8 @@ export async function releaseLock(tableName: string): Promise<void> {
     await supabase
       .from('table_locks')
       .delete()
-      .eq('tableName', tableName)
-      .eq('deviceId', DEVICE_ID)
+      .eq('tablename', tableName)
+      .eq('deviceid', DEVICE_ID)
   } catch (error) {
     console.error('Error releasing lock:', error)
   }
@@ -75,9 +75,9 @@ export async function renewLock(tableName: string): Promise<boolean> {
     const expiresAt = new Date(Date.now() + LOCK_TTL_SECONDS * 1000)
     const { error } = await supabase
       .from('table_locks')
-      .update({ expiresAt: expiresAt.toISOString() })
-      .eq('tableName', tableName)
-      .eq('deviceId', DEVICE_ID)
+      .update({ expiresat: expiresAt.toISOString() })
+      .eq('tablename', tableName)
+      .eq('deviceid', DEVICE_ID)
     return !error
   } catch (error) {
     console.error('Error renewing lock:', error)

@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { putSupervisor, deleteSupervisor, putArea } from '../../services/db'
-import { fetchSupervisores, fetchAreas, upsertSupervisor, deleteSupervisorSupa } from '../../services/api'
-import type { Supervisor, Area } from '../../types'
+import { putSupervisor, deleteSupervisor, putArea, putSede } from '../../services/db'
+import { fetchSupervisores, fetchAreas, fetchSedes, upsertSupervisor, deleteSupervisorSupa } from '../../services/api'
+import type { Supervisor, Area, Sede } from '../../types'
 import { AdminLayout } from '../../components/layout/AdminLayout'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
@@ -22,6 +22,7 @@ type FormData = z.infer<typeof schema>
 export default function AdminSupervisores() {
   const [items, setItems] = useState<Supervisor[]>([])
   const [areas, setAreas] = useState<Area[]>([])
+  const [sedes, setSedes] = useState<Sede[]>([])
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<Supervisor | null>(null)
@@ -37,9 +38,9 @@ export default function AdminSupervisores() {
   const load = async () => {
     setLoading(true); setError(null)
     try {
-      const [s, a] = await Promise.all([fetchSupervisores(), fetchAreas()])
-      setItems(s); setAreas(a)
-      await Promise.all([...s.map(putSupervisor), ...a.map(putArea)])
+      const [s, a, sd] = await Promise.all([fetchSupervisores(), fetchAreas(), fetchSedes()])
+      setItems(s); setAreas(a); setSedes(sd)
+      await Promise.all([...s.map(putSupervisor), ...a.map(putArea), ...sd.map(putSede)])
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Error al cargar')
     } finally { setLoading(false) }
@@ -74,7 +75,9 @@ export default function AdminSupervisores() {
   }
 
   const getAreaNombre = (id: string) => areas.find((a) => a.id === id)?.nombre ?? id
+  const getSedeNombre = (id: string) => sedes.find((s) => s.id === id)?.nombre ?? id
   const areaOptions = areas.map((a) => ({ value: a.id, label: a.nombre }))
+  const sedeOptions = sedes.map((s) => ({ value: s.id, label: s.nombre }))
   const filtered = search ? items.filter((s) => s.nombre.toLowerCase().includes(search.toLowerCase())) : items
 
   return (
@@ -120,7 +123,7 @@ export default function AdminSupervisores() {
                     <td className="px-4 py-3">
                       <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700 border border-blue-200">{getAreaNombre(s.areaId)}</span>
                     </td>
-                    <td className="px-4 py-3 text-gray-600">{s.sedeId || '—'}</td>
+                    <td className="px-4 py-3 text-gray-600">{s.sedeId ? getSedeNombre(s.sedeId) : '—'}</td>
                     <td className="px-4 py-3 text-center">
                       <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${s.activo ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>{s.activo ? 'Activo' : 'Inactivo'}</span>
                     </td>
@@ -149,7 +152,7 @@ export default function AdminSupervisores() {
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <Input label="Nombre" {...register('nombre')} error={errors.nombre?.message} />
               <Select label="Área" options={areaOptions} {...register('areaId')} error={errors.areaId?.message} />
-              <Input label="Sede" {...register('sedeId')} />
+              <Select label="Sede" options={sedeOptions} {...register('sedeId')} />
               <label className="flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" {...register('activo')} className="rounded" /> Activo</label>
               <div className="flex gap-3 pt-2">
                 <Button type="submit" loading={saving} className="flex-1">Guardar</Button>

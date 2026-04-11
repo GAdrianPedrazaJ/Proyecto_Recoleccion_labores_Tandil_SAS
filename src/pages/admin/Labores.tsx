@@ -98,12 +98,11 @@ export default function AdminLabores() {
                 <tr className="bg-gray-50 border-b border-gray-200">
                   <th className="text-left px-4 py-3 font-semibold text-gray-600">#</th>
                   <th className="text-left px-4 py-3 font-semibold text-gray-600">Nombre de la labor</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600">ID interno</th>
                   <th className="text-center px-4 py-3 font-semibold text-gray-600">Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.length === 0 && <tr><td colSpan={4} className="text-center py-12 text-gray-400">Sin resultados</td></tr>}
+                {filtered.length === 0 && <tr><td colSpan={3} className="text-center py-12 text-gray-400">Sin resultados</td></tr>}
                 {filtered.map((l, i) => (
                   <tr key={l.id} className={`border-b border-gray-100 hover:bg-green-50/40 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/60'}`}>
                     <td className="px-4 py-3 text-gray-400 text-xs">{i + 1}</td>
@@ -113,7 +112,6 @@ export default function AdminLabores() {
                         <span className="font-medium text-gray-900">{l.nombre}</span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-gray-400 font-mono text-xs">{l.id}</td>
                     <td className="px-4 py-3 text-center">
                       <div className="flex items-center justify-center gap-2">
                         <button onClick={() => openEdit(l)} className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50">

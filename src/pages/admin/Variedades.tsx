@@ -98,17 +98,15 @@ export default function AdminVariedades() {
                 <tr className="bg-gray-50 border-b border-gray-200">
                   <th className="text-left px-4 py-3 font-semibold text-gray-600">#</th>
                   <th className="text-left px-4 py-3 font-semibold text-gray-600">Nombre</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600">ID</th>
                   <th className="text-center px-4 py-3 font-semibold text-gray-600">Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.length === 0 && <tr><td colSpan={4} className="text-center py-12 text-gray-400">Sin resultados</td></tr>}
+                {filtered.length === 0 && <tr><td colSpan={3} className="text-center py-12 text-gray-400">Sin resultados</td></tr>}
                 {filtered.map((v, i) => (
                   <tr key={v.id} className={`border-b border-gray-100 hover:bg-pink-50/30 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/60'}`}>
                     <td className="px-4 py-3 text-gray-400 text-xs">{i + 1}</td>
                     <td className="px-4 py-3 font-medium text-gray-900">{v.nombre}</td>
-                    <td className="px-4 py-3 text-gray-400 font-mono text-xs">{v.id}</td>
                     <td className="px-4 py-3 text-center">
                       <div className="flex items-center justify-center gap-2">
                         <button onClick={() => openEdit(v)} className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50">
