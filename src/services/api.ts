@@ -378,6 +378,429 @@ export async function postRegistro(formulario: Formulario): Promise<void> {
   if (errRows) throw new Error(errRows.message)
 }
 
+// ─── NUEVAS FUNCIONES PARA FORMULARIOS SEPARADOS (3 TABLAS) ─────────────
+
+/**
+ * Guarda una fila de CORTE en formulario_rows_corte
+ */
+export async function saveFilaCorte(formularioId: string, filaId: string, data: {
+  idColaborador: string
+  nombreColaborador: string
+  externo: boolean
+  idArea: string
+  idSupervisor: string
+  idBloque: string
+  idVariedad: string
+  tiempoEstimadoMinutos?: number
+  tiempoRealMinutos?: number
+  totalTallosCorteEstimado?: number
+  totalTallosCorteReal?: number
+  horaIniciCorte?: string
+  horaFinCorteEstimado?: string
+  horaRealFinCorte?: string
+  horaCama?: number
+  rendimientoCorteEstimado?: number
+  rendimientoCorteReal?: number
+}): Promise<void> {
+  const { error } = await supabase.from('formulario_rows_corte').upsert({
+    id: filaId,
+    formulario_id: formularioId,
+    id_colaborador: data.idColaborador,
+    nombre_colaborador: data.nombreColaborador,
+    externo: data.externo,
+    id_area: data.idArea || null,
+    id_supervisor: data.idSupervisor || null,
+    id_bloque: data.idBloque || null,
+    id_variedad: data.idVariedad || null,
+    tiempo_estimado_minutos: data.tiempoEstimadoMinutos || null,
+    tiempo_real_minutos: data.tiempoRealMinutos || null,
+    total_tallos_corte_estimado: data.totalTallosCorteEstimado || null,
+    total_tallos_corte_real: data.totalTallosCorteReal || null,
+    hora_inicio_corte: data.horaIniciCorte || null,
+    hora_fin_corte_estimado: data.horaFinCorteEstimado || null,
+    hora_real_fin_corte: data.horaRealFinCorte || null,
+    hora_cama: data.horaCama || null,
+    rendimiento_corte_estimado: data.rendimientoCorteEstimado || null,
+    rendimiento_corte_real: data.rendimientoCorteReal || null,
+  }, { onConflict: 'id' })
+  if (error) throw new Error(error.message)
+}
+
+/**
+ * Guarda una fila de LABORES (tabla padre) en formulario_rows_labores
+ */
+export async function saveFilaLabores(formularioId: string, filaId: string, data: {
+  idColaborador: string
+  nombreColaborador: string
+  externo: boolean
+  idArea: string
+  idSupervisor: string
+  idBloque: string
+  idVariedad: string
+  cantidadLaboresRegistradas?: number
+  rendimientoPromedio?: number
+  tiempoTotalLaboresEstimado?: number
+  tiempoTotalLaboresReal?: number
+  camasTotalEstimadas?: number
+  camasTotalReales?: number
+}): Promise<void> {
+  const { error } = await supabase.from('formulario_rows_labores').upsert({
+    id: filaId,
+    formulario_id: formularioId,
+    id_colaborador: data.idColaborador,
+    nombre_colaborador: data.nombreColaborador,
+    externo: data.externo,
+    id_area: data.idArea || null,
+    id_supervisor: data.idSupervisor || null,
+    id_bloque: data.idBloque || null,
+    id_variedad: data.idVariedad || null,
+    cantidad_labores_registradas: data.cantidadLaboresRegistradas || 0,
+    rendimiento_promedio: data.rendimientoPromedio || null,
+    tiempo_total_labores_estimado: data.tiempoTotalLaboresEstimado || null,
+    tiempo_total_labores_real: data.tiempoTotalLaboresReal || null,
+    camas_total_estimadas: data.camasTotalEstimadas || null,
+    camas_total_reales: data.camasTotalReales || null,
+  }, { onConflict: 'id' })
+  if (error) throw new Error(error.message)
+}
+
+/**
+ * Guarda múltiples labores detalle bajo una fila de labores
+ */
+export async function saveLaboresDetalle(filaLaboresId: string, labores: Array<{
+  id: string
+  numeroLabor: number
+  idLabor: string
+  nomLabor: string
+  camasEstimado?: number
+  tiempoCamaEstimado?: number
+  camasReal?: number
+  tiempoCamaReal?: number
+}>): Promise<void> {
+  const rows = labores.map(l => ({
+    id: l.id,
+    fila_labores_id: filaLaboresId,
+    id_labor: l.idLabor || null,
+    nom_labor: l.nomLabor || null,
+    camas_estimado: l.camasEstimado || null,
+    tiempo_cama_estimado: l.tiempoCamaEstimado || null,
+    camas_real: l.camasReal || null,
+    tiempo_cama_real: l.tiempoCamaReal || null,
+    numero_labor: l.numeroLabor,
+  }))
+
+  // Eliminar registros antiguos primero
+  await supabase.from('labores_detalle').delete().eq('fila_labores_id', filaLaboresId)
+
+  // Insertar nuevos
+  const { error } = await supabase.from('labores_detalle').insert(rows)
+  if (error) throw new Error(error.message)
+}
+
+/**
+ * Guarda una fila de ASEGURAMIENTO en formulario_rows_aseguramiento
+ */
+export async function saveFilaAseguramiento(formularioId: string, filaId: string, data: {
+  idColaborador: string
+  nombreColaborador: string
+  externo: boolean
+  idArea: string
+  idSupervisor: string
+  idBloque: string
+  idVariedad: string
+  desglossePipe?: boolean
+  procesoSeguridad?: string
+  calidadCuadro1?: boolean
+  calidadCuadro2?: boolean
+  calidadCuadro3?: boolean
+  calidadCuadro4?: boolean
+  calidadCuadro5?: boolean
+  pctPromRendimiento?: number
+  rendimientoCorteReal?: number
+  observaciones?: string
+}): Promise<void> {
+  const { error } = await supabase.from('formulario_rows_aseguramiento').upsert({
+    id: filaId,
+    formulario_id: formularioId,
+    id_colaborador: data.idColaborador,
+    nombre_colaborador: data.nombreColaborador,
+    externo: data.externo,
+    id_area: data.idArea || null,
+    id_supervisor: data.idSupervisor || null,
+    id_bloque: data.idBloque || null,
+    id_variedad: data.idVariedad || null,
+    desglose_pipe: data.desglossePipe || false,
+    proceso_seguridad: data.procesoSeguridad || null,
+    calidad_cuadro_1: data.calidadCuadro1 || false,
+    calidad_cuadro_2: data.calidadCuadro2 || false,
+    calidad_cuadro_3: data.calidadCuadro3 || false,
+    calidad_cuadro_4: data.calidadCuadro4 || false,
+    calidad_cuadro_5: data.calidadCuadro5 || false,
+    pct_prom_rendimiento: data.pctPromRendimiento || null,
+    rendimiento_corte_real: data.rendimientoCorteReal || null,
+    observaciones: data.observaciones || null,
+  }, { onConflict: 'id' })
+  if (error) throw new Error(error.message)
+}
+
+/**
+ * Actualiza el metadata de un formulario (rastreador de completitud)
+ */
+export async function updateFormularioMetadata(formularioId: string, idColaborador: string, updates: {
+  seCompletoCorte?: boolean
+  seCompletoLabores?: boolean
+  seCompletoAseguramiento?: boolean
+  filaCorteId?: string | null
+  filaLaboresId?: string | null
+  filaAseguramientoId?: string | null
+}): Promise<void> {
+  const metadataId = `${formularioId}-${idColaborador}`
+
+  // Primero intenta actualizar
+  const { data: existing } = await supabase
+    .from('formulario_row_metadata')
+    .select('id')
+    .eq('id', metadataId)
+    .single()
+
+  if (existing) {
+    // Actualizar
+    const { error } = await supabase
+      .from('formulario_row_metadata')
+      .update({
+        se_completo_corte: updates.seCompletoCorte !== undefined ? updates.seCompletoCorte : undefined,
+        se_completo_labores: updates.seCompletoLabores !== undefined ? updates.seCompletoLabores : undefined,
+        se_completo_aseguramiento: updates.seCompletoAseguramiento !== undefined ? updates.seCompletoAseguramiento : undefined,
+        fila_corte_id: updates.filaCorteId !== undefined ? updates.filaCorteId : undefined,
+        fila_labores_id: updates.filaLaboresId !== undefined ? updates.filaLaboresId : undefined,
+        fila_aseguramiento_id: updates.filaAseguramientoId !== undefined ? updates.filaAseguramientoId : undefined,
+        fecha_actualizacion: new Date().toISOString(),
+      })
+      .eq('id', metadataId)
+    if (error) throw new Error(error.message)
+  } else {
+    // Insertar
+    const { error } = await supabase
+      .from('formulario_row_metadata')
+      .insert({
+        id: metadataId,
+        formulario_id: formularioId,
+        id_colaborador: idColaborador,
+        se_completo_corte: updates.seCompletoCorte || false,
+        se_completo_labores: updates.seCompletoLabores || false,
+        se_completo_aseguramiento: updates.seCompletoAseguramiento || false,
+        fila_corte_id: updates.filaCorteId || null,
+        fila_labores_id: updates.filaLaboresId || null,
+        fila_aseguramiento_id: updates.filaAseguramientoId || null,
+      })
+    if (error) throw new Error(error.message)
+  }
+}
+
+/**
+ * Obtiene datos para el dashboard (queries optimizadas)
+ */
+export async function getDashboardDataCorte(desde: string): Promise<any[]> {
+  const { data, error } = await supabase
+    .from('formulario_rows_corte')
+    .select(`
+      id,
+      formulario_id,
+      fecha_creacion,
+      id_area,
+      id_bloque,
+      id_variedad,
+      tiempo_estimado_horas,
+      tiempo_real_horas,
+      total_tallos_corte_estimado,
+      total_tallos_corte_real,
+      rendimiento_corte_estimado,
+      rendimiento_corte_real
+    `)
+    .gte('fecha_creacion', desde)
+    .order('fecha_creacion', { ascending: false })
+  if (error) throw new Error(error.message)
+  return data ?? []
+}
+
+export async function getDashboardDataLabores(desde: string): Promise<any[]> {
+  const { data, error } = await supabase
+    .from('formulario_rows_labores')
+    .select(`
+      id,
+      formulario_id,
+      fecha_creacion,
+      id_area,
+      id_bloque,
+      cantidad_labores_registradas,
+      renderimiento_promedio,
+      camas_total_estimadas,
+      camas_total_reales
+    `)
+    .gte('fecha_creacion', desde)
+    .order('fecha_creacion', { ascending: false })
+  if (error) throw new Error(error.message)
+  return data ?? []
+}
+
+export async function getDashboardDataAseguramiento(desde: string): Promise<any[]> {
+  const { data, error } = await supabase
+    .from('formulario_rows_aseguramiento')
+    .select(`
+      id,
+      formulario_id,
+      fecha_creacion,
+      id_area,
+      pct_cumplimiento,
+      pct_prom_rendimiento
+    `)
+    .gte('fecha_creacion', desde)
+    .order('fecha_creacion', { ascending: false })
+  if (error) throw new Error(error.message)
+  return data ?? []
+}
+
+/**
+ * FUNCIÓN PRINCIPAL: Guarda un formulario distribuido entre las 3 tablas según su tipo
+ */
+export async function saveFormularioCompleto(formulario: {
+  id: string
+  fecha: string
+  areaId: string
+  supervisorId: string
+  tipo: 'Corte' | 'Labores' | 'Aseguramiento'
+  filas: Array<{
+    colaboradorId: string
+    nombre: string
+    externo: boolean
+    bloqueId: string
+    variedadId: string
+    // Corte fields
+    tiempoEstimadoMinutos?: number
+    tiempoRealMinutos?: number
+    tallosEstimados?: number
+    tallosReales?: number
+    horaInicio?: string
+    horaFinEstimado?: string
+    horaFinReal?: string
+    horaCama?: number
+    rendimientoCorte?: number
+    // Labores fields
+    labores?: Array<{
+      id: string
+      numero: number
+      laborId: string
+      laborNombre: string
+      camasEstimadas?: number
+      tiempoCamaEstimado?: number
+      camasReales?: number
+      tiempoCamaReal?: number
+    }>
+    // Aseguramiento fields
+    desglose?: boolean
+    procesoSeguridad?: string
+    calidad?: [boolean, boolean, boolean, boolean, boolean]
+    rendimientoPromedio?: number
+    observaciones?: string
+  }>
+}): Promise<void> {
+  // 1. Crear encabezado del formulario
+  const { error: errForm } = await supabase.from('formularios').upsert({
+    id: formulario.id,
+    fecha: formulario.fecha,
+    area_id: formulario.areaId,
+    supervisor_id: formulario.supervisorId,
+    tipo: formulario.tipo,
+    estado: 'borrador',
+  }, { onConflict: 'id' })
+
+  if (errForm) throw new Error(`Error guardando formulario: ${errForm.message}`)
+
+  // 2. Guardar filas según el tipo
+  for (const fila of formulario.filas) {
+    const filaId = `${formulario.id}-${fila.colaboradorId}`
+
+    if (formulario.tipo === 'Corte') {
+      await saveFilaCorte(formulario.id, filaId, {
+        idColaborador: fila.colaboradorId,
+        nombreColaborador: fila.nombre,
+        externo: fila.externo,
+        idArea: formulario.areaId,
+        idSupervisor: formulario.supervisorId,
+        idBloque: fila.bloqueId,
+        idVariedad: fila.variedadId,
+        tiempoEstimadoMinutos: fila.tiempoEstimadoMinutos,
+        tiempoRealMinutos: fila.tiempoRealMinutos,
+        totalTallosCorteEstimado: fila.tallosEstimados,
+        totalTallosCorteReal: fila.tallosReales,
+        horaIniciCorte: fila.horaInicio,
+        horaFinCorteEstimado: fila.horaFinEstimado,
+        horaRealFinCorte: fila.horaFinReal,
+        horaCama: fila.horaCama,
+        rendimientoCorteEstimado: fila.rendimientoCorte,
+      })
+      await updateFormularioMetadata(formulario.id, fila.colaboradorId, {
+        seCompletoCorte: true,
+        filaCorteId: filaId,
+      })
+    } else if (formulario.tipo === 'Labores') {
+      await saveFilaLabores(formulario.id, filaId, {
+        idColaborador: fila.colaboradorId,
+        nombreColaborador: fila.nombre,
+        externo: fila.externo,
+        idArea: formulario.areaId,
+        idSupervisor: formulario.supervisorId,
+        idBloque: fila.bloqueId,
+        idVariedad: fila.variedadId,
+        cantidadLaboresRegistradas: (fila.labores ?? []).length,
+        tiempoTotalLaboresEstimado: (fila.labores ?? []).reduce((sum, l) => sum + (l.tiempoCamaEstimado || 0), 0),
+        tiempoTotalLaboresReal: (fila.labores ?? []).reduce((sum, l) => sum + (l.tiempoCamaReal || 0), 0),
+        camasTotalEstimadas: (fila.labores ?? []).reduce((sum, l) => sum + (l.camasEstimadas || 0), 0),
+        camasTotalReales: (fila.labores ?? []).reduce((sum, l) => sum + (l.camasReales || 0), 0),
+      })
+      if (fila.labores && fila.labores.length > 0) {
+        await saveLaboresDetalle(filaId, fila.labores.map(l => ({
+          id: l.id,
+          numeroLabor: l.numero,
+          idLabor: l.laborId,
+          nomLabor: l.laborNombre,
+          camasEstimado: l.camasEstimadas,
+          tiempoCamaEstimado: l.tiempoCamaEstimado,
+          camasReal: l.camasReales,
+          tiempoCamaReal: l.tiempoCamaReal,
+        })))
+      }
+      await updateFormularioMetadata(formulario.id, fila.colaboradorId, {
+        seCompletoLabores: true,
+        filaLaboresId: filaId,
+      })
+    } else if (formulario.tipo === 'Aseguramiento') {
+      await saveFilaAseguramiento(formulario.id, filaId, {
+        idColaborador: fila.colaboradorId,
+        nombreColaborador: fila.nombre,
+        externo: fila.externo,
+        idArea: formulario.areaId,
+        idSupervisor: formulario.supervisorId,
+        idBloque: fila.bloqueId,
+        idVariedad: fila.variedadId,
+        desglossePipe: fila.desglose,
+        procesoSeguridad: fila.procesoSeguridad,
+        calidadCuadro1: fila.calidad?.[0],
+        calidadCuadro2: fila.calidad?.[1],
+        calidadCuadro3: fila.calidad?.[2],
+        calidadCuadro4: fila.calidad?.[3],
+        calidadCuadro5: fila.calidad?.[4],
+        pctPromRendimiento: fila.rendimientoPromedio,
+        observaciones: fila.observaciones,
+      })
+      await updateFormularioMetadata(formulario.id, fila.colaboradorId, {
+        seCompletoAseguramiento: true,
+        filaAseguramientoId: filaId,
+      })
+    }
+  }
+}
+
 export async function patchAssignArea(areaId: string, supervisorId: string): Promise<void> {
   const { error } = await supabase
     .from('areas')

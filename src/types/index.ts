@@ -180,3 +180,113 @@ export interface RegistroFV {
   tipo: string
   filas: FilaFV[]
 }
+
+// ============================================================================
+// TIPOS PARA FORMULARIOS SEPARADOS (3 TABLAS NORMALIZADAS)
+// ============================================================================
+
+export interface FilaCorte {
+  id: string
+  formularioId: string
+  idColaborador: string
+  nombreColaborador: string
+  externo: boolean
+  idArea: string
+  idSupervisor: string
+  idBloque: string
+  idVariedad: string
+  
+  tiempoEstimadoMinutos: number | null
+  tiempoEstimadoHoras: number | null
+  tiempoRealMinutos: number | null
+  tiempoRealHoras: number | null
+  totalTallosCorteEstimado: number | null
+  totalTallosCorteReal: number | null
+  horaIniciCorte: string | null
+  horaFinCorteEstimado: string | null
+  horaRealFinCorte: string | null
+  horaCama: number | null
+  rendimientoCorteEstimado: number | null
+  rendimientoCorteReal: number | null
+  fechaCreacion: string
+  fechaActualizacion: string | null
+}
+
+export interface LaborDetalle {
+  id: string
+  filaLaboresId: string
+  idLabor: string
+  nomLabor: string
+  camasEstimado: number | null
+  tiempoCamaEstimado: number | null
+  rendimientoHorasEstimado: number | null
+  camasReal: number | null
+  tiempoCamaReal: number | null
+  rendimientoHorasReal: number | null
+  rendimientoPct: number | null
+  fechaCreacion: string
+  numeroLabor: number
+}
+
+export interface FilaLabores {
+  id: string
+  formularioId: string
+  idColaborador: string
+  nombreColaborador: string
+  externo: boolean
+  idArea: string
+  idSupervisor: string
+  idBloque: string
+  idVariedad: string
+  
+  cantidadLaboresRegistradas: number
+  rendimientoPromedio: number | null
+  tiempoTotalLaboresEstimado: number | null
+  tiempoTotalLaboresReal: number | null
+  camasTotalEstimadas: number | null
+  camasTotalReales: number | null
+  
+  detalles: LaborDetalle[]
+  fechaCreacion: string
+  fechaActualizacion: string | null
+}
+
+export interface FilaAseguramiento {
+  id: string
+  formularioId: string
+  idColaborador: string
+  nombreColaborador: string
+  externo: boolean
+  idArea: string
+  idSupervisor: string
+  idBloque: string
+  idVariedad: string
+  
+  desglosePipe: boolean
+  procesoSeguridad: string | null
+  calidadCuadro1: boolean
+  calidadCuadro2: boolean
+  calidadCuadro3: boolean
+  calidadCuadro4: boolean
+  calidadCuadro5: boolean
+  pctCumplimiento: number | null
+  pctPromRendimiento: number | null
+  rendimientoCorteReal: number | null
+  observaciones: string | null
+  fechaCreacion: string
+  fechaActualizacion: string | null
+}
+
+export interface FilaMetadata {
+  id: string
+  formularioId: string
+  idColaborador: string
+  seCompletoCorte: boolean
+  seCompletoLabores: boolean
+  seCompletoAseguramiento: boolean
+  filaCorteId: string | null
+  filaLaboresId: string | null
+  filaAseguramientoId: string | null
+  fechaCreacion: string
+  fechaActualizacion: string | null
+}
