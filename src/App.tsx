@@ -17,6 +17,7 @@ import AdminSupervisores from './pages/admin/Supervisores'
 import AdminLabores from './pages/admin/Labores'
 import AdminEstadisticas from './pages/admin/Estadisticas'
 import AdminAsignaciones from './pages/admin/Asignaciones'
+import SupervisorGestionar from './pages/supervisor/Gestionar'
 import { SyncProgressModal } from './components/ui/SyncProgressModal'
 
 /** Protector de rutas: verifica que sea supervisor o admin */
@@ -73,6 +74,7 @@ export default function App() {
         <Route path="/area/:areaId/registro" element={<SupervisorRoute><NuevoRegistro /></SupervisorRoute>} />
         <Route path="/registro/:formularioId" element={<SupervisorRoute><NuevoRegistro /></SupervisorRoute>} />
         <Route path="/historial" element={<SupervisorRoute><Historial /></SupervisorRoute>} />
+        <Route path="/supervisor/gestionar" element={<SupervisorRoute><SupervisorGestionar /></SupervisorRoute>} />
 
         {/* Admin routes - solo administrador */}
         <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
