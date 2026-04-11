@@ -1,7 +1,6 @@
 import { useEffect } from 'react'
-import { useLocation } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from './store/useAuthStore'
-import { useNavigationStore, type PageName } from './store/useNavigationStore'
 import AreaSelector from './pages/AreaSelector'
 import AreaDetalle from './pages/AreaDetalle'
 import NuevoRegistro from './pages/NuevoRegistro'
@@ -20,72 +19,47 @@ import AdminAsignaciones from './pages/admin/Asignaciones'
 import SupervisorGestionar from './pages/supervisor/Gestionar'
 import { SyncProgressModal } from './components/ui/SyncProgressModal'
 
-// Mapeo de rutas URL a nombres de página
-const PATH_TO_PAGE: Record<string, PageName> = {
-  '/login': 'login',
-  '/admin-setup': 'admin-setup',
-  '/areas': 'areas',
-  '/area-detail': 'area-detail',
-  '/nuevo-registro': 'nuevo-registro',
-  '/registro': 'registro',
-  '/historial': 'historial',
-  '/supervisor-gestionar': 'supervisor-gestionar',
-  '/admin': 'admin-dashboard',
-  '/admin/estadisticas': 'admin-estadisticas',
-  '/admin/asignaciones': 'admin-asignaciones',
-  '/admin/areas': 'admin-areas',
-  '/admin/colaboradores': 'admin-colaboradores',
-  '/admin/bloques': 'admin-bloques',
-  '/admin/variedades': 'admin-variedades',
-  '/admin/supervisores': 'admin-supervisores',
-  '/admin/labores': 'admin-labores',
-}
-
 export default function App() {
-  const { restoreSession } = useAuthStore()
-  const { currentPage, goTo } = useNavigationStore()
-  const location = useLocation()
+  const { restoreSession, usuario } = useAuthStore()
 
-  // Restaurar sesión al cargar
   useEffect(() => {
     restoreSession()
   }, [restoreSession])
 
-  // Sincronizar URL con navegación por estado
-  useEffect(() => {
-    const path = location.pathname
-    const page = PATH_TO_PAGE[path]
-    if (page && currentPage !== page) {
-      goTo(page)
-    }
-  }, [location.pathname, currentPage, goTo])
+  // Proteger rutas admin
+  const isAdmin = usuario?.rol === 'administrador'
 
-  // Renderizar página basada en estado - usar key para forzar remontaje
   return (
     <>
-      {currentPage === 'login' && <Login />}
-      {currentPage === 'admin-setup' && <AdminSetup />}
+      <Routes>
+        {/* Login */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/admin-setup" element={<AdminSetup />} />
 
-      {/* Páginas supervisors */}
-      {currentPage === 'areas' && <AreaSelector />}
-      {currentPage === 'area-detail' && <AreaDetalle />}
-      {currentPage === 'nuevo-registro' && <NuevoRegistro />}
-      {currentPage === 'registro' && <NuevoRegistro />}
-      {currentPage === 'historial' && <Historial />}
-      {currentPage === 'supervisor-gestionar' && <SupervisorGestionar />}
+        {/* Supervisor pages */}
+        <Route path="/areas" element={<AreaSelector />} />
+        <Route path="/area/:id" element={<AreaDetalle />} />
+        <Route path="/nuevo-registro" element={<NuevoRegistro />} />
+        <Route path="/registro" element={<NuevoRegistro />} />
+        <Route path="/historial" element={<Historial />} />
+        <Route path="/supervisor/gestionar" element={<SupervisorGestionar />} />
 
-      {/* Páginas admin */}
-      {currentPage === 'admin-dashboard' && <AdminDashboard />}
-      {currentPage === 'admin-areas' && <AdminAreas />}
-      {currentPage === 'admin-colaboradores' && <AdminColaboradores />}
-      {currentPage === 'admin-bloques' && <AdminBloques />}
-      {currentPage === 'admin-variedades' && <AdminVariedades />}
-      {currentPage === 'admin-supervisores' && <AdminSupervisores />}
-      {currentPage === 'admin-labores' && <AdminLabores />}
-      {currentPage === 'admin-estadisticas' && <AdminEstadisticas />}
-      {currentPage === 'admin-asignaciones' && <AdminAsignaciones />}
+        {/* Admin pages */}
+        <Route path="/admin" element={isAdmin ? <AdminDashboard /> : <Navigate to="/" />} />
+        <Route path="/admin/estadisticas" element={isAdmin ? <AdminEstadisticas /> : <Navigate to="/" />} />
+        <Route path="/admin/asignaciones" element={isAdmin ? <AdminAsignaciones /> : <Navigate to="/" />} />
+        <Route path="/admin/areas" element={isAdmin ? <AdminAreas /> : <Navigate to="/" />} />
+        <Route path="/admin/colaboradores" element={isAdmin ? <AdminColaboradores /> : <Navigate to="/" />} />
+        <Route path="/admin/bloques" element={isAdmin ? <AdminBloques /> : <Navigate to="/" />} />
+        <Route path="/admin/variedades" element={isAdmin ? <AdminVariedades /> : <Navigate to="/" />} />
+        <Route path="/admin/supervisores" element={isAdmin ? <AdminSupervisores /> : <Navigate to="/" />} />
+        <Route path="/admin/labores" element={isAdmin ? <AdminLabores /> : <Navigate to="/" />} />
 
-      {/* Modal de progreso de sincronización */}
+        {/* Default */}
+        <Route path="/" element={usuario ? <Navigate to="/areas" /> : <Navigate to="/login" />} />
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
+
       <SyncProgressModal />
     </>
   )
