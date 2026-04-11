@@ -70,12 +70,10 @@ const registroSchema = z.object({
 
 // â”€â”€â”€ Constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-const TIPOS_LABOR = [
-  { value: 'Labores', label: 'Labores' },
+const TIPOS_REGISTRO = [
   { value: 'Corte', label: 'Corte' },
-  { value: 'Siembra', label: 'Siembra' },
-  { value: 'Fumigación', label: 'Fumigación' },
-  { value: 'Otro', label: 'Otro' },
+  { value: 'Labores', label: 'Labores' },
+  { value: 'Aseguramiento', label: 'Aseguramiento' },
 ]
 
 // â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -336,7 +334,7 @@ export default function NuevoRegistro() {
                 />
                 <Select
                   label="Tipo de registro"
-                  options={TIPOS_LABOR}
+                  options={TIPOS_REGISTRO}
                   {...methods.register('tipo')}
                 />
               </div>
@@ -348,16 +346,20 @@ export default function NuevoRegistro() {
                 </div>
               )}
 
-              {fields.map((_field, index) => (
-                <FilaColaboradorForm
-                  key={_field.id}
-                  index={index}
-                  bloques={bloques}
-                  variedades={variedades}
-                  laborCatalog={laborCatalog}
-                  isEditMode={isEditMode}
-                />
-              ))}
+              {fields.map((_field, index) => {
+                const tipoRegistro = methods.watch('tipo')
+                return (
+                  <FilaColaboradorForm
+                    key={_field.id}
+                    index={index}
+                    bloques={bloques}
+                    variedades={variedades}
+                    laborCatalog={laborCatalog}
+                    isEditMode={isEditMode}
+                    tipoRegistro={tipoRegistro}
+                  />
+                )
+              })}
             </form>
           </FormProvider>
         )}
