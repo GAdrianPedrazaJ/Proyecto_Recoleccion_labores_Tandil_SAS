@@ -11,6 +11,16 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [contraseña, setContraseña] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [recordar, setRecordar] = useState(false)
+
+  // Restaurar email guardado al cargar
+  useEffect(() => {
+    const emailGuardado = localStorage.getItem('labores-email-recordado')
+    if (emailGuardado) {
+      setEmail(emailGuardado)
+      setRecordar(true)
+    }
+  }, [])
 
   // Si ya está autenticado, redirigir según rol
   useEffect(() => {
@@ -28,6 +38,12 @@ export default function Login() {
     clearError()
     if (!email || !contraseña) {
       return
+    }
+    // Guardar email si el usuario marcó "Recordar"
+    if (recordar) {
+      localStorage.setItem('labores-email-recordado', email)
+    } else {
+      localStorage.removeItem('labores-email-recordado')
     }
     await login(email, contraseña)
   }
@@ -84,6 +100,21 @@ export default function Login() {
                 >
                   {showPassword ? '👁️' : '👁️‍🗨️'}
                 </button>
+              </div>
+
+              {/* Checkbox Recordar */}
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="recordar"
+                  checked={recordar}
+                  onChange={(e) => setRecordar(e.target.checked)}
+                  disabled={isLoading}
+                  className="w-4 h-4 rounded border-gray-300 text-green-600 cursor-pointer"
+                />
+                <label htmlFor="recordar" className="text-sm text-gray-700 cursor-pointer">
+                  Recordar mi email
+                </label>
               </div>
 
               <Button
