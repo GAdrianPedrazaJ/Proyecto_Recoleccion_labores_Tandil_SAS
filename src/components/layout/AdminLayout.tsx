@@ -19,6 +19,8 @@ export function AdminLayout({ children }: { children: ReactNode }) {
   const logout = useAuthStore((s) => s.logout)
   const usuario = useAuthStore((s) => s.usuario)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [expandAdminMobile, setExpandAdminMobile] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   const path = location.pathname
@@ -34,6 +36,11 @@ export function AdminLayout({ children }: { children: ReactNode }) {
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
+
+  // Cerrar menú móvil al cambiar de ruta
+  useEffect(() => {
+    setMobileMenuOpen(false)
+  }, [path])
 
   const navLink = (to: string, label: string) => {
     const active = path === to
@@ -61,6 +68,16 @@ export function AdminLayout({ children }: { children: ReactNode }) {
           <Link to="/admin" className="flex items-center gap-1 sm:gap-2 text-white font-bold text-sm sm:text-base whitespace-nowrap">
             🌿 <span className="hidden sm:inline">Labores Admin</span>
           </Link>
+
+          {/* Hamburger menu button - visible on mobile */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden ml-auto p-2 text-white hover:bg-white/10 rounded-lg transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
 
           {/* Nav principal - hidden on mobile */}
           <nav className="hidden md:flex items-center gap-1 flex-1">
@@ -144,6 +161,132 @@ export function AdminLayout({ children }: { children: ReactNode }) {
           </div>
         )}
       </header>
+
+      {/* Mobile Menu Drawer */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-40 md:hidden">
+          {/* Overlay */}
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+
+          {/* Menu */}
+          <div className="absolute inset-y-0 right-0 w-64 bg-white shadow-lg overflow-y-auto">
+            <div className="p-4 space-y-2">
+              {/* Close button */}
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-lg"
+              >
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+
+              {/* Navigation Links */}
+              <div className="space-y-1 mt-8">
+                {/* Dashboard */}
+                <Link
+                  to="/admin"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`block px-4 py-2 rounded-lg font-medium transition-colors ${
+                    path === '/admin'
+                      ? 'bg-green-100 text-green-700'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  📊 Dashboard
+                </Link>
+
+                {/* Estadísticas */}
+                <Link
+                  to="/admin/estadisticas"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`block px-4 py-2 rounded-lg font-medium transition-colors ${
+                    path === '/admin/estadisticas'
+                      ? 'bg-green-100 text-green-700'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  📈 Estadísticas
+                </Link>
+
+                {/* Asignaciones */}
+                <Link
+                  to="/admin/asignaciones"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`block px-4 py-2 rounded-lg font-medium transition-colors ${
+                    path === '/admin/asignaciones'
+                      ? 'bg-green-100 text-green-700'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  📋 Asignaciones
+                </Link>
+
+                {/* Divider */}
+                <div className="border-t border-gray-200 my-2" />
+
+                {/* Administrar Section */}
+                <button
+                  onClick={() => setExpandAdminMobile(!expandAdminMobile)}
+                  className="w-full text-left px-4 py-2 rounded-lg font-medium text-gray-700 hover:bg-gray-100 transition-colors flex items-center justify-between"
+                >
+                  ⚙️ Administrar
+                  <svg
+                    className={`w-4 h-4 transition-transform ${expandAdminMobile ? 'rotate-180' : ''}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {expandAdminMobile && (
+                  <div className="pl-4 space-y-1">
+                    {ADMIN_ITEMS.map(({ to, label }) => (
+                      <Link
+                        key={to}
+                        to={to}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={`block px-4 py-2 rounded-lg text-sm transition-colors ${
+                          path === to
+                            ? 'bg-green-50 text-green-700 font-semibold'
+                            : 'text-gray-600 hover:bg-gray-100'
+                        }`}
+                      >
+                        {label}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+
+                {/* Divider */}
+                <div className="border-t border-gray-200 my-2" />
+
+                {/* User Info */}
+                <div className="px-4 py-2 text-sm text-gray-700 font-medium">
+                  👤 {usuario?.nombre}
+                </div>
+
+                {/* Logout */}
+                <button
+                  onClick={() => {
+                    logout()
+                    setMobileMenuOpen(false)
+                  }}
+                  className="w-full text-left px-4 py-2 rounded-lg font-medium text-red-600 hover:bg-red-50 transition-colors"
+                >
+                  🚪 Salir
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Contenido ── */}
       <main className="flex-1 w-full max-w-screen-xl mx-auto px-2 sm:px-4 py-4 sm:py-8">
