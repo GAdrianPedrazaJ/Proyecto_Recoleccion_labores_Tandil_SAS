@@ -81,7 +81,6 @@ export function AdminLayout({ children }: { children: ReactNode }) {
           {/* Nav principal - hidden on mobile */}
           <nav className="hidden md:flex items-center gap-1 flex-1">
             {navButton('admin-dashboard', 'Dashboard')}
-            {navButton('admin-estadisticas', 'Estadísticas')}
             {navButton('admin-asignaciones', 'Asignaciones')}
 
             {/* Administrar dropdown */}
@@ -197,16 +196,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
                 </button>
 
                 {/* Estadísticas */}
-                <button
-                  onClick={() => { goTo('admin-estadisticas'); setMobileMenuOpen(false) }}
-                  className={`w-full text-left block px-4 py-2 rounded-lg font-medium transition-colors ${
-                    currentPage === 'admin-estadisticas'
-                      ? 'bg-green-100 text-green-700'
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  📈 Estadísticas
-                </button>
+
 
                 {/* Asignaciones */}
                 <button

@@ -14,7 +14,6 @@ import AdminBloques from './pages/admin/Bloques'
 import AdminVariedades from './pages/admin/Variedades'
 import AdminSupervisores from './pages/admin/Supervisores'
 import AdminLabores from './pages/admin/Labores'
-import AdminEstadisticas from './pages/admin/Estadisticas'
 import AdminAsignaciones from './pages/admin/Asignaciones'
 import SupervisorGestionar from './pages/supervisor/Gestionar'
 import { SyncProgressModal } from './components/ui/SyncProgressModal'
@@ -51,7 +50,7 @@ export default function App() {
 
       // Páginas de admin
       case 'admin-dashboard':     return isAdmin ? <AdminDashboard />    : <Login />
-      case 'admin-estadisticas':  return isAdmin ? <AdminEstadisticas /> : <Login />
+      case 'admin-estadisticas':  return isAdmin ? <AdminDashboard />    : <Login />  // redirige a Dashboard unificado
       case 'admin-asignaciones':  return isAdmin ? <AdminAsignaciones /> : <Login />
       case 'admin-areas':         return isAdmin ? <AdminAreas />        : <Login />
       case 'admin-colaboradores': return isAdmin ? <AdminColaboradores />: <Login />

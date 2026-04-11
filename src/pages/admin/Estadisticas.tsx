@@ -1,9 +1,3 @@
-import { AdminLayout } from "../../components/layout/AdminLayout"
-
-export default function AdminEstadisticas() {
-  return (
-    <AdminLayout>
-      <div><h1 className="text-2xl font-bold">ESTADÕSTICAS - Test</h1></div>
-    </AdminLayout>
-  )
-}
+// Estad√≠sticas fue integrada al Dashboard unificado.
+// Este componente queda como alias que nunca se renderiza directamente.
+export default function AdminEstadisticas() { return null }
