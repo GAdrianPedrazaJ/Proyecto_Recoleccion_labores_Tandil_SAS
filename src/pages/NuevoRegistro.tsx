@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { useLocation } from 'react-router-dom'
 import { useNavigationStore } from '../store/useNavigationStore'
 import { useNavigation } from '../hooks/useNavigation'
 import { FormProvider, useFieldArray, useForm } from 'react-hook-form'
@@ -131,7 +130,6 @@ export default function NuevoRegistro() {
   const { params } = useNavigationStore()
   const areaId = params.areaId ? String(params.areaId) : undefined
   const formularioId = params.formularioId ? String(params.formularioId) : undefined
-  const location = useLocation()
   const navigate = useNavigation()
   const { save, update, saving } = useFormulario()
   const isEditMode = !!formularioId
@@ -168,10 +166,14 @@ export default function NuevoRegistro() {
     loadCatalog()
   }, [])
 
-  // NEW mode: load area + init filas from navigation state
+  // NEW mode: load area + init filas from sessionStorage
   useEffect(() => {
     if (isEditMode || !areaId) return
-    const selecciones = (location.state?.selecciones as SeleccionColaborador[]) || []
+    // Obtener selecciones del sessionStorage (pasadas desde AreaDetalle)
+    const seleccionesJson = sessionStorage.getItem('labores-selecciones')
+    const selecciones = seleccionesJson ? JSON.parse(seleccionesJson) : []
+    // Limpiar después de usar
+    sessionStorage.removeItem('labores-selecciones')
     Promise.all([getAreaById(areaId), getBloquesByArea(areaId)]).then(([areaData, bloquesData]) => {
       setArea(areaData ?? null)
       setBloques(bloquesData)

@@ -97,7 +97,9 @@ export default function AreaDetalle() {
       bloqueId: r.bloqueId,
       variedadId: r.variedadId,
     }))
-    navigate('nuevo-registro', { areaId, sedeId: sedeId || '', selecciones })
+    // Guardar selecciones en sessionStorage para pasar a NuevoRegistro
+    sessionStorage.setItem('labores-selecciones', JSON.stringify(selecciones))
+    navigate('nuevo-registro', { areaId, sedeId: sedeId || '' })
   }
 
   const bloquesOpts = bloques.map((b) => ({ value: b.id, label: b.nombre }))
