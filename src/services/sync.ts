@@ -10,6 +10,13 @@ import {
   saveFormularioCompleto,
 } from './api'
 import {
+  clearAreas,
+  clearBloques,
+  clearColaboradores,
+  clearLabores,
+  clearSedes,
+  clearSupervisores,
+  clearVariedades,
   clearVariedadesBloques,
   getPendientesSincronizacion,
   putArea,
@@ -54,16 +61,16 @@ export async function syncFromRemote(): Promise<void> {
       ])
 
     await clearVariedadesBloques()
-    await Promise.all([
-      ...sedes.map(putSede),
-      ...areas.map(putArea),
-      ...supervisores.map(putSupervisor),
-      ...bloques.map(putBloque),
-      ...colaboradores.map(putColaborador),
-      ...variedades.map(putVariedad),
-      ...variedadesBloques.map(putVariedadBloque),
-      ...labores.map(putLabor),
-    ])
+    // Para cada store de datos maestros: limpiar y repoblar SOLO si el backend
+    // devolvio datos (evita borrar cache cuando no hay conexion)
+    if (sedes.length > 0) { await clearSedes(); await Promise.all(sedes.map(putSede)) }
+    if (areas.length > 0) { await clearAreas(); await Promise.all(areas.map(putArea)) }
+    if (supervisores.length > 0) { await clearSupervisores(); await Promise.all(supervisores.map(putSupervisor)) }
+    if (bloques.length > 0) { await clearBloques(); await Promise.all(bloques.map(putBloque)) }
+    if (colaboradores.length > 0) { await clearColaboradores(); await Promise.all(colaboradores.map(putColaborador)) }
+    if (variedades.length > 0) { await clearVariedades(); await Promise.all(variedades.map(putVariedad)) }
+    await Promise.all(variedadesBloques.map(putVariedadBloque))
+    if (labores.length > 0) { await clearLabores(); await Promise.all(labores.map(putLabor)) }
   } catch {
     // Sin conexión — usar caché IDB existente
   } finally {

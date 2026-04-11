@@ -251,11 +251,45 @@ export async function clearVariedadesBloques(): Promise<void> {
   await db.clear('variedadesBloques')
 }
 
-export async function getFormularioBorradorDelDia(areaId: string, fecha: string, tipo: string): Promise<Formulario | undefined> {
+/**
+ * Limpia todos los stores de datos maestros (no formularios, no usuarios).
+ * Se llama en syncFromRemote SOLO cuando el backend devuelve datos para ese store.
+ */
+export async function clearSedes(): Promise<void> {
+  const db = await getDb()
+  await db.clear('sedes')
+}
+export async function clearAreas(): Promise<void> {
+  const db = await getDb()
+  await db.clear('areas')
+}
+export async function clearSupervisores(): Promise<void> {
+  const db = await getDb()
+  await db.clear('supervisores')
+}
+export async function clearBloques(): Promise<void> {
+  const db = await getDb()
+  await db.clear('bloques')
+}
+export async function clearColaboradores(): Promise<void> {
+  const db = await getDb()
+  await db.clear('colaboradores')
+}
+export async function clearVariedades(): Promise<void> {
+  const db = await getDb()
+  await db.clear('variedades')
+}
+export async function clearLabores(): Promise<void> {
+  const db = await getDb()
+  await db.clear('labores')
+}
+
+export async function getFormularioBorradorDelDia(areaId: string, fecha: string): Promise<Formulario | undefined> {
   const db = await getDb()
   const all = await db.getAll('formularios')
+  // Buscar cualquier borrador del dia para esta area, sin importar el tipo
   return all.find(
-    (f) => f.areaId === areaId && f.fecha === fecha && f.tipo === tipo && f.fase === 'estimado' && f.estado === 'borrador',
+    (f) => f.areaId === areaId && f.fecha === fecha && f.fase === 'estimado' && f.estado === 'borrador',
   )
 }
 

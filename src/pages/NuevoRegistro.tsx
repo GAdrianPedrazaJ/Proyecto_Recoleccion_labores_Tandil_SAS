@@ -175,8 +175,7 @@ export default function NuevoRegistro() {
     // Limpiar después de usar
     sessionStorage.removeItem('labores-selecciones')
     const today = nowDate()
-    const tipoInicial = 'Labores'
-    Promise.all([getAreaById(areaId), getBloquesByArea(areaId), getFormularioBorradorDelDia(areaId, today, tipoInicial)]).then(([areaData, bloquesData, borradorExistente]) => {
+    Promise.all([getAreaById(areaId), getBloquesByArea(areaId), getFormularioBorradorDelDia(areaId, today)]).then(([areaData, bloquesData, borradorExistente]) => {
       setArea(areaData ?? null)
       setBloques(bloquesData)
       if (borradorExistente) {
@@ -193,7 +192,7 @@ export default function NuevoRegistro() {
         setFase('estimado')
         methods.reset({
           fecha: today,
-          tipo: tipoInicial,
+          tipo: 'Labores',
           filas: selecciones.length > 0 ? selecciones.map(defaultFila) : [],
         })
       }
@@ -228,35 +227,43 @@ export default function NuevoRegistro() {
     fila: RegistroFV['filas'][number],
     estado: 'borrador' | 'completo',
     index: number,
+    tipo: string,
   ): Array<{ field: string; message: string }> => {
     const errs: Array<{ field: string; message: string }> = []
     const req = (ok: boolean, field: string, msg = 'Campo requerido') => {
       if (!ok) errs.push({ field: `filas.${index}.${field}`, message: msg })
     }
-    // Estimados — siempre requeridos
-    req(fila.tiempoEstimadoMinutos > 0, 'tiempoEstimadoMinutos')
-    req(fila.tallosEstimados > 0, 'tallosEstimados')
-    req(!!fila.horaInicio, 'horaInicio')
-    req(!!fila.horaFinCorteEstimado, 'horaFinCorteEstimado')
-    req(fila.rendimientoCorteEstimado > 0, 'rendimientoCorteEstimado')
-    // Labores
-    fila.labores.forEach((labor, j) => {
-      req(!!labor.laborId, `labores.${j}.laborId`, 'Selecciona una labor')
-      req(labor.camasEstimadas > 0, `labores.${j}.camasEstimadas`)
-      req(labor.tiempoCamaEstimado > 0, `labores.${j}.tiempoCamaEstimado`)
+
+    if (tipo === 'Corte') {
+      // Estimados requeridos en borrador y completo
+      req(fila.tiempoEstimadoMinutos > 0, 'tiempoEstimadoMinutos')
+      req(fila.tallosEstimados > 0, 'tallosEstimados')
+      req(!!fila.horaInicio, 'horaInicio')
+      req(!!fila.horaFinCorteEstimado, 'horaFinCorteEstimado')
+      req(fila.rendimientoCorteEstimado > 0, 'rendimientoCorteEstimado')
+      // Reales solo al completar
       if (estado === 'completo') {
-        req(labor.camasReales > 0, `labores.${j}.camasReales`)
-        req(labor.tiempoCamaReal > 0, `labores.${j}.tiempoCamaReal`)
+        req(fila.tiempoRealMinutos > 0, 'tiempoRealMinutos')
+        req(fila.tallosReales > 0, 'tallosReales')
+        req(!!fila.horaFinCorteReal, 'horaFinCorteReal')
+        req(fila.rendimientoCorteReal > 0, 'rendimientoCorteReal')
       }
-    })
-    // Reales — solo al completar
-    if (estado === 'completo') {
-      req(fila.tiempoRealMinutos > 0, 'tiempoRealMinutos')
-      req(fila.tallosReales > 0, 'tallosReales')
-      req(!!fila.horaFinCorteReal, 'horaFinCorteReal')
-      req(fila.rendimientoCorteReal > 0, 'rendimientoCorteReal')
+    } else if (tipo === 'Labores') {
+      // Al menos una labor con datos estimados
+      fila.labores.forEach((labor, j) => {
+        req(!!labor.laborId, `labores.${j}.laborId`, 'Selecciona una labor')
+        req(labor.camasEstimadas > 0, `labores.${j}.camasEstimadas`)
+        req(labor.tiempoCamaEstimado > 0, `labores.${j}.tiempoCamaEstimado`)
+        if (estado === 'completo') {
+          req(labor.camasReales > 0, `labores.${j}.camasReales`)
+          req(labor.tiempoCamaReal > 0, `labores.${j}.tiempoCamaReal`)
+        }
+      })
+    } else if (tipo === 'Aseguramiento') {
+      // Proceso y seguridad requerido siempre
       req(!!fila.procesoSeguridad, 'procesoSeguridad')
     }
+
     return errs
   }
 
@@ -273,11 +280,11 @@ export default function NuevoRegistro() {
     // En fase 'estimado' siempre se guarda borrador; en fase 'real' siempre completo
     const estado: 'borrador' | 'completo' = estadoForzado ?? (fase === 'estimado' ? 'borrador' : 'completo')
 
-    // Validar todos los campos requeridos según el estado
+    // Validar todos los campos requeridos según el estado y tipo
     let allErrs: Array<{ field: string; message: string }> = []
     data.filas.forEach((fila, i) => {
       if (!fila._active) return
-      allErrs = [...allErrs, ...validateFila(fila, estado, i)]
+      allErrs = [...allErrs, ...validateFila(fila, estado, i, data.tipo)]
     })
 
     if (allErrs.length > 0) {
