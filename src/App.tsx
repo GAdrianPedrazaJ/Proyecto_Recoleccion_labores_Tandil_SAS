@@ -15,6 +15,7 @@ import AdminVariedades from './pages/admin/Variedades'
 import AdminSupervisores from './pages/admin/Supervisores'
 import AdminLabores from './pages/admin/Labores'
 import AdminAsignaciones from './pages/admin/Asignaciones'
+import AdminSedes from './pages/admin/Sedes'
 import AdminGestionUsuarios from './pages/admin/GestionUsuarios'
 import SupervisorGestionar from './pages/supervisor/Gestionar'
 import { SyncProgressModal } from './components/ui/SyncProgressModal'
@@ -60,6 +61,7 @@ export default function App() {
       case 'admin-variedades':    return isAdmin ? <AdminVariedades />   : <Login />
       case 'admin-supervisores':  return isAdmin ? <AdminSupervisores /> : <Login />
       case 'admin-labores':       return isAdmin ? <AdminLabores />      : <Login />
+      case 'admin-sedes':         return isAdmin ? <AdminSedes />        : <Login />
       // Páginas exclusivas de superadministrador
       case 'superadmin-usuarios': return isSuperAdmin ? <AdminGestionUsuarios /> : <Login />
       default: return <Login />

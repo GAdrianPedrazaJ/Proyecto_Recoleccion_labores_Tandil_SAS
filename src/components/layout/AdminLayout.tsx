@@ -4,6 +4,7 @@ import { useNavigationStore, type PageName } from '../../store/useNavigationStor
 
 // ─── sub-items de "Administrar" ───────────────────────────────────────────────
 const ADMIN_ITEMS: { page: PageName; label: string }[] = [
+  { page: 'admin-sedes',         label: 'Sedes' },
   { page: 'admin-areas',         label: 'Áreas' },
   { page: 'admin-colaboradores', label: 'Colaboradores' },
   { page: 'admin-supervisores',  label: 'Supervisores' },

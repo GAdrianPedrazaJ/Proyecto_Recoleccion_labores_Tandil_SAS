@@ -18,6 +18,7 @@ export type PageName =
   | 'admin-labores'
   | 'admin-estadisticas'
   | 'admin-asignaciones'
+  | 'admin-sedes'
   | 'superadmin-usuarios'
 
 export interface NavigationState {

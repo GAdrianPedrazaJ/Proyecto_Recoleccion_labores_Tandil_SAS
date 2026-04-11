@@ -198,11 +198,25 @@ export async function fetchSedes(): Promise<Sede[]> {
   const { data, error } = await supabase
     .from('sedes')
     .select('id_sede, nom_sede')
+    .order('nom_sede', { ascending: true })
   if (error) throw new Error(error.message)
   return (data ?? []).map((s) => ({
     id: String(s.id_sede ?? ''),
     nombre: String(s.nom_sede ?? ''),
   }))
+}
+
+export async function upsertSede(s: Sede): Promise<void> {
+  const { error } = await supabase.from('sedes').upsert(
+    { id_sede: s.id, nom_sede: s.nombre },
+    { onConflict: 'id_sede' }
+  )
+  if (error) throw new Error(error.message)
+}
+
+export async function deleteSedeSupabase(id: string): Promise<void> {
+  const { error } = await supabase.from('sedes').delete().eq('id_sede', id)
+  if (error) throw new Error(error.message)
 }
 
 export async function patchColaboradorAsignacion(
