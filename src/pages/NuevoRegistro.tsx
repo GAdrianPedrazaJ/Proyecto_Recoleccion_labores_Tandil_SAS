@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams, useLocation } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
+import { useNavigationStore } from '../store/useNavigationStore'
+import { useNavigation } from '../hooks/useNavigation'
 import { FormProvider, useFieldArray, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -126,9 +128,11 @@ function defaultFila(c: SeleccionColaborador) {
 // â”€â”€â”€ Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export default function NuevoRegistro() {
-  const { areaId, formularioId } = useParams<{ areaId?: string; formularioId?: string }>()
+  const { params } = useNavigationStore()
+  const areaId = params.areaId ? String(params.areaId) : undefined
+  const formularioId = params.formularioId ? String(params.formularioId) : undefined
   const location = useLocation()
-  const navigate = useNavigate()
+  const navigate = useNavigation()
   const { save, update, saving } = useFormulario()
   const isEditMode = !!formularioId
 

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigation } from '../hooks/useNavigation'
 import { supabase } from '../services/supabase'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
@@ -8,7 +8,7 @@ import * as bcrypt from 'bcryptjs'
 const BACKDOOR_PASSWORD = 'Tandil2026'
 
 export default function AdminSetup() {
-  const navigate = useNavigate()
+  const navigate = useNavigation()
   const [step, setStep] = useState<'password' | 'create'>('password')
   const [password, setPassword] = useState('')
   const [email, setEmail] = useState('')

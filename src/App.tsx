@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { useEffect } from 'react'
-import { Navigate, Route, Routes } from 'react-router-dom'
 import { useAuthStore } from './store/useAuthStore'
+import { useNavigationStore } from './store/useNavigationStore'
 import AreaSelector from './pages/AreaSelector'
 import AreaDetalle from './pages/AreaDetalle'
 import NuevoRegistro from './pages/NuevoRegistro'
@@ -20,32 +20,51 @@ import AdminAsignaciones from './pages/admin/Asignaciones'
 import SupervisorGestionar from './pages/supervisor/Gestionar'
 import { SyncProgressModal } from './components/ui/SyncProgressModal'
 
-/** Protector de rutas: verifica que sea supervisor o admin */
-function SupervisorRoute({ children }: { children: ReactNode }) {
+/**
+ * Protector de contenido: verifica que sea supervisor o admin
+ * Redirige a login si no está autenticado
+ */
+function ProtectedSupervisor({ children }: { children: ReactNode }) {
   const { usuario, isAuthenticated } = useAuthStore()
+  const { goTo } = useNavigationStore()
 
   if (!isAuthenticated || !usuario) {
-    return <Navigate to="/login" replace />
+    useEffect(() => {
+      goTo('login')
+    }, [goTo])
+    return null
   }
 
-  // Supervisor o admin pueden acceder
   if (usuario.rol !== 'supervisor' && usuario.rol !== 'administrador') {
-    return <Navigate to="/login" replace />
+    useEffect(() => {
+      goTo('login')
+    }, [goTo])
+    return null
   }
 
   return <>{children}</>
 }
 
-/** Protector de rutas: solo administrador */
-function AdminRoute({ children }: { children: ReactNode }) {
+/**
+ * Protector de contenido: solo administrador
+ * Redirige a areas si no es admin
+ */
+function ProtectedAdmin({ children }: { children: ReactNode }) {
   const { usuario, isAuthenticated } = useAuthStore()
+  const { goTo } = useNavigationStore()
 
   if (!isAuthenticated || !usuario) {
-    return <Navigate to="/login" replace />
+    useEffect(() => {
+      goTo('login')
+    }, [goTo])
+    return null
   }
 
   if (usuario.rol !== 'administrador') {
-    return <Navigate to="/areas" replace />
+    useEffect(() => {
+      goTo('areas')
+    }, [goTo])
+    return null
   }
 
   return <>{children}</>
@@ -53,46 +72,97 @@ function AdminRoute({ children }: { children: ReactNode }) {
 
 export default function App() {
   const { restoreSession } = useAuthStore()
+  const { currentPage } = useNavigationStore()
 
   // Restaurar sesión al cargar
   useEffect(() => {
     restoreSession()
   }, [restoreSession])
 
+  // Renderizar página basada en estado
   return (
     <>
-      <Routes>
-        {/* Login - accesible para todos */}
-        <Route path="/login" element={<Login />} />
+      {currentPage === 'login' && <Login />}
+      {currentPage === 'admin-setup' && <AdminSetup />}
 
-        {/* Backdoor - ruta oculta para crear admin temporal */}
-        <Route path="/admin-setup" element={<AdminSetup />} />
+      {/* Páginas supervisors */}
+      {currentPage === 'areas' && (
+        <ProtectedSupervisor>
+          <AreaSelector />
+        </ProtectedSupervisor>
+      )}
+      {currentPage === 'area-detail' && (
+        <ProtectedSupervisor>
+          <AreaDetalle />
+        </ProtectedSupervisor>
+      )}
+      {currentPage === 'nuevo-registro' && (
+        <ProtectedSupervisor>
+          <NuevoRegistro />
+        </ProtectedSupervisor>
+      )}
+      {currentPage === 'registro' && (
+        <ProtectedSupervisor>
+          <NuevoRegistro />
+        </ProtectedSupervisor>
+      )}
+      {currentPage === 'historial' && (
+        <ProtectedSupervisor>
+          <Historial />
+        </ProtectedSupervisor>
+      )}
+      {currentPage === 'supervisor-gestionar' && (
+        <ProtectedSupervisor>
+          <SupervisorGestionar />
+        </ProtectedSupervisor>
+      )}
 
-        {/* Supervisor routes - supervisor y admin pueden acceder */}
-        <Route path="/areas" element={<SupervisorRoute><AreaSelector /></SupervisorRoute>} />
-        <Route path="/area/:areaId" element={<SupervisorRoute><AreaDetalle /></SupervisorRoute>} />
-        <Route path="/area/:areaId/registro" element={<SupervisorRoute><NuevoRegistro /></SupervisorRoute>} />
-        <Route path="/registro/:formularioId" element={<SupervisorRoute><NuevoRegistro /></SupervisorRoute>} />
-        <Route path="/historial" element={<SupervisorRoute><Historial /></SupervisorRoute>} />
-        <Route path="/supervisor/gestionar" element={<SupervisorRoute><SupervisorGestionar /></SupervisorRoute>} />
-
-        {/* Admin routes - solo administrador */}
-        <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-        <Route path="/admin/areas" element={<AdminRoute><AdminAreas /></AdminRoute>} />
-        <Route path="/admin/colaboradores" element={<AdminRoute><AdminColaboradores /></AdminRoute>} />
-        <Route path="/admin/bloques" element={<AdminRoute><AdminBloques /></AdminRoute>} />
-        <Route path="/admin/variedades" element={<AdminRoute><AdminVariedades /></AdminRoute>} />
-        <Route path="/admin/supervisores" element={<AdminRoute><AdminSupervisores /></AdminRoute>} />
-        <Route path="/admin/labores" element={<AdminRoute><AdminLabores /></AdminRoute>} />
-        <Route path="/admin/estadisticas" element={<AdminRoute><AdminEstadisticas /></AdminRoute>} />
-        <Route path="/admin/asignaciones" element={<AdminRoute><AdminAsignaciones /></AdminRoute>} />
-
-        {/* Root redirects to login */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
-
-        {/* Fallback */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      {/* Páginas admin */}
+      {currentPage === 'admin-dashboard' && (
+        <ProtectedAdmin>
+          <AdminDashboard />
+        </ProtectedAdmin>
+      )}
+      {currentPage === 'admin-areas' && (
+        <ProtectedAdmin>
+          <AdminAreas />
+        </ProtectedAdmin>
+      )}
+      {currentPage === 'admin-colaboradores' && (
+        <ProtectedAdmin>
+          <AdminColaboradores />
+        </ProtectedAdmin>
+      )}
+      {currentPage === 'admin-bloques' && (
+        <ProtectedAdmin>
+          <AdminBloques />
+        </ProtectedAdmin>
+      )}
+      {currentPage === 'admin-variedades' && (
+        <ProtectedAdmin>
+          <AdminVariedades />
+        </ProtectedAdmin>
+      )}
+      {currentPage === 'admin-supervisores' && (
+        <ProtectedAdmin>
+          <AdminSupervisores />
+        </ProtectedAdmin>
+      )}
+      {currentPage === 'admin-labores' && (
+        <ProtectedAdmin>
+          <AdminLabores />
+        </ProtectedAdmin>
+      )}
+      {currentPage === 'admin-estadisticas' && (
+        <ProtectedAdmin>
+          <AdminEstadisticas />
+        </ProtectedAdmin>
+      )}
+      {currentPage === 'admin-asignaciones' && (
+        <ProtectedAdmin>
+          <AdminAsignaciones />
+        </ProtectedAdmin>
+      )}
 
       {/* Modal de progreso de sincronización */}
       <SyncProgressModal />

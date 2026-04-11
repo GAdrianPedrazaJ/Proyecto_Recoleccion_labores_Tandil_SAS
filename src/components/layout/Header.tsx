@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
+import { useNavigation } from '../../hooks/useNavigation'
 import { useAuthStore } from '../../store/useAuthStore'
 import { SyncIndicator } from '../ui/SyncIndicator'
 
@@ -10,7 +11,7 @@ interface HeaderProps {
 }
 
 export function Header({ title, showBack = false, showUser = true }: HeaderProps) {
-  const navigate = useNavigate()
+  const navigate = useNavigation()
   const { usuario, logout } = useAuthStore()
   const [showMenu, setShowMenu] = useState(false)
 

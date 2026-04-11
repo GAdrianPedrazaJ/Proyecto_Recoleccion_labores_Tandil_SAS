@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom'
+import { useNavigation } from '../hooks/useNavigation'
 import { useAreas } from '../hooks/useAreas'
 import { Header } from '../components/layout/Header'
 import { BottomNav } from '../components/layout/BottomNav'
@@ -7,7 +7,7 @@ import { Spinner } from '../components/ui/Spinner'
 
 export default function AreaSelector() {
   const { areas, loading, error } = useAreas()
-  const navigate = useNavigate()
+  const navigate = useNavigation()
 
   const activeAreas = areas.filter((a) => a.activo !== false)
 

@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigation } from '../hooks/useNavigation'
 import { useAuthStore } from '../store/useAuthStore'
 import { Header } from '../components/layout/Header'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 
 export default function Login() {
-  const navigate = useNavigate()
+  const navigate = useNavigation()
   const { usuario, isAuthenticated, isLoading, error, login, clearError } = useAuthStore()
   const [email, setEmail] = useState('')
   const [contraseña, setContraseña] = useState('')

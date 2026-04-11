@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigationStore } from '../store/useNavigationStore'
+import { useNavigation } from '../hooks/useNavigation'
 import { getAreaById, getBloquesByArea, getAllVariedades, getAllVariedadesBloques, getColaboradoresByArea } from '../services/db'
 import { syncFromRemote } from '../services/sync'
 import type { Area, Bloque, Colaborador, SeleccionColaborador, Variedad, VariedadBloque } from '../types'
@@ -18,8 +19,9 @@ interface ColabRow {
 }
 
 export default function AreaDetalle() {
-  const { areaId } = useParams<{ areaId: string }>()
-  const navigate = useNavigate()
+  const { params } = useNavigationStore()
+  const areaId = String(params.areaId)
+  const navigate = useNavigation()
   const [area, setArea] = useState<Area | null>(null)
   const [rows, setRows] = useState<ColabRow[]>([])
   const [bloques, setBloques] = useState<Bloque[]>([])

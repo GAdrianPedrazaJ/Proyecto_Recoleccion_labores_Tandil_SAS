@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigation } from '../hooks/useNavigation'
 import { getAllFormularios, deleteFormulario } from '../services/db'
 import { syncPendientes } from '../services/sync'
 import type { Formulario } from '../types'
@@ -14,7 +14,7 @@ export default function Historial() {
   const [formularios, setFormularios] = useState<Formulario[]>([])
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
-  const navigate = useNavigate()
+  const navigate = useNavigation()
 
   const load = async () => {
     setLoading(true)
