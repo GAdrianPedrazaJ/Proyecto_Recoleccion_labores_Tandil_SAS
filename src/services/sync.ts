@@ -7,7 +7,7 @@ import {
   fetchSupervisores,
   fetchVariedades,
   fetchVariedadesBloques,
-  postRegistro,
+  saveFormularioCompleto,
 } from './api'
 import {
   clearVariedadesBloques,
@@ -87,7 +87,46 @@ export async function syncPendientes(): Promise<SyncResult> {
 
   for (const formulario of pendientes) {
     try {
-      await postRegistro(formulario)
+      await saveFormularioCompleto({
+        id: formulario.id,
+        fecha: formulario.fecha,
+        areaId: formulario.areaId,
+        supervisorId: formulario.supervisorId,
+        tipo: formulario.tipo as 'Corte' | 'Labores' | 'Aseguramiento',
+        estado: formulario.estado,
+        filas: formulario.filas.map(f => ({
+          colaboradorId: f.colaboradorId,
+          nombre: f.nombre,
+          externo: f.externo,
+          bloqueId: f.bloqueId,
+          variedadId: f.variedadId,
+          tiempoEstimadoMinutos: f.tiempoEstimadoMinutos,
+          tiempoRealMinutos: f.tiempoRealMinutos,
+          tallosEstimados: f.tallosEstimados,
+          tallosReales: f.tallosReales,
+          horaInicio: f.horaInicio,
+          horaFinEstimado: f.horaFinCorteEstimado,
+          horaFinReal: f.horaFinCorteReal,
+          horaCama: f.horaCama,
+          rendimientoCorteEstimado: f.rendimientoCorteEstimado,
+          rendimientoCorteReal: f.rendimientoCorteReal,
+          labores: f.labores.map((l, idx) => ({
+            id: `${formulario.id}-${f.colaboradorId}-labor-${idx}`,
+            numero: idx + 1,
+            laborId: l.laborId,
+            laborNombre: l.laborNombre,
+            camasEstimadas: l.camasEstimadas,
+            tiempoCamaEstimado: l.tiempoCamaEstimado,
+            camasReales: l.camasReales,
+            tiempoCamaReal: l.tiempoCamaReal,
+          })),
+          desglose: f.desglossePiPc,
+          procesoSeguridad: f.procesoSeguridad,
+          calidad: [f.calidad1, f.calidad2, f.calidad3, f.calidad4, f.calidad5],
+          rendimientoPromedio: f.rendimientoPromedio,
+          observaciones: f.observaciones,
+        })),
+      })
       const updated: Formulario = {
         ...formulario,
         sincronizado: true,

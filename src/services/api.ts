@@ -683,6 +683,7 @@ export async function saveFormularioCompleto(formulario: {
   areaId: string
   supervisorId: string
   tipo: 'Corte' | 'Labores' | 'Aseguramiento'
+  estado?: string
   filas: Array<{
     colaboradorId: string
     nombre: string
@@ -726,7 +727,7 @@ export async function saveFormularioCompleto(formulario: {
     area_id: formulario.areaId,
     supervisor_id: formulario.supervisorId,
     tipo: formulario.tipo,
-    estado: 'borrador',
+    estado: formulario.estado ?? 'borrador',
   }, { onConflict: 'id' })
 
   if (errForm) throw new Error(`Error guardando formulario: ${errForm.message}`)

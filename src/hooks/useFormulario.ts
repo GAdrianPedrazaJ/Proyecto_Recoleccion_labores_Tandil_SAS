@@ -37,6 +37,7 @@ export function useFormulario() {
             areaId: formulario.areaId,
             supervisorId: formulario.supervisorId,
             tipo: formulario.tipo as 'Corte' | 'Labores' | 'Aseguramiento',
+            estado: formulario.estado,
             filas: formulario.filas.map(f => ({
               colaboradorId: f.colaboradorId,
               nombre: f.nombre,
@@ -73,6 +74,8 @@ export function useFormulario() {
               observaciones: f.observaciones,
             })),
           })
+          // Marcar como sincronizado en IDB
+          await putFormulario({ ...formulario, sincronizado: true })
         } catch (apiErr) {
           console.error('Error sincronizando a Supabase:', apiErr)
           // No lanzar error - el queue lo reintentará
@@ -105,6 +108,7 @@ export function useFormulario() {
             areaId: formulario.areaId,
             supervisorId: formulario.supervisorId,
             tipo: formulario.tipo as 'Corte' | 'Labores' | 'Aseguramiento',
+            estado: formulario.estado,
             filas: formulario.filas.map(f => ({
               colaboradorId: f.colaboradorId,
               nombre: f.nombre,
@@ -141,6 +145,8 @@ export function useFormulario() {
               observaciones: f.observaciones,
             })),
           })
+          // Marcar como sincronizado en IDB
+          await putFormulario({ ...formulario, sincronizado: true })
         } catch (apiErr) {
           console.error('Error sincronizando a Supabase:', apiErr)
           // No lanzar error - el queue lo reintentará
