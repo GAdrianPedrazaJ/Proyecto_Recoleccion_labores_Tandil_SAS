@@ -9,6 +9,7 @@ interface LaborRowProps {
   laborIndex: number
   laborCatalog: LaborCatalog[]
   isEditMode: boolean
+  faseReal?: boolean
   onRemove: () => void
 }
 
@@ -16,7 +17,7 @@ function fmt2(n: number): string {
   return isNaN(n) || !isFinite(n) ? '0.00' : n.toFixed(2)
 }
 
-export function LaborRow({ filaIndex, laborIndex, laborCatalog, isEditMode, onRemove }: LaborRowProps) {
+export function LaborRow({ filaIndex, laborIndex, laborCatalog, isEditMode, faseReal = false, onRemove }: LaborRowProps) {
   const { register, control, setValue, formState: { errors } } = useFormContext<RegistroFV>()
   const laborErrs = errors.filas?.[filaIndex]?.labores?.[laborIndex]
 
@@ -74,6 +75,7 @@ export function LaborRow({ filaIndex, laborIndex, laborCatalog, isEditMode, onRe
           onClick={onRemove}
           className="rounded p-1 text-red-400 hover:bg-red-50 hover:text-red-600"
           aria-label="Eliminar labor"
+          style={{ visibility: faseReal ? 'hidden' : 'visible' }}
         >
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -87,6 +89,7 @@ export function LaborRow({ filaIndex, laborIndex, laborCatalog, isEditMode, onRe
         options={laborOptions}
         placeholder="Seleccionar labor..."
         error={laborErrs?.laborId?.message}
+        disabled={faseReal}
         {...register(`filas.${filaIndex}.labores.${laborIndex}.laborId`)}
       />
 
@@ -96,6 +99,7 @@ export function LaborRow({ filaIndex, laborIndex, laborCatalog, isEditMode, onRe
           label="Camas estimadas"
           type="number"
           min={0}
+          readOnly={faseReal}
           error={laborErrs?.camasEstimadas?.message}
           {...register(`filas.${filaIndex}.labores.${laborIndex}.camasEstimadas`, { valueAsNumber: true })}
         />
@@ -103,7 +107,7 @@ export function LaborRow({ filaIndex, laborIndex, laborCatalog, isEditMode, onRe
           label="Camas reales"
           type="number"
           min={0}
-          placeholder={isEditMode ? '' : 'Al cierre'}
+          placeholder={isEditMode || faseReal ? '' : 'Al cierre'}
           error={laborErrs?.camasReales?.message}
           {...register(`filas.${filaIndex}.labores.${laborIndex}.camasReales`, { valueAsNumber: true })}
         />
@@ -116,6 +120,7 @@ export function LaborRow({ filaIndex, laborIndex, laborCatalog, isEditMode, onRe
           type="number"
           min={0}
           step="0.1"
+          readOnly={faseReal}
           error={laborErrs?.tiempoCamaEstimado?.message}
           {...register(`filas.${filaIndex}.labores.${laborIndex}.tiempoCamaEstimado`, { valueAsNumber: true })}
         />
@@ -124,7 +129,7 @@ export function LaborRow({ filaIndex, laborIndex, laborCatalog, isEditMode, onRe
           type="number"
           min={0}
           step="0.1"
-          placeholder={isEditMode ? '' : 'Al cierre'}
+          placeholder={isEditMode || faseReal ? '' : 'Al cierre'}
           error={laborErrs?.tiempoCamaReal?.message}
           {...register(`filas.${filaIndex}.labores.${laborIndex}.tiempoCamaReal`, { valueAsNumber: true })}
         />

@@ -5,7 +5,7 @@ import { FormProvider, useFieldArray, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useFormulario } from '../hooks/useFormulario'
-import { getAllLabores, getAllVariedades, getAreaById, getBloquesByArea, getFormularioById } from '../services/db'
+import { getAllLabores, getAllVariedades, getAreaById, getBloquesByArea, getFormularioById, getFormularioBorradorDelDia } from '../services/db'
 import { syncFromRemote } from '../services/sync'
 import type { Area, Bloque, Formulario, LaborCatalog, RegistroFV, SeleccionColaborador, Variedad } from '../types'
 import { Header } from '../components/layout/Header'
@@ -139,6 +139,8 @@ export default function NuevoRegistro() {
   const [formularioOriginal, setFormularioOriginal] = useState<Formulario | null>(null)
   const [loading, setLoading] = useState(true)
   const [success, setSuccess] = useState(false)
+  // fase: 'estimado' = primera carga del día (solo estimados), 'real' = completar reales
+  const [fase, setFase] = useState<'estimado' | 'real'>('estimado')
 
   const methods = useForm<RegistroFV>({
     resolver: zodResolver(registroSchema),
@@ -172,14 +174,29 @@ export default function NuevoRegistro() {
     const selecciones = seleccionesJson ? JSON.parse(seleccionesJson) : []
     // Limpiar después de usar
     sessionStorage.removeItem('labores-selecciones')
-    Promise.all([getAreaById(areaId), getBloquesByArea(areaId)]).then(([areaData, bloquesData]) => {
+    const today = nowDate()
+    const tipoInicial = 'Labores'
+    Promise.all([getAreaById(areaId), getBloquesByArea(areaId), getFormularioBorradorDelDia(areaId, today, tipoInicial)]).then(([areaData, bloquesData, borradorExistente]) => {
       setArea(areaData ?? null)
       setBloques(bloquesData)
-      methods.reset({
-        fecha: nowDate(),
-        tipo: 'Labores',
-        filas: selecciones.length > 0 ? selecciones.map(defaultFila) : [],
-      })
+      if (borradorExistente) {
+        // Ya existe un borrador del día → abrir en fase REAL (completar reales)
+        setFase('real')
+        setFormularioOriginal(borradorExistente)
+        methods.reset({
+          fecha: borradorExistente.fecha,
+          tipo: borradorExistente.tipo,
+          filas: borradorExistente.filas.map((fila) => ({ _active: true, ...fila })),
+        })
+      } else {
+        // Primera vez del día → fase ESTIMADO
+        setFase('estimado')
+        methods.reset({
+          fecha: today,
+          tipo: tipoInicial,
+          filas: selecciones.length > 0 ? selecciones.map(defaultFila) : [],
+        })
+      }
       setLoading(false)
     })
   }, [areaId, isEditMode]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -190,6 +207,7 @@ export default function NuevoRegistro() {
     getFormularioById(formularioId).then(async (f) => {
       if (!f) { navigate('historial'); return }
       setFormularioOriginal(f)
+      setFase(f.fase ?? 'real')
       const bloquesData = await getBloquesByArea(f.areaId)
       setArea({ id: f.areaId, nombre: f.areaNombre, sedeId: '', supervisorId: f.supervisorId, activo: true })
       setBloques(bloquesData)
@@ -242,7 +260,7 @@ export default function NuevoRegistro() {
     return errs
   }
 
-  const handleSave = async (estado: 'borrador' | 'completo') => {
+  const handleSave = async (estadoForzado?: 'borrador' | 'completo') => {
     methods.clearErrors()
     setValidationErrors(0)
     const data = methods.getValues()
@@ -251,6 +269,9 @@ export default function NuevoRegistro() {
       .map(({ _active: _, ...rest }) => rest)
 
     if (filasActivas.length === 0) return
+
+    // En fase 'estimado' siempre se guarda borrador; en fase 'real' siempre completo
+    const estado: 'borrador' | 'completo' = estadoForzado ?? (fase === 'estimado' ? 'borrador' : 'completo')
 
     // Validar todos los campos requeridos según el estado
     let allErrs: Array<{ field: string; message: string }> = []
@@ -268,12 +289,14 @@ export default function NuevoRegistro() {
       return
     }
 
-    if (isEditMode && formularioOriginal) {
+    if (formularioOriginal) {
+      // Actualizar borrador existente (fase real o edición normal)
       await update({
         ...formularioOriginal,
         fecha: data.fecha,
         tipo: data.tipo,
         estado,
+        fase: estado === 'completo' ? 'real' : formularioOriginal.fase,
         filas: filasActivas,
         sincronizado: false,
       })
@@ -285,6 +308,7 @@ export default function NuevoRegistro() {
         supervisorId: area?.supervisorId ?? '',
         tipo: data.tipo,
         estado,
+        fase,
         filas: filasActivas,
       })
     }
@@ -308,7 +332,9 @@ export default function NuevoRegistro() {
 
   const pageTitle = isEditMode
     ? `Completar · ${area?.nombre ?? '...'}`
-    : `Registro · ${area?.nombre ?? '...'}`
+    : fase === 'real'
+      ? `Cierre · ${area?.nombre ?? '...'}`
+      : `Registro · ${area?.nombre ?? '...'}`
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
@@ -326,15 +352,27 @@ export default function NuevoRegistro() {
             <form noValidate className="space-y-4">
               {/* Meta */}
               <div className="rounded-xl bg-white border border-gray-100 shadow-sm p-4 space-y-3">
+                {/* Banner de fase */}
+                {fase === 'estimado' ? (
+                  <div className="rounded-lg bg-blue-50 border border-blue-200 px-3 py-2 text-sm text-blue-700 font-medium">
+                    📋 Ingreso de <strong>estimados</strong> — los datos reales se completan más tarde
+                  </div>
+                ) : (
+                  <div className="rounded-lg bg-orange-50 border border-orange-200 px-3 py-2 text-sm text-orange-700 font-medium">
+                    ✅ Ingreso de <strong>reales</strong> — los estimados no se pueden editar
+                  </div>
+                )}
                 <Input
                   label="Fecha"
                   type="date"
+                  readOnly={fase === 'real'}
                   error={methods.formState.errors.fecha?.message}
                   {...methods.register('fecha')}
                 />
                 <Select
                   label="Tipo de registro"
                   options={TIPOS_REGISTRO}
+                  disabled={fase === 'real'}
                   {...methods.register('tipo')}
                 />
               </div>
@@ -357,6 +395,7 @@ export default function NuevoRegistro() {
                     laborCatalog={laborCatalog}
                     isEditMode={isEditMode}
                     tipoRegistro={tipoRegistro}
+                    faseReal={fase === 'real'}
                   />
                 )
               })}
@@ -373,7 +412,7 @@ export default function NuevoRegistro() {
               Hay {validationErrors} campo{validationErrors !== 1 ? 's' : ''} requerido{validationErrors !== 1 ? 's' : ''} sin completar
             </p>
           )}
-          {isEditMode ? (
+          {isEditMode || fase === 'real' ? (
             <Button
               type="button"
               className="w-full"
@@ -381,30 +420,18 @@ export default function NuevoRegistro() {
               loading={saving}
               onClick={() => handleSave('completo')}
             >
-              Guardar Registro Completo
+              Guardar Cierre (Reales)
             </Button>
           ) : (
-            <>
-              <Button
-                type="button"
-                className="w-full"
-                size="lg"
-                loading={saving}
-                onClick={() => handleSave('borrador')}
-              >
-                Guardar Estimados (Borrador)
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                className="w-full"
-                size="lg"
-                loading={saving}
-                onClick={() => handleSave('completo')}
-              >
-                Guardar Registro Completo
-              </Button>
-            </>
+            <Button
+              type="button"
+              className="w-full"
+              size="lg"
+              loading={saving}
+              onClick={() => handleSave('borrador')}
+            >
+              Guardar Estimados
+            </Button>
           )}
         </div>
       )}

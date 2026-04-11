@@ -104,6 +104,7 @@ export interface Formulario {
   supervisorId: string
   tipo: string
   estado: 'borrador' | 'completo'
+  fase: 'estimado' | 'real'   // 'estimado' = primer turno del día, 'real' = cierre
   filas: FilaColaborador[]
   sincronizado: boolean
   intentosSincronizacion: number

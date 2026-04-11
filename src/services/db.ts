@@ -251,6 +251,14 @@ export async function clearVariedadesBloques(): Promise<void> {
   await db.clear('variedadesBloques')
 }
 
+export async function getFormularioBorradorDelDia(areaId: string, fecha: string, tipo: string): Promise<Formulario | undefined> {
+  const db = await getDb()
+  const all = await db.getAll('formularios')
+  return all.find(
+    (f) => f.areaId === areaId && f.fecha === fecha && f.tipo === tipo && f.fase === 'estimado' && f.estado === 'borrador',
+  )
+}
+
 /** --- Formularios --- */
 export async function putFormulario(f: Formulario): Promise<void> {
   const db = await getDb()

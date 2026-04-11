@@ -11,6 +11,7 @@ interface FilaColaboradorFormProps {
   laborCatalog: LaborCatalog[]
   isEditMode: boolean
   tipoRegistro: string
+  faseReal?: boolean   // true = fase de cierre, estimados bloqueados
 }
 
 function horaToDecimal(hora: string): number {
@@ -23,7 +24,7 @@ function fmt2(n: number): string {
   return isNaN(n) || !isFinite(n) ? '0.00' : n.toFixed(2)
 }
 
-export function FilaColaboradorForm({ index, bloques, variedades, laborCatalog, isEditMode, tipoRegistro }: FilaColaboradorFormProps) {
+export function FilaColaboradorForm({ index, bloques, variedades, laborCatalog, isEditMode, tipoRegistro, faseReal = false }: FilaColaboradorFormProps) {
   const { register, control, setValue, formState: { errors } } = useFormContext<RegistroFV>()
   const filaErrs = errors.filas?.[index]
 
@@ -138,6 +139,7 @@ export function FilaColaboradorForm({ index, bloques, variedades, laborCatalog, 
                 label="Tiempo estimado (min)"
                 type="number"
                 min={0}
+                readOnly={faseReal}
                 error={filaErrs?.tiempoEstimadoMinutos?.message}
                 {...register(`filas.${index}.tiempoEstimadoMinutos`, { valueAsNumber: true })}
               />
@@ -155,7 +157,7 @@ export function FilaColaboradorForm({ index, bloques, variedades, laborCatalog, 
                 label="Tiempo real (min)"
                 type="number"
                 min={0}
-                placeholder={isEditMode ? '' : 'Al cierre'}
+                placeholder={isEditMode || faseReal ? '' : 'Al cierre'}
                 error={filaErrs?.tiempoRealMinutos?.message}
                 {...register(`filas.${index}.tiempoRealMinutos`, { valueAsNumber: true })}
               />
@@ -173,6 +175,7 @@ export function FilaColaboradorForm({ index, bloques, variedades, laborCatalog, 
                 label="Tallos estimados"
                 type="number"
                 min={0}
+                readOnly={faseReal}
                 error={filaErrs?.tallosEstimados?.message}
                 {...register(`filas.${index}.tallosEstimados`, { valueAsNumber: true })}
               />
@@ -180,7 +183,7 @@ export function FilaColaboradorForm({ index, bloques, variedades, laborCatalog, 
                 label="Tallos reales"
                 type="number"
                 min={0}
-                placeholder={isEditMode ? '' : 'Al cierre'}
+                placeholder={isEditMode || faseReal ? '' : 'Al cierre'}
                 error={filaErrs?.tallosReales?.message}
                 {...register(`filas.${index}.tallosReales`, { valueAsNumber: true })}
               />
@@ -191,12 +194,14 @@ export function FilaColaboradorForm({ index, bloques, variedades, laborCatalog, 
               <Input
                 label="Hora inicio corte"
                 type="time"
+                readOnly={faseReal}
                 error={filaErrs?.horaInicio?.message}
                 {...register(`filas.${index}.horaInicio`)}
               />
               <Input
                 label="Hora fin estimado"
                 type="time"
+                readOnly={faseReal}
                 error={filaErrs?.horaFinCorteEstimado?.message}
                 {...register(`filas.${index}.horaFinCorteEstimado`)}
               />
@@ -224,6 +229,7 @@ export function FilaColaboradorForm({ index, bloques, variedades, laborCatalog, 
                 type="number"
                 min={0}
                 step="0.01"
+                readOnly={faseReal}
                 error={filaErrs?.rendimientoCorteEstimado?.message}
                 {...register(`filas.${index}.rendimientoCorteEstimado`, { valueAsNumber: true })}
               />
@@ -232,7 +238,7 @@ export function FilaColaboradorForm({ index, bloques, variedades, laborCatalog, 
                 type="number"
                 min={0}
                 step="0.01"
-                placeholder={isEditMode ? '' : 'Al cierre'}
+                placeholder={isEditMode || faseReal ? '' : 'Al cierre'}
                 error={filaErrs?.rendimientoCorteReal?.message}
                 {...register(`filas.${index}.rendimientoCorteReal`, { valueAsNumber: true })}
               />
@@ -248,7 +254,7 @@ export function FilaColaboradorForm({ index, bloques, variedades, laborCatalog, 
             <p className="text-xs font-bold uppercase text-green-700">
               LABORES ({laborFields.length}/5)
             </p>
-            {laborFields.length < 5 && (
+            {laborFields.length < 5 && !faseReal && (
               <button
                 type="button"
                 onClick={addLabor}
@@ -276,6 +282,7 @@ export function FilaColaboradorForm({ index, bloques, variedades, laborCatalog, 
                 laborIndex={laborIdx}
                 laborCatalog={laborCatalog}
                 isEditMode={isEditMode}
+                faseReal={faseReal}
                 onRemove={() => removeLabor(laborIdx)}
               />
             ))}
