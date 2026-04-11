@@ -18,6 +18,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
   const { currentPage, goTo } = useNavigationStore()
   const logout = useAuthStore((s) => s.logout)
   const usuario = useAuthStore((s) => s.usuario)
+  const isSuperAdmin = usuario?.rol === 'superadministrador'
   const [menuOpen, setMenuOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [expandAdminMobile, setExpandAdminMobile] = useState(false)
@@ -82,6 +83,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
           <nav className="hidden md:flex items-center gap-1 flex-1">
             {navButton('admin-dashboard', 'Dashboard')}
             {navButton('admin-asignaciones', 'Asignaciones')}
+            {isSuperAdmin && navButton('superadmin-usuarios', '👥 Usuarios')}
 
             {/* Administrar dropdown */}
             <div ref={dropdownRef} className="relative">
@@ -209,6 +211,20 @@ export function AdminLayout({ children }: { children: ReactNode }) {
                 >
                   📋 Asignaciones
                 </button>
+
+                {/* Usuarios (solo superadmin) */}
+                {isSuperAdmin && (
+                  <button
+                    onClick={() => { goTo('superadmin-usuarios'); setMobileMenuOpen(false) }}
+                    className={`w-full text-left block px-4 py-2 rounded-lg font-medium transition-colors ${
+                      currentPage === 'superadmin-usuarios'
+                        ? 'bg-purple-100 text-purple-700'
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    👥 Usuarios
+                  </button>
+                )}
 
                 {/* Divider */}
                 <div className="border-t border-gray-200 my-2" />

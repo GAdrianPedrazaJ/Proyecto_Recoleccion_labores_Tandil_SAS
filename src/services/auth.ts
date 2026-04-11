@@ -1,12 +1,25 @@
 import { supabase } from './supabase'
 import * as bcrypt from 'bcryptjs'
 
+export type Rol = 'supervisor' | 'administrador' | 'superadministrador'
+
 export interface Usuario {
   id: string
   email: string
   nombre: string
-  rol: 'supervisor' | 'administrador'
+  rol: Rol
   activo: boolean
+}
+
+// Para listado de usuarios en panel de gestión (sin hash)
+export interface UsuarioListItem {
+  id: string
+  email: string
+  nombre: string
+  rol: Rol
+  activo: boolean
+  temporal_hasta: string | null
+  creado_por_backdoor: boolean
 }
 
 export interface AuthState {
@@ -40,8 +53,7 @@ export async function loginUsuario(email: string, contraseña: string): Promise<
 
     const userData = usuariosData as any
     if (!userData.activo) {
-      console.error('Usuario inactivo:', email)
-      return null
+      throw new Error('CUENTA_DESACTIVADA')
     }
 
     // 2. Verificar contraseña con bcrypt
@@ -66,9 +78,46 @@ export async function loginUsuario(email: string, contraseña: string): Promise<
       token,
     }
   } catch (error) {
+    if (error instanceof Error && error.message === 'CUENTA_DESACTIVADA') throw error
     console.error('Error en login:', error)
     return null
   }
+}
+
+// ─── Gestión de usuarios (solo superadministrador) ───────────────────────────
+
+export async function getUsuarios(): Promise<UsuarioListItem[]> {
+  const { data, error } = await supabase
+    .from('usuarios')
+    .select('id, email, nombre, rol, activo, temporal_hasta, creado_por_backdoor')
+    .order('nombre', { ascending: true })
+  if (error) throw new Error(error.message)
+  return (data ?? []) as UsuarioListItem[]
+}
+
+export async function updateUsuarioAdmin(
+  id: string,
+  changes: Partial<Pick<UsuarioListItem, 'nombre' | 'rol' | 'activo'>>
+): Promise<void> {
+  const { error } = await supabase.from('usuarios').update(changes).eq('id', id)
+  if (error) throw new Error(error.message)
+}
+
+export async function createUsuarioAdmin(data: {
+  email: string
+  nombre: string
+  contraseña: string
+  rol: Rol
+}): Promise<void> {
+  const contraseña_hash = await bcrypt.hash(data.contraseña, 10)
+  const { error } = await supabase.from('usuarios').insert({
+    email: data.email.trim().toLowerCase(),
+    nombre: data.nombre.trim(),
+    contraseña_hash,
+    rol: data.rol,
+    activo: true,
+  })
+  if (error) throw new Error(error.message)
 }
 
 /**

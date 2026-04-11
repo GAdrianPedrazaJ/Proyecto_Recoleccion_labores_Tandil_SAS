@@ -46,11 +46,12 @@ export const useAuthStore = create<AuthStore>()(
             return false
           }
         } catch (error) {
-          const errorMsg = error instanceof Error ? error.message : 'Error al iniciar sesión'
-          set({
-            error: errorMsg,
-            isLoading: false,
-          })
+          if (error instanceof Error && error.message === 'CUENTA_DESACTIVADA') {
+            set({ error: 'Tu cuenta fue desactivada. Contacta al administrador.', isLoading: false })
+          } else {
+            const errorMsg = error instanceof Error ? error.message : 'Error al iniciar sesión'
+            set({ error: errorMsg, isLoading: false })
+          }
           return false
         }
       },

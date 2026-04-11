@@ -15,6 +15,7 @@ import AdminVariedades from './pages/admin/Variedades'
 import AdminSupervisores from './pages/admin/Supervisores'
 import AdminLabores from './pages/admin/Labores'
 import AdminAsignaciones from './pages/admin/Asignaciones'
+import AdminGestionUsuarios from './pages/admin/GestionUsuarios'
 import SupervisorGestionar from './pages/supervisor/Gestionar'
 import { SyncProgressModal } from './components/ui/SyncProgressModal'
 
@@ -33,7 +34,8 @@ export default function App() {
     }
   }, [isAuthenticated, currentPage, goTo])
 
-  const isAdmin = usuario?.rol === 'administrador'
+  const isAdmin = usuario?.rol === 'administrador' || usuario?.rol === 'superadministrador'
+  const isSuperAdmin = usuario?.rol === 'superadministrador'
 
   const renderPage = () => {
     switch (currentPage) {
@@ -58,7 +60,8 @@ export default function App() {
       case 'admin-variedades':    return isAdmin ? <AdminVariedades />   : <Login />
       case 'admin-supervisores':  return isAdmin ? <AdminSupervisores /> : <Login />
       case 'admin-labores':       return isAdmin ? <AdminLabores />      : <Login />
-
+      // Páginas exclusivas de superadministrador
+      case 'superadmin-usuarios': return isSuperAdmin ? <AdminGestionUsuarios /> : <Login />
       default: return <Login />
     }
   }
