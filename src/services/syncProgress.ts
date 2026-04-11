@@ -12,6 +12,7 @@ export interface SyncError {
 
 export interface SyncProgress {
   isActive: boolean
+  isManuallyOpen: boolean
   total: number
   processed: number
   succeeded: number
@@ -25,6 +26,7 @@ export interface SyncProgress {
 
 let syncProgress: SyncProgress = {
   isActive: false,
+  isManuallyOpen: false,
   total: 0,
   processed: 0,
   succeeded: 0,
@@ -59,6 +61,7 @@ function notifyProgress(progress: SyncProgress) {
 export function startSyncProgress(total: number) {
   notifyProgress({
     isActive: true,
+    isManuallyOpen: false,
     total,
     processed: 0,
     succeeded: 0,
@@ -124,6 +127,7 @@ export function endSyncProgress() {
   setTimeout(() => {
     notifyProgress({
       isActive: false,
+      isManuallyOpen: false,
       total: 0,
       processed: 0,
       succeeded: 0,
@@ -148,5 +152,16 @@ export function clearSyncErrors() {
   notifyProgress({
     ...syncProgress,
     errors: [],
+  })
+}
+
+/**
+ * Abrir/cerrar modal manualmente
+ */
+export function toggleSyncProgressModal(open?: boolean) {
+  const isManuallyOpen = open !== undefined ? open : !syncProgress.isManuallyOpen
+  notifyProgress({
+    ...syncProgress,
+    isManuallyOpen,
   })
 }
