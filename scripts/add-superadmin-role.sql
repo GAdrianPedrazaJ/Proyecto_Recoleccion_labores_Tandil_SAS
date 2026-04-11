@@ -20,9 +20,16 @@
 -- ------------------------------------------------------------
 
 -- Eliminar políticas anteriores si existen
+DROP POLICY IF EXISTS "Allow select usuarios" ON usuarios;
 DROP POLICY IF EXISTS "Allow insert usuarios" ON usuarios;
 DROP POLICY IF EXISTS "Allow update usuarios" ON usuarios;
 DROP POLICY IF EXISTS "Allow delete usuarios" ON usuarios;
+
+-- Permitir SELECT (listar todos los usuarios — necesario para GestionUsuarios)
+CREATE POLICY "Allow select usuarios"
+  ON usuarios FOR SELECT
+  TO anon
+  USING (true);
 
 -- Permitir INSERT (crear nuevos usuarios via app)
 CREATE POLICY "Allow insert usuarios"

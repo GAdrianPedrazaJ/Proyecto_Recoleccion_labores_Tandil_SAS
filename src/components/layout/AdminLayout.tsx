@@ -3,8 +3,8 @@ import { useAuthStore } from '../../store/useAuthStore'
 import { useNavigationStore, type PageName } from '../../store/useNavigationStore'
 
 // ─── sub-items de "Administrar" ───────────────────────────────────────────────
-const ADMIN_ITEMS: { page: PageName; label: string }[] = [
-  { page: 'admin-sedes',         label: 'Sedes' },
+const ADMIN_ITEMS: { page: PageName; label: string; superAdminOnly?: boolean }[] = [
+  { page: 'admin-sedes',         label: 'Sedes',         superAdminOnly: true },
   { page: 'admin-areas',         label: 'Áreas' },
   { page: 'admin-colaboradores', label: 'Colaboradores' },
   { page: 'admin-supervisores',  label: 'Supervisores' },
@@ -104,7 +104,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 
               {menuOpen && (
                 <div className="absolute top-full left-0 mt-1 w-44 bg-white rounded-xl shadow-xl border border-gray-100 py-1 z-50">
-                  {ADMIN_ITEMS.map(({ page, label }) => {
+                  {ADMIN_ITEMS.filter((i) => !i.superAdminOnly || isSuperAdmin).map(({ page, label }) => {
                     const active = currentPage === page
                     return (
                       <button
@@ -141,7 +141,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
         {isAdminSection && (
           <div className="bg-green-800 border-t border-green-600 overflow-x-auto">
             <div className="w-full max-w-screen-xl mx-auto px-2 sm:px-4 h-10 flex items-center gap-1">
-              {ADMIN_ITEMS.map(({ page, label }) => {
+              {ADMIN_ITEMS.filter((i) => !i.superAdminOnly || isSuperAdmin).map(({ page, label }) => {
                 const active = currentPage === page
                 return (
                   <button
@@ -249,7 +249,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 
                 {expandAdminMobile && (
                   <div className="pl-4 space-y-1">
-                    {ADMIN_ITEMS.map(({ page, label }) => (
+                    {ADMIN_ITEMS.filter((i) => !i.superAdminOnly || isSuperAdmin).map(({ page, label }) => (
                       <button
                         key={page}
                         onClick={() => { goTo(page); setMobileMenuOpen(false) }}
