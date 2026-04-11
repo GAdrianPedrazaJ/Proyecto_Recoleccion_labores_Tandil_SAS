@@ -84,7 +84,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
           <nav className="hidden md:flex items-center gap-1 flex-1">
             {navButton('admin-dashboard', 'Dashboard')}
             {navButton('admin-asignaciones', 'Asignaciones')}
-            {isSuperAdmin && navButton('superadmin-usuarios', '👥 Usuarios')}
+            {navButton('superadmin-usuarios', '👥 Usuarios')}
 
             {/* Administrar dropdown */}
             <div ref={dropdownRef} className="relative">
@@ -213,8 +213,8 @@ export function AdminLayout({ children }: { children: ReactNode }) {
                   📋 Asignaciones
                 </button>
 
-                {/* Usuarios (solo superadmin) */}
-                {isSuperAdmin && (
+                {/* Usuarios */}
+                {(
                   <button
                     onClick={() => { goTo('superadmin-usuarios'); setMobileMenuOpen(false) }}
                     className={`w-full text-left block px-4 py-2 rounded-lg font-medium transition-colors ${

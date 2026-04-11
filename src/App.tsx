@@ -36,7 +36,6 @@ export default function App() {
   }, [isAuthenticated, currentPage, goTo])
 
   const isAdmin = usuario?.rol === 'administrador' || usuario?.rol === 'superadministrador'
-  const isSuperAdmin = usuario?.rol === 'superadministrador'
 
   const renderPage = () => {
     switch (currentPage) {
@@ -63,7 +62,7 @@ export default function App() {
       case 'admin-labores':       return isAdmin ? <AdminLabores />      : <Login />
       case 'admin-sedes':         return isAdmin ? <AdminSedes />        : <Login />
       // Páginas exclusivas de superadministrador
-      case 'superadmin-usuarios': return isSuperAdmin ? <AdminGestionUsuarios /> : <Login />
+      case 'superadmin-usuarios': return isAdmin ? <AdminGestionUsuarios /> : <Login />
       default: return <Login />
     }
   }
