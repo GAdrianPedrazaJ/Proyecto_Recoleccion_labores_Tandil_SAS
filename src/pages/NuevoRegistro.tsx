@@ -171,16 +171,14 @@ export default function NuevoRegistro() {
   // NEW mode: load area + init filas from navigation state
   useEffect(() => {
     if (isEditMode || !areaId) return
-    const id = decodeURIComponent(areaId)
-    Promise.all([getAreaById(id), getBloquesByArea(id)]).then(([areaData, bloquesData]) => {
+    const selecciones = (location.state?.selecciones as SeleccionColaborador[]) || []
+    Promise.all([getAreaById(areaId), getBloquesByArea(areaId)]).then(([areaData, bloquesData]) => {
       setArea(areaData ?? null)
       setBloques(bloquesData)
-      const navState = location.state as { selecciones?: SeleccionColaborador[] } | null
-      const selecciones = navState?.selecciones ?? []
       methods.reset({
         fecha: nowDate(),
         tipo: 'Labores',
-        filas: selecciones.map(defaultFila),
+        filas: selecciones.length > 0 ? selecciones.map(defaultFila) : [],
       })
       setLoading(false)
     })
@@ -190,7 +188,7 @@ export default function NuevoRegistro() {
   useEffect(() => {
     if (!isEditMode || !formularioId) return
     getFormularioById(formularioId).then(async (f) => {
-      if (!f) { navigate('/historial'); return }
+      if (!f) { navigate('historial'); return }
       setFormularioOriginal(f)
       const bloquesData = await getBloquesByArea(f.areaId)
       setArea({ id: f.areaId, nombre: f.areaNombre, sedeId: '', supervisorId: f.supervisorId, activo: true })
@@ -291,7 +289,7 @@ export default function NuevoRegistro() {
       })
     }
     setSuccess(true)
-    setTimeout(() => navigate('/historial'), 1200)
+    setTimeout(() => navigate('historial'), 1200)
   }
 
   // â”€â”€â”€ Success screen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

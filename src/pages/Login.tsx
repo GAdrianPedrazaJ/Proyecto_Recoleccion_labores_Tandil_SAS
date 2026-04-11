@@ -13,11 +13,16 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false)
   const [recordar, setRecordar] = useState(false)
 
-  // Restaurar email guardado al cargar
+  // Restaurar email y contraseña guardados al cargar
   useEffect(() => {
     const emailGuardado = localStorage.getItem('labores-email-recordado')
+    const contraseñaGuardada = localStorage.getItem('labores-contraseña-recordada')
     if (emailGuardado) {
       setEmail(emailGuardado)
+      setRecordar(true)
+    }
+    if (contraseñaGuardada) {
+      setContraseña(contraseñaGuardada)
       setRecordar(true)
     }
   }, [])
@@ -26,9 +31,9 @@ export default function Login() {
   useEffect(() => {
     if (isAuthenticated && usuario) {
       if (usuario.rol === 'administrador') {
-        navigate('/admin', { replace: true })
+        navigate('admin-dashboard', { replace: true })
       } else {
-        navigate('/areas', { replace: true })
+        navigate('areas', { replace: true })
       }
     }
   }, [isAuthenticated, usuario, navigate])
@@ -39,11 +44,13 @@ export default function Login() {
     if (!email || !contraseña) {
       return
     }
-    // Guardar email si el usuario marcó "Recordar"
+    // Guardar email y contraseña si el usuario marcó "Recordar"
     if (recordar) {
       localStorage.setItem('labores-email-recordado', email)
+      localStorage.setItem('labores-contraseña-recordada', contraseña)
     } else {
       localStorage.removeItem('labores-email-recordado')
+      localStorage.removeItem('labores-contraseña-recordada')
     }
     await login(email, contraseña)
   }
@@ -113,7 +120,7 @@ export default function Login() {
                   className="w-4 h-4 rounded border-gray-300 text-green-600 cursor-pointer"
                 />
                 <label htmlFor="recordar" className="text-sm text-gray-700 cursor-pointer">
-                  Recordar mi email
+                  Recordar mi email y contraseña
                 </label>
               </div>
 

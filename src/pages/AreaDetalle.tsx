@@ -96,7 +96,7 @@ export default function AreaDetalle() {
       bloqueId: r.bloqueId,
       variedadId: r.variedadId,
     }))
-    navigate(`/area/${areaId}/registro`, { state: { selecciones } })
+    navigate('nuevo-registro', { areaId, selecciones })
   }
 
   const bloquesOpts = bloques.map((b) => ({ value: b.id, label: b.nombre }))

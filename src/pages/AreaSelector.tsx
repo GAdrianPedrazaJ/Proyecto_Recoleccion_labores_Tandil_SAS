@@ -41,7 +41,7 @@ export default function AreaSelector() {
           {activeAreas.map((area) => (
             <Card
               key={area.id}
-              onClick={() => navigate(`/area/${encodeURIComponent(area.id)}`)}
+              onClick={() => navigate('area-detail', { areaId: area.id })}
             >
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-green-100 text-xl">

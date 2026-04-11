@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
 import { useNavigation } from '../../hooks/useNavigation'
 import { useAuthStore } from '../../store/useAuthStore'
 import { SyncIndicator } from '../ui/SyncIndicator'
@@ -18,7 +17,7 @@ export function Header({ title, showBack = false, showUser = true }: HeaderProps
   const handleLogout = () => {
     logout()
     setShowMenu(false)
-    navigate('/login', { replace: true })
+    navigate('login', { replace: true })
   }
 
   return (
@@ -36,10 +35,13 @@ export function Header({ title, showBack = false, showUser = true }: HeaderProps
         </button>
       )}
 
-      <Link to={usuario?.rol === 'administrador' ? '/admin' : '/areas'} className="flex items-center gap-2 flex-1 min-w-0">
+      <button 
+        onClick={() => navigate(usuario?.rol === 'administrador' ? 'admin-dashboard' : 'areas')} 
+        className="flex items-center gap-2 flex-1 min-w-0 hover:opacity-80 active:opacity-70 transition-opacity"
+      >
         <span className="text-2xl" role="img" aria-label="Flor">🌷</span>
         <span className="truncate font-semibold text-lg">{title}</span>
-      </Link>
+      </button>
 
       <SyncIndicator />
 
@@ -74,7 +76,7 @@ export function Header({ title, showBack = false, showUser = true }: HeaderProps
               {usuario.rol === 'administrador' && (
                 <button
                   onClick={() => {
-                    navigate('/admin')
+                    navigate('admin-dashboard')
                     setShowMenu(false)
                   }}
                   className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition"
@@ -85,7 +87,7 @@ export function Header({ title, showBack = false, showUser = true }: HeaderProps
 
               <button
                 onClick={() => {
-                  navigate(usuario.rol === 'administrador' ? '/admin' : '/areas')
+                  navigate(usuario.rol === 'administrador' ? 'admin-dashboard' : 'areas')
                   setShowMenu(false)
                 }}
                 className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition"

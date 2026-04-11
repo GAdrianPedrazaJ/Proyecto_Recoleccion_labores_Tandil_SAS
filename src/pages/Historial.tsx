@@ -91,7 +91,7 @@ export default function Historial() {
                   <Button
                     size="sm"
                     variant="secondary"
-                    onClick={() => navigate(`/registro/${f.id}`)}
+                    onClick={() => navigate('registro', { formularioId: f.id })}
                   >
                     Completar
                   </Button>

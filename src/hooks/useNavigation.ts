@@ -4,13 +4,13 @@ import { useNavigationStore, type PageName } from '../store/useNavigationStore'
 /**
  * Hook de navegación que reemplaza useNavigate()
  * Usa el store de navegación para ocultar las URLs reales
- * Retorna una función compatible con useNavigate()
+ * Acepta nombres de página directamente o URLs para convertir
  */
 export function useNavigation() {
   const { goTo, back } = useNavigationStore()
 
   const navigate = useCallback(
-    ((to: string | number | { pathname: string }) => {
+    ((to: string | number | { pathname: string }, params?: Record<string, string | number | undefined>) => {
       if (typeof to === 'number') {
         // -1 para ir atrás
         if (to === -1) {
@@ -19,11 +19,37 @@ export function useNavigation() {
         return
       }
 
-      // Convertir ruta a nombre de página
+      // Si ya es un nombre de página conocido, usarlo directamente
       const pathname = typeof to === 'string' ? to : to.pathname
+      const pageNames: PageName[] = [
+        'login',
+        'admin-setup',
+        'areas',
+        'area-detail',
+        'nuevo-registro',
+        'registro',
+        'historial',
+        'supervisor-gestionar',
+        'admin-dashboard',
+        'admin-areas',
+        'admin-colaboradores',
+        'admin-bloques',
+        'admin-variedades',
+        'admin-supervisores',
+        'admin-labores',
+        'admin-estadisticas',
+        'admin-asignaciones',
+      ]
+
+      if (pageNames.includes(pathname as PageName)) {
+        goTo(pathname as PageName, params || {})
+        return
+      }
+
+      // Si es una URL, convertir a nombre de página
       const page = urlToPage(pathname)
-      const params = extractParams(pathname)
-      goTo(page, params)
+      const finalParams = params || extractParams(pathname)
+      goTo(page, finalParams)
     }) as any,
     [goTo, back],
   )
@@ -40,6 +66,7 @@ function urlToPage(url: string): PageName {
   if (pathname === '/login' || pathname === '/') return 'login'
   if (pathname === '/admin-setup') return 'admin-setup'
   if (pathname === '/areas') return 'areas'
+  if (pathname === '/area-detail') return 'area-detail'
   if (pathname === '/historial') return 'historial'
   if (pathname === '/supervisor/gestionar') return 'supervisor-gestionar'
 
@@ -69,12 +96,12 @@ function extractParams(url: string): Record<string, string | number> {
   const params: Record<string, string | number> = {}
 
   // Extraer areaId
-  const areaMatch = url.match(/\/area\/(\d+)/)
-  if (areaMatch) params.areaId = parseInt(areaMatch[1])
+  const areaMatch = url.match(/\/area\/([^/]+)/)
+  if (areaMatch) params.areaId = areaMatch[1]
 
   // Extraer formularioId
-  const formMatch = url.match(/\/registro\/(\d+)/)
-  if (formMatch) params.formularioId = parseInt(formMatch[1])
+  const formMatch = url.match(/\/registro\/([^/]+)/)
+  if (formMatch) params.formularioId = formMatch[1]
 
   return params
 }

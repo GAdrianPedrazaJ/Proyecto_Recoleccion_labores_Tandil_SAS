@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react'
 import { useEffect } from 'react'
 import { useAuthStore } from './store/useAuthStore'
 import { useNavigationStore } from './store/useNavigationStore'
@@ -20,32 +19,6 @@ import AdminAsignaciones from './pages/admin/Asignaciones'
 import SupervisorGestionar from './pages/supervisor/Gestionar'
 import { SyncProgressModal } from './components/ui/SyncProgressModal'
 
-/**
- * Contenedor de página con protección de acceso
- */
-function PageRenderer({ children }: { children: ReactNode }) {
-  const { usuario, isAuthenticated } = useAuthStore()
-  const { currentPage, goTo } = useNavigationStore()
-
-  // Proteger acceso a rutas
-  useEffect(() => {
-    if (!isAuthenticated || !usuario) {
-      if (currentPage !== 'login' && currentPage !== 'admin-setup') {
-        goTo('login')
-      }
-      return
-    }
-
-    // Solo admin puede acceder a rutas /admin/*
-    if (currentPage.startsWith('admin-') && currentPage !== 'admin-setup' && usuario.rol !== 'administrador') {
-      goTo('areas')
-      return
-    }
-  }, [isAuthenticated, usuario, currentPage, goTo])
-
-  return <>{children}</>
-}
-
 export default function App() {
   const { restoreSession } = useAuthStore()
   const { currentPage } = useNavigationStore()
@@ -58,29 +31,27 @@ export default function App() {
   // Renderizar página basada en estado - usar key para forzar remontaje
   return (
     <>
-      <PageRenderer key={currentPage}>
-        {currentPage === 'login' && <Login />}
-        {currentPage === 'admin-setup' && <AdminSetup />}
+      {currentPage === 'login' && <Login />}
+      {currentPage === 'admin-setup' && <AdminSetup />}
 
-        {/* Páginas supervisors */}
-        {currentPage === 'areas' && <AreaSelector />}
-        {currentPage === 'area-detail' && <AreaDetalle />}
-        {currentPage === 'nuevo-registro' && <NuevoRegistro />}
-        {currentPage === 'registro' && <NuevoRegistro />}
-        {currentPage === 'historial' && <Historial />}
-        {currentPage === 'supervisor-gestionar' && <SupervisorGestionar />}
+      {/* Páginas supervisors */}
+      {currentPage === 'areas' && <AreaSelector />}
+      {currentPage === 'area-detail' && <AreaDetalle />}
+      {currentPage === 'nuevo-registro' && <NuevoRegistro />}
+      {currentPage === 'registro' && <NuevoRegistro />}
+      {currentPage === 'historial' && <Historial />}
+      {currentPage === 'supervisor-gestionar' && <SupervisorGestionar />}
 
-        {/* Páginas admin */}
-        {currentPage === 'admin-dashboard' && <AdminDashboard />}
-        {currentPage === 'admin-areas' && <AdminAreas />}
-        {currentPage === 'admin-colaboradores' && <AdminColaboradores />}
-        {currentPage === 'admin-bloques' && <AdminBloques />}
-        {currentPage === 'admin-variedades' && <AdminVariedades />}
-        {currentPage === 'admin-supervisores' && <AdminSupervisores />}
-        {currentPage === 'admin-labores' && <AdminLabores />}
-        {currentPage === 'admin-estadisticas' && <AdminEstadisticas />}
-        {currentPage === 'admin-asignaciones' && <AdminAsignaciones />}
-      </PageRenderer>
+      {/* Páginas admin */}
+      {currentPage === 'admin-dashboard' && <AdminDashboard />}
+      {currentPage === 'admin-areas' && <AdminAreas />}
+      {currentPage === 'admin-colaboradores' && <AdminColaboradores />}
+      {currentPage === 'admin-bloques' && <AdminBloques />}
+      {currentPage === 'admin-variedades' && <AdminVariedades />}
+      {currentPage === 'admin-supervisores' && <AdminSupervisores />}
+      {currentPage === 'admin-labores' && <AdminLabores />}
+      {currentPage === 'admin-estadisticas' && <AdminEstadisticas />}
+      {currentPage === 'admin-asignaciones' && <AdminAsignaciones />}
 
       {/* Modal de progreso de sincronización */}
       <SyncProgressModal />
