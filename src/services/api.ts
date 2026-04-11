@@ -575,7 +575,7 @@ export async function updateFormularioMetadata(formularioId: string, idColaborad
     .from('formulario_row_metadata')
     .select('id')
     .eq('id', metadataId)
-    .single()
+    .maybeSingle()
 
   if (existing) {
     // Actualizar
@@ -698,7 +698,8 @@ export async function saveFormularioCompleto(formulario: {
     horaFinEstimado?: string
     horaFinReal?: string
     horaCama?: number
-    rendimientoCorte?: number
+    rendimientoCorteEstimado?: number
+    rendimientoCorteReal?: number
     // Labores fields
     labores?: Array<{
       id: string
@@ -751,7 +752,8 @@ export async function saveFormularioCompleto(formulario: {
         horaFinCorteEstimado: fila.horaFinEstimado,
         horaRealFinCorte: fila.horaFinReal,
         horaCama: fila.horaCama,
-        rendimientoCorteEstimado: fila.rendimientoCorte,
+        rendimientoCorteEstimado: fila.rendimientoCorteEstimado,
+        rendimientoCorteReal: fila.rendimientoCorteReal,
       })
       await updateFormularioMetadata(formulario.id, fila.colaboradorId, {
         seCompletoCorte: true,
@@ -771,6 +773,7 @@ export async function saveFormularioCompleto(formulario: {
         tiempoTotalLaboresReal: (fila.labores ?? []).reduce((sum, l) => sum + (l.tiempoCamaReal || 0), 0),
         camasTotalEstimadas: (fila.labores ?? []).reduce((sum, l) => sum + (l.camasEstimadas || 0), 0),
         camasTotalReales: (fila.labores ?? []).reduce((sum, l) => sum + (l.camasReales || 0), 0),
+        rendimientoPromedio: fila.rendimientoPromedio,
       })
       if (fila.labores && fila.labores.length > 0) {
         await saveLaboresDetalle(filaId, fila.labores.map(l => ({
@@ -805,6 +808,7 @@ export async function saveFormularioCompleto(formulario: {
         calidadCuadro4: fila.calidad?.[3],
         calidadCuadro5: fila.calidad?.[4],
         pctPromRendimiento: fila.rendimientoPromedio,
+        rendimientoCorteReal: fila.rendimientoCorteReal,
         observaciones: fila.observaciones,
       })
       await updateFormularioMetadata(formulario.id, fila.colaboradorId, {

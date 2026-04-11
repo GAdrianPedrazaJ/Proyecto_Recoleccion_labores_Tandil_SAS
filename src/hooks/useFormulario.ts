@@ -52,7 +52,8 @@ export function useFormulario() {
               horaFinEstimado: f.horaFinCorteEstimado,
               horaFinReal: f.horaFinCorteReal,
               horaCama: f.horaCama,
-              rendimientoCorte: f.rendimientoCorteReal,
+              rendimientoCorteEstimado: f.rendimientoCorteEstimado,
+              rendimientoCorteReal: f.rendimientoCorteReal,
               // Labores fields
               labores: f.labores.map((l, idx) => ({
                 id: `${formulario.id}-${f.colaboradorId}-labor-${idx}`,
@@ -119,7 +120,8 @@ export function useFormulario() {
               horaFinEstimado: f.horaFinCorteEstimado,
               horaFinReal: f.horaFinCorteReal,
               horaCama: f.horaCama,
-              rendimientoCorte: f.rendimientoCorteReal,
+              rendimientoCorteEstimado: f.rendimientoCorteEstimado,
+              rendimientoCorteReal: f.rendimientoCorteReal,
               // Labores fields
               labores: f.labores.map((l, idx) => ({
                 id: `${formulario.id}-${f.colaboradorId}-labor-${idx}`,

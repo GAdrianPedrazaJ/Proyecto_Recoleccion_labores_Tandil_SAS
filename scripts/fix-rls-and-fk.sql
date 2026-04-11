@@ -69,23 +69,40 @@ CREATE POLICY "allow_all_formularios" ON formularios
 -- RLS no aplica a views. El acceso se controla desde la tabla base (formularios).
 -- No se hace nada aquí.
 
--- ── 10. FORMULARIO_ROWS_ASEGURAMIENTO ───────────────────────────────────────
--- Si también es vista, omitir las líneas de RLS y dejar sólo el DROP CONSTRAINT.
-DO $$
-DECLARE
-  relkind_val char;
-BEGIN
-  SELECT relkind INTO relkind_val FROM pg_class WHERE relname = 'formulario_rows_aseguramiento';
-  IF relkind_val = 'r' THEN
-    -- Es tabla: habilitar RLS
-    EXECUTE 'ALTER TABLE formulario_rows_aseguramiento ENABLE ROW LEVEL SECURITY';
-    EXECUTE 'DROP POLICY IF EXISTS "allow_all_aseguramiento" ON formulario_rows_aseguramiento';
-    EXECUTE $p$CREATE POLICY "allow_all_aseguramiento" ON formulario_rows_aseguramiento
-      FOR ALL TO anon, authenticated USING (true) WITH CHECK (true)$p$;
-    -- Eliminar FK problemática
-    EXECUTE 'ALTER TABLE formulario_rows_aseguramiento DROP CONSTRAINT IF EXISTS formulario_rows_aseguramiento_id_variedad_fkey';
-  END IF;
-END $$;
+-- ── 10. FORMULARIO_ROWS_CORTE ────────────────────────────────────────────────
+ALTER TABLE formulario_rows_corte ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "allow_all_rows_corte" ON formulario_rows_corte;
+CREATE POLICY "allow_all_rows_corte" ON formulario_rows_corte
+  FOR ALL TO anon, authenticated
+  USING (true) WITH CHECK (true);
+
+-- ── 10b. FORMULARIO_ROWS_LABORES ─────────────────────────────────────────────
+ALTER TABLE formulario_rows_labores ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "allow_all_rows_labores" ON formulario_rows_labores;
+CREATE POLICY "allow_all_rows_labores" ON formulario_rows_labores
+  FOR ALL TO anon, authenticated
+  USING (true) WITH CHECK (true);
+
+-- ── 10c. FORMULARIO_ROWS_ASEGURAMIENTO ───────────────────────────────────────
+ALTER TABLE formulario_rows_aseguramiento ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "allow_all_aseguramiento" ON formulario_rows_aseguramiento;
+CREATE POLICY "allow_all_aseguramiento" ON formulario_rows_aseguramiento
+  FOR ALL TO anon, authenticated
+  USING (true) WITH CHECK (true);
+
+-- ── 10d. FORMULARIO_ROW_METADATA ─────────────────────────────────────────────
+ALTER TABLE formulario_row_metadata ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "allow_all_metadata" ON formulario_row_metadata;
+CREATE POLICY "allow_all_metadata" ON formulario_row_metadata
+  FOR ALL TO anon, authenticated
+  USING (true) WITH CHECK (true);
+
+-- ── 10e. LABORES_DETALLE ──────────────────────────────────────────────────────
+ALTER TABLE labores_detalle ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "allow_all_labores_detalle" ON labores_detalle;
+CREATE POLICY "allow_all_labores_detalle" ON labores_detalle
+  FOR ALL TO anon, authenticated
+  USING (true) WITH CHECK (true);
 
 -- ── 11. VARIEDADES_BLOQUES ──────────────────────────────────────────────────
 ALTER TABLE variedades_bloques ENABLE ROW LEVEL SECURITY;
@@ -111,19 +128,25 @@ ALTER TABLE formularios DROP CONSTRAINT IF EXISTS formularios_area_id_fkey;
 ALTER TABLE formularios DROP CONSTRAINT IF EXISTS formularios_supervisor_id_fkey;
 
 -- formulario_rows_corte  
+ALTER TABLE formulario_rows_corte DROP CONSTRAINT IF EXISTS formulario_rows_corte_id_colaborador_fkey;
 ALTER TABLE formulario_rows_corte DROP CONSTRAINT IF EXISTS formulario_rows_corte_id_area_fkey;
 ALTER TABLE formulario_rows_corte DROP CONSTRAINT IF EXISTS formulario_rows_corte_id_supervisor_fkey;
 ALTER TABLE formulario_rows_corte DROP CONSTRAINT IF EXISTS formulario_rows_corte_id_bloque_fkey;
 ALTER TABLE formulario_rows_corte DROP CONSTRAINT IF EXISTS formulario_rows_corte_id_variedad_fkey;
 
 -- formulario_rows_labores
+ALTER TABLE formulario_rows_labores DROP CONSTRAINT IF EXISTS formulario_rows_labores_id_colaborador_fkey;
 ALTER TABLE formulario_rows_labores DROP CONSTRAINT IF EXISTS formulario_rows_labores_id_area_fkey;
 ALTER TABLE formulario_rows_labores DROP CONSTRAINT IF EXISTS formulario_rows_labores_id_supervisor_fkey;
 ALTER TABLE formulario_rows_labores DROP CONSTRAINT IF EXISTS formulario_rows_labores_id_bloque_fkey;
 ALTER TABLE formulario_rows_labores DROP CONSTRAINT IF EXISTS formulario_rows_labores_id_variedad_fkey;
 
 -- formulario_rows_aseguramiento
+ALTER TABLE formulario_rows_aseguramiento DROP CONSTRAINT IF EXISTS formulario_rows_aseguramiento_id_colaborador_fkey;
 ALTER TABLE formulario_rows_aseguramiento DROP CONSTRAINT IF EXISTS formulario_rows_aseguramiento_id_area_fkey;
 ALTER TABLE formulario_rows_aseguramiento DROP CONSTRAINT IF EXISTS formulario_rows_aseguramiento_id_supervisor_fkey;
 ALTER TABLE formulario_rows_aseguramiento DROP CONSTRAINT IF EXISTS formulario_rows_aseguramiento_id_bloque_fkey;
 ALTER TABLE formulario_rows_aseguramiento DROP CONSTRAINT IF EXISTS formulario_rows_aseguramiento_id_variedad_fkey;
+
+-- labores_detalle (id_labor puede no existir si viene de seed local)
+ALTER TABLE labores_detalle DROP CONSTRAINT IF EXISTS labores_detalle_id_labor_fkey;
