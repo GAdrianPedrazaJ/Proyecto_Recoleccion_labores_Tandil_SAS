@@ -26,13 +26,10 @@ export default function App() {
     restoreSession()
   }, [restoreSession])
 
-  // Proteger rutas admin
-  const isAdmin = usuario?.rol === 'administrador'
-
   return (
     <>
       <Routes>
-        {/* Login */}
+        {/* Auth pages */}
         <Route path="/login" element={<Login />} />
         <Route path="/admin-setup" element={<AdminSetup />} />
 
@@ -45,15 +42,15 @@ export default function App() {
         <Route path="/supervisor/gestionar" element={<SupervisorGestionar />} />
 
         {/* Admin pages */}
-        <Route path="/admin" element={isAdmin ? <AdminDashboard /> : <Navigate to="/" />} />
-        <Route path="/admin/estadisticas" element={isAdmin ? <AdminEstadisticas /> : <Navigate to="/" />} />
-        <Route path="/admin/asignaciones" element={isAdmin ? <AdminAsignaciones /> : <Navigate to="/" />} />
-        <Route path="/admin/areas" element={isAdmin ? <AdminAreas /> : <Navigate to="/" />} />
-        <Route path="/admin/colaboradores" element={isAdmin ? <AdminColaboradores /> : <Navigate to="/" />} />
-        <Route path="/admin/bloques" element={isAdmin ? <AdminBloques /> : <Navigate to="/" />} />
-        <Route path="/admin/variedades" element={isAdmin ? <AdminVariedades /> : <Navigate to="/" />} />
-        <Route path="/admin/supervisores" element={isAdmin ? <AdminSupervisores /> : <Navigate to="/" />} />
-        <Route path="/admin/labores" element={isAdmin ? <AdminLabores /> : <Navigate to="/" />} />
+        <Route path="/admin" element={usuario?.rol === 'administrador' ? <AdminDashboard /> : <Navigate to="/login" />} />
+        <Route path="/admin/estadisticas" element={usuario?.rol === 'administrador' ? <AdminEstadisticas /> : <Navigate to="/login" />} />
+        <Route path="/admin/asignaciones" element={usuario?.rol === 'administrador' ? <AdminAsignaciones /> : <Navigate to="/login" />} />
+        <Route path="/admin/areas" element={usuario?.rol === 'administrador' ? <AdminAreas /> : <Navigate to="/login" />} />
+        <Route path="/admin/colaboradores" element={usuario?.rol === 'administrador' ? <AdminColaboradores /> : <Navigate to="/login" />} />
+        <Route path="/admin/bloques" element={usuario?.rol === 'administrador' ? <AdminBloques /> : <Navigate to="/login" />} />
+        <Route path="/admin/variedades" element={usuario?.rol === 'administrador' ? <AdminVariedades /> : <Navigate to="/login" />} />
+        <Route path="/admin/supervisores" element={usuario?.rol === 'administrador' ? <AdminSupervisores /> : <Navigate to="/login" />} />
+        <Route path="/admin/labores" element={usuario?.rol === 'administrador' ? <AdminLabores /> : <Navigate to="/login" />} />
 
         {/* Default */}
         <Route path="/" element={usuario ? <Navigate to="/areas" /> : <Navigate to="/login" />} />
