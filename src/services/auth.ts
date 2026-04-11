@@ -18,8 +18,6 @@ export interface UsuarioListItem {
   nombre: string
   rol: Rol
   activo: boolean
-  temporal_hasta: string | null
-  creado_por_backdoor: boolean
 }
 
 export interface AuthState {
@@ -89,7 +87,7 @@ export async function loginUsuario(email: string, contraseña: string): Promise<
 export async function getUsuarios(): Promise<UsuarioListItem[]> {
   const { data, error } = await supabase
     .from('usuarios')
-    .select('id, email, nombre, rol, activo, temporal_hasta, creado_por_backdoor')
+    .select('id, email, nombre, rol, activo')
     .order('nombre', { ascending: true })
   if (error) throw new Error(error.message)
   return (data ?? []) as UsuarioListItem[]
