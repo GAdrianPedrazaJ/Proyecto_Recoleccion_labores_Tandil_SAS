@@ -30,7 +30,7 @@ export default function Login() {
   // Si ya está autenticado, redirigir según rol
   useEffect(() => {
     if (isAuthenticated && usuario) {
-      if (usuario.rol === 'administrador') {
+      if (usuario.rol === 'administrador' || usuario.rol === 'superadministrador') {
         navigate('admin-dashboard', { replace: true })
       } else {
         navigate('areas', { replace: true })
@@ -120,7 +120,7 @@ export default function Login() {
                   className="w-4 h-4 rounded border-gray-300 text-green-600 cursor-pointer"
                 />
                 <label htmlFor="recordar" className="text-sm text-gray-700 cursor-pointer">
-                  Recordar mi email y contraseña
+                  Recordarme
                 </label>
               </div>
 
@@ -135,37 +135,9 @@ export default function Login() {
               </Button>
             </form>
 
-            {/* Separador */}
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Credenciales de prueba</span>
-              </div>
-            </div>
-
-            {/* Demo credentials */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {/* Supervisor */}
-              <div className="rounded-lg bg-blue-50 border border-blue-200 p-3 text-xs space-y-1">
-                <p className="font-semibold text-blue-900">👤 Supervisor</p>
-                <p className="text-blue-700">supervisor@tandil.com</p>
-                <p className="text-blue-700">supervisor123</p>
-              </div>
-
-              {/* Admin */}
-              <div className="rounded-lg bg-purple-50 border border-purple-200 p-3 text-xs space-y-1">
-                <p className="font-semibold text-purple-900">👨‍💼 Administrador</p>
-                <p className="text-purple-700">admin@tandil.com</p>
-                <p className="text-purple-700">admin123</p>
-              </div>
-            </div>
-
             {/* Footer */}
-            <div className="text-center text-xs text-gray-500 space-y-1">
-              <p>🔒 Acceso protegido con encriptación</p>
-              <p>Cada rol tiene permisos diferentes</p>
+            <div className="text-center text-xs text-gray-400">
+              🔒 Acceso protegido
             </div>
           </div>
         </div>
