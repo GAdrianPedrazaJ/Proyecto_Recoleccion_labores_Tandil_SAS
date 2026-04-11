@@ -3,6 +3,7 @@ import { useAuthStore } from '../../store/useAuthStore'
 import { fetchDashboardFormularios } from '../../services/api'
 import { syncPendientes } from '../../services/sync'
 import { countNoSincronizados, getAllAreas } from '../../services/db'
+import { useSyncProgress } from '../../hooks/useSyncProgress'
 import type { Area } from '../../types'
 import type { DashboardFormulario } from '../../services/api'
 import { AdminLayout } from '../../components/layout/AdminLayout'
@@ -32,11 +33,11 @@ interface WeekStats { label: string; total: number; completos: number }
 
 export default function AdminDashboard() {
   const usuario = useAuthStore((s) => s.usuario)
+  const { syncWithProgress } = useSyncProgress()
   const [areas, setAreas] = useState<Area[]>([])
   const [formularios, setFormularios] = useState<DashboardFormulario[]>([])
   const [pendingCount, setPendingCount] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [syncing, setSyncing] = useState(false)
   const [tab, setTab] = useState<'areas' | 'semanas'>('areas')
 
   const load = async () => {
@@ -56,10 +57,10 @@ export default function AdminDashboard() {
   useEffect(() => { load() }, [])
 
   const handleSync = async () => {
-    setSyncing(true)
-    await syncPendientes()
-    await load()
-    setSyncing(false)
+    await syncWithProgress(async () => {
+      await syncPendientes()
+      await load()
+    })
   }
 
   const todayStr = new Date().toISOString().split('T')[0]
@@ -99,7 +100,7 @@ export default function AdminDashboard() {
           </p>
         </div>
         {pendingCount > 0 && (
-          <Button variant="secondary" loading={syncing} onClick={handleSync}>
+          <Button variant="secondary" loading={false} onClick={handleSync}>
             Sincronizar {pendingCount} pendiente{pendingCount !== 1 ? 's' : ''}
           </Button>
         )}

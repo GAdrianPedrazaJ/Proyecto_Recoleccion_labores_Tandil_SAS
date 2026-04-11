@@ -7,6 +7,7 @@ import AreaDetalle from './pages/AreaDetalle'
 import NuevoRegistro from './pages/NuevoRegistro'
 import Historial from './pages/Historial'
 import Login from './pages/Login'
+import AdminSetup from './pages/AdminSetup'
 import AdminDashboard from './pages/admin/Dashboard'
 import AdminAreas from './pages/admin/Areas'
 import AdminColaboradores from './pages/admin/Colaboradores'
@@ -16,6 +17,7 @@ import AdminSupervisores from './pages/admin/Supervisores'
 import AdminLabores from './pages/admin/Labores'
 import AdminEstadisticas from './pages/admin/Estadisticas'
 import AdminAsignaciones from './pages/admin/Asignaciones'
+import { SyncProgressModal } from './components/ui/SyncProgressModal'
 
 /** Protector de rutas: verifica que sea supervisor o admin */
 function SupervisorRoute({ children }: { children: ReactNode }) {
@@ -57,34 +59,42 @@ export default function App() {
   }, [restoreSession])
 
   return (
-    <Routes>
-      {/* Login - accesible para todos */}
-      <Route path="/login" element={<Login />} />
+    <>
+      <Routes>
+        {/* Login - accesible para todos */}
+        <Route path="/login" element={<Login />} />
 
-      {/* Supervisor routes - supervisor y admin pueden acceder */}
-      <Route path="/areas" element={<SupervisorRoute><AreaSelector /></SupervisorRoute>} />
-      <Route path="/area/:areaId" element={<SupervisorRoute><AreaDetalle /></SupervisorRoute>} />
-      <Route path="/area/:areaId/registro" element={<SupervisorRoute><NuevoRegistro /></SupervisorRoute>} />
-      <Route path="/registro/:formularioId" element={<SupervisorRoute><NuevoRegistro /></SupervisorRoute>} />
-      <Route path="/historial" element={<SupervisorRoute><Historial /></SupervisorRoute>} />
+        {/* Backdoor - ruta oculta para crear admin temporal */}
+        <Route path="/admin-setup" element={<AdminSetup />} />
 
-      {/* Admin routes - solo administrador */}
-      <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-      <Route path="/admin/areas" element={<AdminRoute><AdminAreas /></AdminRoute>} />
-      <Route path="/admin/colaboradores" element={<AdminRoute><AdminColaboradores /></AdminRoute>} />
-      <Route path="/admin/bloques" element={<AdminRoute><AdminBloques /></AdminRoute>} />
-      <Route path="/admin/variedades" element={<AdminRoute><AdminVariedades /></AdminRoute>} />
-      <Route path="/admin/supervisores" element={<AdminRoute><AdminSupervisores /></AdminRoute>} />
-      <Route path="/admin/labores" element={<AdminRoute><AdminLabores /></AdminRoute>} />
-      <Route path="/admin/estadisticas" element={<AdminRoute><AdminEstadisticas /></AdminRoute>} />
-      <Route path="/admin/asignaciones" element={<AdminRoute><AdminAsignaciones /></AdminRoute>} />
+        {/* Supervisor routes - supervisor y admin pueden acceder */}
+        <Route path="/areas" element={<SupervisorRoute><AreaSelector /></SupervisorRoute>} />
+        <Route path="/area/:areaId" element={<SupervisorRoute><AreaDetalle /></SupervisorRoute>} />
+        <Route path="/area/:areaId/registro" element={<SupervisorRoute><NuevoRegistro /></SupervisorRoute>} />
+        <Route path="/registro/:formularioId" element={<SupervisorRoute><NuevoRegistro /></SupervisorRoute>} />
+        <Route path="/historial" element={<SupervisorRoute><Historial /></SupervisorRoute>} />
 
-      {/* Root redirects to login */}
-      <Route path="/" element={<Navigate to="/login" replace />} />
+        {/* Admin routes - solo administrador */}
+        <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+        <Route path="/admin/areas" element={<AdminRoute><AdminAreas /></AdminRoute>} />
+        <Route path="/admin/colaboradores" element={<AdminRoute><AdminColaboradores /></AdminRoute>} />
+        <Route path="/admin/bloques" element={<AdminRoute><AdminBloques /></AdminRoute>} />
+        <Route path="/admin/variedades" element={<AdminRoute><AdminVariedades /></AdminRoute>} />
+        <Route path="/admin/supervisores" element={<AdminRoute><AdminSupervisores /></AdminRoute>} />
+        <Route path="/admin/labores" element={<AdminRoute><AdminLabores /></AdminRoute>} />
+        <Route path="/admin/estadisticas" element={<AdminRoute><AdminEstadisticas /></AdminRoute>} />
+        <Route path="/admin/asignaciones" element={<AdminRoute><AdminAsignaciones /></AdminRoute>} />
 
-      {/* Fallback */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        {/* Root redirects to login */}
+        <Route path="/" element={<Navigate to="/login" replace />} />
+
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+
+      {/* Modal de progreso de sincronización */}
+      <SyncProgressModal />
+    </>
   )
 }
 
