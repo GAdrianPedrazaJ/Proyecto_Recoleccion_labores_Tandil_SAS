@@ -1,16 +1,20 @@
 import { useEffect, useState } from 'react'
-import { onSyncProgress, toggleSyncProgressModal, type SyncProgress } from '../../services/syncProgress'
+import { onSyncProgress, toggleSyncProgressModal, getLastCompletedSync, type SyncProgress } from '../../services/syncProgress'
 
 export function SyncProgressModal() {
-  const [progress, setProgress] = useState<SyncProgress>({
-    isActive: false,
-    isManuallyOpen: false,
-    total: 0,
-    processed: 0,
-    succeeded: 0,
-    failed: 0,
-    percentage: 0,
-    errors: [],
+  const [progress, setProgress] = useState<SyncProgress>(() => {
+    // Si no hay sincronización activa, mostrar el último estado completado
+    const lastSync = getLastCompletedSync()
+    return lastSync || {
+      isActive: false,
+      isManuallyOpen: false,
+      total: 0,
+      processed: 0,
+      succeeded: 0,
+      failed: 0,
+      percentage: 0,
+      errors: [],
+    }
   })
 
   useEffect(() => {

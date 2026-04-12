@@ -35,6 +35,9 @@ let syncProgress: SyncProgress = {
   errors: [],
 }
 
+// Guardar último estado completado para mostrar en historial
+let lastCompletedSync: SyncProgress | null = null
+
 let progressListeners: Array<(progress: SyncProgress) => void> = []
 
 /**
@@ -117,25 +120,26 @@ export function addSyncError(recordId: string, table: string, error: string, dat
 export function endSyncProgress() {
   const duration = syncProgress.startTime ? Date.now() - syncProgress.startTime : 0
 
-  notifyProgress({
+  // Guardar estado final antes de resetear
+  const finalState: SyncProgress = {
     ...syncProgress,
     isActive: false,
     estimatedTime: duration,
-  })
+  }
+  lastCompletedSync = finalState
 
-  // Limpiar después de 3 segundos
+  notifyProgress(finalState)
+
+  // Limpiar después de 5 segundos solo SI el modal no está abierto manualmente
   setTimeout(() => {
-    notifyProgress({
-      isActive: false,
-      isManuallyOpen: false,
-      total: 0,
-      processed: 0,
-      succeeded: 0,
-      failed: 0,
-      percentage: 0,
-      errors: [],
-    })
-  }, 3000)
+    if (!syncProgress.isManuallyOpen && lastCompletedSync) {
+      const cleanState: SyncProgress = {
+        ...lastCompletedSync,
+        isActive: false,
+      }
+      notifyProgress(cleanState)
+    }
+  }, 5000)
 }
 
 /**
@@ -143,6 +147,13 @@ export function endSyncProgress() {
  */
 export function getCurrentProgress(): SyncProgress {
   return syncProgress
+}
+
+/**
+ * Obtener último estado de sincronización completado
+ */
+export function getLastCompletedSync(): SyncProgress | null {
+  return lastCompletedSync
 }
 
 /**
@@ -160,8 +171,18 @@ export function clearSyncErrors() {
  */
 export function toggleSyncProgressModal(open?: boolean) {
   const isManuallyOpen = open !== undefined ? open : !syncProgress.isManuallyOpen
-  notifyProgress({
-    ...syncProgress,
-    isManuallyOpen,
-  })
+  
+  // Si se abre manualmente y no hay sincronización activa, mostrar último estado completado
+  if (isManuallyOpen && !syncProgress.isActive && lastCompletedSync) {
+    const displaySync: SyncProgress = {
+      ...lastCompletedSync,
+      isManuallyOpen: true,
+    }
+    notifyProgress(displaySync)
+  } else {
+    notifyProgress({
+      ...syncProgress,
+      isManuallyOpen,
+    })
+  }
 }
