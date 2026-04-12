@@ -9,7 +9,7 @@ import FormularioCorte from './pages/FormularioCorte'
 import FormularioLabores from './pages/FormularioLabores'
 import FormularioAseguramiento from './pages/FormularioAseguramiento'
 import NuevoRegistro from './pages/NuevoRegistro'
-import Historial from './pages/Historial'
+import Registros from './pages/Registros'
 import Login from './pages/Login'
 import AdminSetup from './pages/AdminSetup'
 import AdminDashboard from './pages/admin/Dashboard'
@@ -65,7 +65,7 @@ export default function App() {
       case 'formulario-aseguramiento': return isAuthenticated ? <FormularioAseguramiento /> : <Login />
       case 'nuevo-registro':
       case 'registro':            return isAuthenticated ? <NuevoRegistro />      : <Login />
-      case 'historial':           return isAuthenticated ? <Historial />          : <Login />
+      case 'historial':           return isAuthenticated ? <Registros />          : <Login />
       case 'supervisor-gestionar':return isAuthenticated ? <SupervisorGestionar />: <Login />
 
       // Páginas de admin
