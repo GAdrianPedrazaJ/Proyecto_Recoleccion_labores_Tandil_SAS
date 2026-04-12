@@ -126,10 +126,14 @@ function defaultFila(c: SeleccionColaborador) {
 
 export default function NuevoRegistro() {
   const { params } = useNavigationStore()
-  const areaId = params.areaId ? String(params.areaId) : undefined
+  const areaIdParam = params.areaId ? String(params.areaId) : undefined
   const formularioId = params.formularioId ? String(params.formularioId) : undefined
   const tipoParam = params.tipo ? String(params.tipo) : 'Labores'
-  console.log('🚀 NuevoRegistro mount - tipoParam:', tipoParam, 'areaId:', areaId)
+  console.log('🚀 NuevoRegistro mount - tipoParam:', tipoParam, 'areaId:', areaIdParam)
+  
+  // Mantener areaId en estado localpara no perderlo si se navega sin parámetros
+  const [areaIdLocal, setAreaIdLocal] = useState<string | undefined>(areaIdParam)
+  const areaId = areaIdParam || areaIdLocal
   const navigate = useNavigation()
   const { save, update, saving } = useFormulario()
   const isEditMode = !!formularioId
@@ -150,6 +154,13 @@ export default function NuevoRegistro() {
   })
 
   const { fields } = useFieldArray({ control: methods.control, name: 'filas' })
+
+  // Actualizar areaIdLocal cuando areaIdParam cambia (mantiene contexto si navega sin paráms)
+  useEffect(() => {
+    if (areaIdParam) {
+      setAreaIdLocal(areaIdParam)
+    }
+  }, [areaIdParam])
 
   // Load labor catalog and variedades (shared between modes)
   useEffect(() => {

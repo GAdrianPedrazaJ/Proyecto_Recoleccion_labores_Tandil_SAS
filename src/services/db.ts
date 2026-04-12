@@ -287,10 +287,13 @@ export async function clearLabores(): Promise<void> {
 export async function getFormularioBorradorDelDia(areaId: string, fecha: string, tipo?: string): Promise<Formulario | undefined> {
   const db = await getDb()
   const all = await db.getAll('formularios')
+  console.log('🔎 getFormularioBorradorDelDia search:', { areaId, fecha, tipo, totalBorradores: all.filter(f => f.estado === 'borrador').length })
   // Buscar borrador del dia para esta area filtrado por tipo (si se provee)
-  return all.find(
+  const result = all.find(
     (f) => f.areaId === areaId && f.fecha === fecha && f.fase === 'estimado' && f.estado === 'borrador' && (!tipo || f.tipo === tipo),
   )
+  console.log('🔎 getFormularioBorradorDelDia result:', result ? result.tipo : 'NO ENCONTRADO')
+  return result
 }
 
 /**
