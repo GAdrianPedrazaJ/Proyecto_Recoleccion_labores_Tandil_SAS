@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useAuthStore } from './store/useAuthStore'
 import { useNavigationStore } from './store/useNavigationStore'
 import { syncFromRemote } from './services/sync'
+import { PWAInstallBanner } from './components/PWAInstallBanner'
 import AreaSelector from './pages/AreaSelector'
 import AreaDetalle from './pages/AreaDetalle'
 import SelectTipo from './pages/SelectTipo'
@@ -92,6 +93,7 @@ export default function App() {
         {renderPage()}
       </div>
       <SyncProgressModal />
+      <PWAInstallBanner />
     </>
   )
 }

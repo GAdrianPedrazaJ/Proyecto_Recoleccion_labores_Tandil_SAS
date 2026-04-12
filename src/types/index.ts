@@ -111,6 +111,9 @@ export interface Formulario {
   errorPermanente: boolean
   ultimoError?: string
   fechaCreacion: string
+  // Usuario que creó/está trabajando en el formulario
+  usuarioId?: string
+  usuarioNombre?: string
 }
 
 export interface Usuario {

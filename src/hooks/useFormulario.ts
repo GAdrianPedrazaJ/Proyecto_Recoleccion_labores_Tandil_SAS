@@ -1,16 +1,18 @@
 import { useState } from 'react'
 import type { Formulario } from '../types'
+import { useAuthStore } from '../store/useAuthStore'
 import { putFormulario, obtenerLosTres } from '../services/db'
 import { saveFormularioCompleto, saveFormulariosEnBloque } from '../services/api'
 
 export type FormularioInput = Omit<
   Formulario,
-  'id' | 'sincronizado' | 'intentosSincronizacion' | 'errorPermanente' | 'fechaCreacion'
+  'id' | 'sincronizado' | 'intentosSincronizacion' | 'errorPermanente' | 'fechaCreacion' | 'usuarioId' | 'usuarioNombre'
 >
 
 export function useFormulario() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const { usuario } = useAuthStore()
 
   const save = async (input: FormularioInput): Promise<string> => {
     setSaving(true)
@@ -23,6 +25,8 @@ export function useFormulario() {
         intentosSincronizacion: 0,
         errorPermanente: false,
         fechaCreacion: new Date().toISOString(),
+        usuarioId: usuario?.id,
+        usuarioNombre: usuario?.nombre,
       }
 
       // Guardar localmente en IndexedDB

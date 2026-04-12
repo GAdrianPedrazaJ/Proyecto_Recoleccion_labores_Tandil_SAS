@@ -5,6 +5,13 @@ import App from './App'
 import { seedIfEmpty } from './services/db'
 import './index.css'
 
+// Registrar Service Worker para PWA
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js', { scope: '/' })
+    .then(reg => console.log('✓ Service Worker registrado', reg))
+    .catch(err => console.warn('Service Worker no disponible:', err))
+}
+
 // Inicializar IDB con datos de seed (usuario admin)
 seedIfEmpty().catch(console.error)
 
