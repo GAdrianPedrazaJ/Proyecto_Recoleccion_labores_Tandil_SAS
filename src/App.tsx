@@ -6,6 +6,8 @@ import AreaSelector from './pages/AreaSelector'
 import AreaDetalle from './pages/AreaDetalle'
 import SelectTipo from './pages/SelectTipo'
 import FormularioCorte from './pages/FormularioCorte'
+import FormularioLabores from './pages/FormularioLabores'
+import FormularioAseguramiento from './pages/FormularioAseguramiento'
 import NuevoRegistro from './pages/NuevoRegistro'
 import Historial from './pages/Historial'
 import Login from './pages/Login'
@@ -59,6 +61,8 @@ export default function App() {
       case 'area-detail':         return isAuthenticated ? <AreaDetalle />        : <Login />
       case 'select-tipo':         return isAuthenticated ? <SelectTipo />         : <Login />
       case 'formulario-corte':    return isAuthenticated ? <FormularioCorte />    : <Login />
+      case 'formulario-labores':  return isAuthenticated ? <FormularioLabores />  : <Login />
+      case 'formulario-aseguramiento': return isAuthenticated ? <FormularioAseguramiento /> : <Login />
       case 'nuevo-registro':
       case 'registro':            return isAuthenticated ? <NuevoRegistro />      : <Login />
       case 'historial':           return isAuthenticated ? <Historial />          : <Login />

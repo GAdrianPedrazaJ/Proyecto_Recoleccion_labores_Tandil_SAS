@@ -34,8 +34,8 @@ export default function SelectTipo() {
     // Determinar qué formulario abrir según el tipo
     const formularioMap: Record<string, string> = {
       Corte: 'formulario-corte',
-      Labores: 'nuevo-registro', // TODO: cambiar a formulario-labores cuando esté listo
-      Aseguramiento: 'nuevo-registro', // TODO: cambiar a formulario-aseguramiento cuando esté listo
+      Labores: 'formulario-labores',
+      Aseguramiento: 'formulario-aseguramiento',
     }
 
     navigate(formularioMap[tipo], {

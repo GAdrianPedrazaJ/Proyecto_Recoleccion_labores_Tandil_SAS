@@ -28,6 +28,8 @@ export function useNavigation() {
         'area-detail',
         'select-tipo',
         'formulario-corte',
+        'formulario-labores',
+        'formulario-aseguramiento',
         'nuevo-registro',
         'registro',
         'historial',
