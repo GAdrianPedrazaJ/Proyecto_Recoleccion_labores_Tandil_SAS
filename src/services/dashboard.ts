@@ -319,6 +319,271 @@ export async function getSupervisorColaboradorStats(supervisorId: string): Promi
   }
 }
 
+// ============= ANÁLISIS DETALLADO POR LABOR/CORTE/ASEGURAMIENTO =============
+
+export interface LaborDetalleData {
+  fecha: string
+  numeroLabor: number
+  nombreLabor: string
+  colaborador: string
+  area: string
+  bloque: string
+  variedad: string
+  camasEstimadas: number
+  camasReales: number
+  rendimientoLabor: number
+}
+
+export interface CorteDetalleData {
+  fecha: string
+  numeroLabor: number
+  nombreLabor: string
+  colaborador: string
+  area: string
+  bloque: string
+  variedad: string
+  tiempoEstimado: number
+  tiempoReal: number
+  tallosEstimados: number
+  tallosReales: number
+  rendimiento: number
+}
+
+export interface AseguramientoDetalleData {
+  fecha: string
+  tipoLabor: string
+  colaborador: string
+  area: string
+  bloque: string
+  variedad: string
+  cumplimiento: number
+  calidad: number
+}
+
+/**
+ * Obtiene datos detallados de labores por labor individual
+ * Con filtros opcionales: área, bloque, variedad
+ */
+export async function getLaborData(
+  desde: string,
+  hasta: string,
+  areaId?: string,
+  bloqueId?: string,
+  variedadId?: string,
+): Promise<LaborDetalleData[]> {
+  try {
+    let query = supabase
+      .from('labores_detalle')
+      .select(
+        `
+        id,
+        numero_labor,
+        nom_labor,
+        camas_estimado,
+        camas_real,
+        rendimiento_pct,
+        fecha_creacion,
+        formulario_id
+      `,
+      )
+      .gte('fecha_creacion', desde)
+      .lte('fecha_creacion', hasta)
+
+    // Aplicar filtros si existen
+    if (areaId) query = query.eq('area_id', areaId)
+    if (bloqueId) query = query.eq('bloque_id', bloqueId)
+    if (variedadId) query = query.eq('variedad_id', variedadId)
+
+    const { data: labores } = await query
+
+    // Enriquecer con datos de colaborador, área, bloque, variedad
+    const enrichedData = await Promise.all(
+      (labores || []).map(async (labor: any) => {
+        const { data: form } = await supabase
+          .from('formularios')
+          .select('colaborador_id, area_id, bloque_id, variedad_id')
+          .eq('id', labor.formulario_id)
+          .single()
+
+        const [{ data: colab }, { data: area }, { data: bloque }, { data: variedad }] = await Promise.all([
+          supabase.from('colaboradores').select('nom_colaborador').eq('id_colaborador', form?.colaborador_id).single(),
+          supabase.from('areas').select('nom_area').eq('id_area', form?.area_id).single(),
+          supabase.from('bloques').select('nom_bloque').eq('id_bloque', form?.bloque_id).single(),
+          supabase.from('variedades').select('nom_variedad').eq('id_variedad', form?.variedad_id).single(),
+        ])
+
+        return {
+          fecha: labor.fecha_creacion?.split('T')[0] || '',
+          numeroLabor: labor.numero_labor || 0,
+          nombreLabor: labor.nom_labor || '—',
+          colaborador: colab?.nom_colaborador || '—',
+          area: area?.nom_area || '—',
+          bloque: bloque?.nom_bloque || '—',
+          variedad: variedad?.nom_variedad || '—',
+          camasEstimadas: labor.camas_estimado || 0,
+          camasReales: labor.camas_real || 0,
+          rendimientoLabor: labor.rendimiento_pct || 0,
+        }
+      }),
+    )
+
+    return enrichedData.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
+  } catch (error) {
+    console.error('Error loading labor data:', error)
+    return []
+  }
+}
+
+/**
+ * Obtiene datos detallados de cortes por labor
+ * Con filtros opcionales: área, bloque, variedad
+ */
+export async function getCorteDetalleData(
+  desde: string,
+  hasta: string,
+  areaId?: string,
+  bloqueId?: string,
+  variedadId?: string,
+): Promise<CorteDetalleData[]> {
+  try {
+    let query = supabase
+      .from('formulario_rows_corte')
+      .select(
+        `
+        id,
+        numero_labor,
+        nom_labor,
+        nombre_colaborador,
+        tiempo_estimado_horas,
+        tiempo_real_horas,
+        total_tallos_corte_estimado,
+        total_tallos_corte_real,
+        rendimiento_corte_real,
+        fecha_creacion,
+        formulario_id
+      `,
+      )
+      .gte('fecha_creacion', desde)
+      .lte('fecha_creacion', hasta)
+
+    // Aplicar filtros si existen
+    if (areaId) query = query.eq('area_id', areaId)
+    if (bloqueId) query = query.eq('bloque_id', bloqueId)
+    if (variedadId) query = query.eq('variedad_id', variedadId)
+
+    const { data: cortes } = await query
+
+    // Enriquecer con datos de área, bloque, variedad
+    const enrichedData = await Promise.all(
+      (cortes || []).map(async (corte: any) => {
+        const { data: form } = await supabase
+          .from('formularios')
+          .select('area_id, bloque_id, variedad_id')
+          .eq('id', corte.formulario_id)
+          .single()
+
+        const [{ data: area }, { data: bloque }, { data: variedad }] = await Promise.all([
+          supabase.from('areas').select('nom_area').eq('id_area', form?.area_id).single(),
+          supabase.from('bloques').select('nom_bloque').eq('id_bloque', form?.bloque_id).single(),
+          supabase.from('variedades').select('nom_variedad').eq('id_variedad', form?.variedad_id).single(),
+        ])
+
+        return {
+          fecha: corte.fecha_creacion?.split('T')[0] || '',
+          numeroLabor: corte.numero_labor || 0,
+          nombreLabor: corte.nom_labor || '—',
+          colaborador: corte.nombre_colaborador || '—',
+          area: area?.nom_area || '—',
+          bloque: bloque?.nom_bloque || '—',
+          variedad: variedad?.nom_variedad || '—',
+          tiempoEstimado: corte.tiempo_estimado_horas || 0,
+          tiempoReal: corte.tiempo_real_horas || 0,
+          tallosEstimados: corte.total_tallos_corte_estimado || 0,
+          tallosReales: corte.total_tallos_corte_real || 0,
+          rendimiento: corte.rendimiento_corte_real || 0,
+        }
+      }),
+    )
+
+    return enrichedData.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
+  } catch (error) {
+    console.error('Error loading corte detalle data:', error)
+    return []
+  }
+}
+
+/**
+ * Obtiene datos detallados de aseguramiento
+ * Con filtros opcionales: área, bloque, variedad
+ * NOTA: NO muestra rendimiento% (ya está en labores)
+ */
+export async function getAseguramientoDetalleData(
+  desde: string,
+  hasta: string,
+  areaId?: string,
+  bloqueId?: string,
+  variedadId?: string,
+): Promise<AseguramientoDetalleData[]> {
+  try {
+    let query = supabase
+      .from('formulario_rows_aseguramiento')
+      .select(
+        `
+        id,
+        tipo_labor,
+        nombre_colaborador,
+        pct_cumplimiento,
+        pct_prom_rendimiento,
+        fecha_creacion,
+        formulario_id
+      `,
+      )
+      .gte('fecha_creacion', desde)
+      .lte('fecha_creacion', hasta)
+
+    // Aplicar filtros si existen
+    if (areaId) query = query.eq('area_id', areaId)
+    if (bloqueId) query = query.eq('bloque_id', bloqueId)
+    if (variedadId) query = query.eq('variedad_id', variedadId)
+
+    const { data: aseguramiento } = await query
+
+    // Enriquecer con datos de área, bloque, variedad
+    const enrichedData = await Promise.all(
+      (aseguramiento || []).map(async (aseg: any) => {
+        const { data: form } = await supabase
+          .from('formularios')
+          .select('area_id, bloque_id, variedad_id')
+          .eq('id', aseg.formulario_id)
+          .single()
+
+        const [{ data: area }, { data: bloque }, { data: variedad }] = await Promise.all([
+          supabase.from('areas').select('nom_area').eq('id_area', form?.area_id).single(),
+          supabase.from('bloques').select('nom_bloque').eq('id_bloque', form?.bloque_id).single(),
+          supabase.from('variedades').select('nom_variedad').eq('id_variedad', form?.variedad_id).single(),
+        ])
+
+        return {
+          fecha: aseg.fecha_creacion?.split('T')[0] || '',
+          tipoLabor: aseg.tipo_labor || '—',
+          colaborador: aseg.nombre_colaborador || '—',
+          area: area?.nom_area || '—',
+          bloque: bloque?.nom_bloque || '—',
+          variedad: variedad?.nom_variedad || '—',
+          cumplimiento: aseg.pct_cumplimiento || 0,
+          calidad: aseg.pct_prom_rendimiento || 0,
+          // Nota: NO incluimos rendimiento aquí porque ya está en labores
+        }
+      }),
+    )
+
+    return enrichedData.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
+  } catch (error) {
+    console.error('Error loading aseguramiento detalle data:', error)
+    return []
+  }
+}
+
 // ============= LEGACY FUNCTIONS (for admin Dashboard compatibility) =============
 
 export interface DashDataCorte {

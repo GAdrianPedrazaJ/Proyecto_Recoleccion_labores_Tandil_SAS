@@ -16,8 +16,10 @@ import {
 import {
   getCorteData, getLaboresData, getAseguramientoData,
   getStatsPorArea, getStatsPorColaborador, getKPIData,
+  getLaborData, getCorteDetalleData, getAseguramientoDetalleData,
   type DashDataCorte, type DashDataLabores, type DashDataAseguramiento,
-  type StatsPorArea, type StatsPorColaborador
+  type StatsPorArea, type StatsPorColaborador,
+  type LaborDetalleData, type CorteDetalleData, type AseguramientoDetalleData
 } from '../../services/dashboard'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -42,7 +44,7 @@ function daysAgoIso(days: number): string {
 
 const CHART_COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6']
 
-type DashSection = 'general' | 'corte' | 'labores' | 'aseguramiento' | 'colaboradores'
+type DashSection = 'general' | 'corte' | 'labores' | 'aseguramiento' | 'colaboradores' | 'labores-detalle' | 'gestion'
 
 interface AreaStats { areaId: string; nombre: string; total: number; completos: number; borradores: number; porcentaje: number }
 interface WeekStats { label: string; total: number; completos: number }
@@ -53,6 +55,8 @@ const SECTIONS: { key: DashSection; label: string; icon: string }[] = [
   { key: 'labores',        label: 'Labores',        icon: '🌿' },
   { key: 'aseguramiento',  label: 'Aseguramiento',  icon: '✅' },
   { key: 'colaboradores',  label: 'Colaboradores',  icon: '👥' },
+  { key: 'labores-detalle',label: 'Por Labor',      icon: '📈' },
+  { key: 'gestion',        label: 'Gestión',        icon: '📋' },
 ]
 
 // ─── Componente principal ─────────────────────────────────────────────────────
@@ -79,6 +83,16 @@ export default function AdminDashboard() {
   const [kpis, setKpis] = useState({ totalRegistros: 0, promRendimiento: 0, promCumplimiento: 0, totalHoras: 0 })
   const [loadingAnalitico, setLoadingAnalitico] = useState(false)
   const [errorAnalitico, setErrorAnalitico] = useState('')
+
+  // Datos para labores-detalle y gestión (con filtros)
+  const [selectedArea, setSelectedArea] = useState<string>('')
+  const [selectedBloque, setSelectedBloque] = useState<string>('')
+  const [selectedVariedad, setSelectedVariedad] = useState<string>('')
+  const [laborDetalleData, setLaborDetalleData] = useState<LaborDetalleData[]>([])
+  const [corteDetalleData, setCorteDetalleData] = useState<CorteDetalleData[]>([])
+  const [asegDetalleData, setAsegDetalleData] = useState<AseguramientoDetalleData[]>([])
+  const [loadingDetalle, setLoadingDetalle] = useState(false)
+  const [chartType, setChartType] = useState<'line' | 'bar'>('line')
 
   // Cargar datos generales
   const loadGeneral = async () => {
@@ -123,10 +137,34 @@ export default function AdminDashboard() {
     }
   }
 
+  // Cargar datos detallados por labor/corte/aseguramiento (con filtros)
+  const loadDetalle = async () => {
+    setLoadingDetalle(true)
+    try {
+      const desde = daysAgoIso(dias)
+      const hasta = new Date().toISOString().split('T')[0]
+      const [labor, corteD, asegD] = await Promise.all([
+        getLaborData(desde, hasta, selectedArea || undefined, selectedBloque || undefined, selectedVariedad || undefined),
+        getCorteDetalleData(desde, hasta, selectedArea || undefined, selectedBloque || undefined, selectedVariedad || undefined),
+        getAseguramientoDetalleData(desde, hasta, selectedArea || undefined, selectedBloque || undefined, selectedVariedad || undefined),
+      ])
+      setLaborDetalleData(labor)
+      setCorteDetalleData(corteD)
+      setAsegDetalleData(asegD)
+    } catch (e) {
+      console.error('Error loading detalle data:', e)
+    } finally {
+      setLoadingDetalle(false)
+    }
+  }
+
   useEffect(() => { loadGeneral() }, [])
   useEffect(() => {
-    if (section !== 'general') loadAnalitico()
+    if (section !== 'general' && section !== 'labores-detalle' && section !== 'gestion') loadAnalitico()
   }, [section, dias])
+  useEffect(() => {
+    if (section === 'labores-detalle' || section === 'gestion') loadDetalle()
+  }, [section, dias, selectedArea, selectedBloque, selectedVariedad])
 
   const handleSync = async () => {
     await syncWithProgress(async () => {
@@ -278,6 +316,117 @@ export default function AdminDashboard() {
                 {section === 'labores'       && <SectionLabores laboresData={laboresData} statsPorArea={statsPorArea} />}
                 {section === 'aseguramiento' && <SectionAseguramiento asegData={asegData} statsPorArea={statsPorArea} />}
                 {section === 'colaboradores' && <SectionColaboradores statsPorColab={statsPorColab} />}
+              </>
+            )}
+
+            {/* Secciones con filtros (labores-detalle y gestión) */}
+            {(section === 'labores-detalle' || section === 'gestion') && (
+              <>
+                {/* Filtros */}
+                <div className="space-y-4 bg-white rounded-xl border border-gray-200 p-5">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm text-gray-500 font-medium">Período:</span>
+                    {[7, 14, 28, 60].map((d) => (
+                      <button
+                        key={d}
+                        onClick={() => setDias(d)}
+                        className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                          dias === d
+                            ? 'bg-green-600 text-white'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        {d} días
+                      </button>
+                    ))}
+                    <button
+                      onClick={loadDetalle}
+                      className="px-4 py-1.5 rounded-full text-sm font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+                    >
+                      ↻ Actualizar
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 mb-2">Área</label>
+                      <select
+                        value={selectedArea}
+                        onChange={(e) => setSelectedArea(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                      >
+                        <option value="">Todas las áreas</option>
+                        {areas.map((a) => (
+                          <option key={a.id} value={a.id}>{a.nombre}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 mb-2">Bloque</label>
+                      <select
+                        value={selectedBloque}
+                        onChange={(e) => setSelectedBloque(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                      >
+                        <option value="">Todos los bloques</option>
+                        {/* Aquí podrías agregar lógica para obtener bloques filtrados */}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 mb-2">Variedad</label>
+                      <select
+                        value={selectedVariedad}
+                        onChange={(e) => setSelectedVariedad(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                      >
+                        <option value="">Todas las variedades</option>
+                        {/* Aquí podrías agregar lógica para obtener variedades filtradas */}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Selector de tipo de gráfico */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-500 font-medium">Gráfico:</span>
+                    <button
+                      onClick={() => setChartType('line')}
+                      className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                        chartType === 'line'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      📈 Líneas
+                    </button>
+                    <button
+                      onClick={() => setChartType('bar')}
+                      className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                        chartType === 'bar'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      📊 Barras
+                    </button>
+                  </div>
+                </div>
+
+                {/* Contenido */}
+                {loadingDetalle ? (
+                  <div className="flex justify-center py-20"><Spinner size="lg" /></div>
+                ) : section === 'labores-detalle' ? (
+                  <SectionLaborDetalle
+                    corteData={corteDetalleData}
+                    chartType={chartType}
+                  />
+                ) : (
+                  <SectionGestion
+                    laborData={laborDetalleData}
+                    corteData={corteDetalleData}
+                    asegData={asegDetalleData}
+                    chartType={chartType}
+                  />
+                )}
               </>
             )}
           </>
@@ -653,4 +802,418 @@ function ChartCard({ title, children, full }: { title: string; children: React.R
 
 function NoData() {
   return <p className="text-center text-sm text-gray-400 py-10">Sin datos para el período seleccionado</p>
+}
+
+// ─── Componentes auxiliares para gráficos detallados ────────────────────────
+
+// ─── SECCIÓN: Por Labor (Labores Detalle) ───────────────────────────────────
+function SectionLaborDetalle({
+  corteData,
+  chartType,
+}: {
+  corteData: CorteDetalleData[]
+  chartType: 'line' | 'bar'
+}) {
+  // Agrupar por fecha para gráficos
+  const dataByDate = corteData.reduce(
+    (acc, item) => {
+      const existing = acc.find((d) => d.fecha === item.fecha)
+      if (existing) {
+        existing.rendimientoPromedio = (existing.rendimientoPromedio + item.rendimiento) / 2
+        existing.tiempoTotal = (existing.tiempoTotal || 0) + item.tiempoReal
+        existing.tallosTotal = (existing.tallosTotal || 0) + item.tallosReales
+      } else {
+        acc.push({
+          fecha: item.fecha,
+          rendimientoPromedio: item.rendimiento,
+          tiempoTotal: item.tiempoReal,
+          tallosTotal: item.tallosReales,
+        })
+      }
+      return acc
+    },
+    [] as any[],
+  )
+
+  // Agrupar por labor
+  const laborStats = corteData.reduce(
+    (acc, item) => {
+      const existing = acc.find((l) => l.numeroLabor === item.numeroLabor)
+      if (existing) {
+        existing.rendimientos.push(item.rendimiento)
+        existing.count++
+      } else {
+        acc.push({
+          nombreLabor: item.nombreLabor,
+          numeroLabor: item.numeroLabor,
+          rendimientos: [item.rendimiento],
+          count: 1,
+        })
+      }
+      return acc
+    },
+    [] as any[],
+  )
+
+  const laboresWithAvg = laborStats.map((l) => ({
+    ...l,
+    rendimientoPromedio: Math.round((l.rendimientos.reduce((a: number, b: number) => a + b, 0) / l.count) * 100) / 100,
+  }))
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <ChartCard title="📈 Rendimiento por Día">
+          {dataByDate.length > 0 ? (
+            <ResponsiveContainer width="100%" height={280}>
+              {chartType === 'line' ? (
+                <LineChart data={dataByDate}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="fecha" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 11 }} />
+                  <Tooltip />
+                  <Legend />
+                  <Line
+                    type="monotone"
+                    dataKey="rendimientoPromedio"
+                    name="Rend. Promedio %"
+                    stroke="#10b981"
+                    strokeWidth={2}
+                    dot={{ r: 3 }}
+                  />
+                </LineChart>
+              ) : (
+                <BarChart data={dataByDate}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="fecha" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 11 }} />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="rendimientoPromedio" name="Rend. Promedio %" fill="#10b981" />
+                </BarChart>
+              )}
+            </ResponsiveContainer>
+          ) : (
+            <NoData />
+          )}
+        </ChartCard>
+
+        <ChartCard title="🌾 Tallos por Día">
+          {dataByDate.length > 0 ? (
+            <ResponsiveContainer width="100%" height={280}>
+              <BarChart data={dataByDate}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="fecha" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="tallosTotal" name="Tallos" fill="#f59e0b" />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <NoData />
+          )}
+        </ChartCard>
+      </div>
+
+      <ChartCard title="💼 Rendimiento por Labor" full>
+        {laboresWithAvg.length > 0 ? (
+          <ResponsiveContainer width="100%" height={280}>
+            {chartType === 'line' ? (
+              <LineChart data={laboresWithAvg}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="nombreLabor" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="rendimientoPromedio"
+                  name="Rendimiento %"
+                  stroke="#3b82f6"
+                  strokeWidth={2}
+                  dot={{ r: 4 }}
+                />
+              </LineChart>
+            ) : (
+              <BarChart data={laboresWithAvg}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="nombreLabor" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="rendimientoPromedio" name="Rendimiento %" fill="#3b82f6" />
+              </BarChart>
+            )}
+          </ResponsiveContainer>
+        ) : (
+          <NoData />
+        )}
+      </ChartCard>
+
+      {/* Tabla detallada */}
+      <ChartCard title="📋 Detalle por Labor" full>
+        {corteData.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="text-left py-2 px-2 font-semibold text-gray-700">Fecha</th>
+                  <th className="text-left py-2 px-2 font-semibold text-gray-700">Labor</th>
+                  <th className="text-left py-2 px-2 font-semibold text-gray-700">Colaborador</th>
+                  <th className="text-right py-2 px-2 font-semibold text-gray-700">Rendimiento %</th>
+                  <th className="text-right py-2 px-2 font-semibold text-gray-700">Tallos</th>
+                </tr>
+              </thead>
+              <tbody>
+                {corteData.slice(0, 20).map((row, i) => (
+                  <tr key={i} className="border-b border-gray-100 hover:bg-gray-50">
+                    <td className="py-2 px-2">{row.fecha}</td>
+                    <td className="py-2 px-2">{row.nombreLabor}</td>
+                    <td className="py-2 px-2">{row.colaborador}</td>
+                    <td className="text-right py-2 px-2">
+                      <span
+                        className={`${row.rendimiento >= 80 ? 'text-green-600' : row.rendimiento >= 50 ? 'text-yellow-600' : 'text-red-600'} font-semibold`}
+                      >
+                        {row.rendimiento}%
+                      </span>
+                    </td>
+                    <td className="text-right py-2 px-2">{row.tallosReales}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <NoData />
+        )}
+      </ChartCard>
+    </div>
+  )
+}
+
+// ─── SECCIÓN: Gestión (Labor + Corte + Aseguramiento) ──────────────────────
+function SectionGestion({
+  laborData,
+  corteData,
+  asegData,
+  chartType,
+}: {
+  laborData: LaborDetalleData[]
+  corteData: CorteDetalleData[]
+  asegData: AseguramientoDetalleData[]
+  chartType: 'line' | 'bar'
+}) {
+  // Agrupar por fecha
+  const laboresByDate = laborData.reduce(
+    (acc, item) => {
+      const existing = acc.find((d) => d.fecha === item.fecha)
+      if (existing) {
+        existing.labor = (existing.labor || 0) + item.rendimientoLabor
+        existing.laborCount++
+      } else {
+        acc.push({
+          fecha: item.fecha,
+          labor: item.rendimientoLabor,
+          laborCount: 1,
+          corte: 0,
+          corteCount: 0,
+          aseg: 0,
+          asegCount: 0,
+        })
+      }
+      return acc
+    },
+    [] as any[],
+  )
+
+  const corteByDate = corteData.reduce(
+    (acc, item) => {
+      const existing = acc.find((d) => d.fecha === item.fecha)
+      if (existing) {
+        existing.corte = (existing.corte || 0) + item.rendimiento
+        existing.corteCount++
+      } else {
+        acc.push({
+          fecha: item.fecha,
+          corte: item.rendimiento,
+          corteCount: 1,
+          labor: 0,
+          laborCount: 0,
+          aseg: 0,
+          asegCount: 0,
+        })
+      }
+      return acc
+    },
+    [] as any[],
+  )
+
+  const asegByDate = asegData.reduce(
+    (acc, item) => {
+      const existing = acc.find((d) => d.fecha === item.fecha)
+      if (existing) {
+        existing.aseg = (existing.aseg || 0) + item.cumplimiento
+        existing.asegCount++
+      } else {
+        acc.push({
+          fecha: item.fecha,
+          aseg: item.cumplimiento,
+          asegCount: 1,
+          labor: 0,
+          laborCount: 0,
+          corte: 0,
+          corteCount: 0,
+        })
+      }
+      return acc
+    },
+    [] as any[],
+  )
+
+  // Merge all data by date
+  const allDates = new Set([
+    ...laboresByDate.map((d) => d.fecha),
+    ...corteByDate.map((d) => d.fecha),
+    ...asegByDate.map((d) => d.fecha),
+  ])
+
+  const mergedData = Array.from(allDates).map((fecha) => {
+    const labor = laboresByDate.find((d) => d.fecha === fecha)
+    const corte = corteByDate.find((d) => d.fecha === fecha)
+    const aseg = asegByDate.find((d) => d.fecha === fecha)
+
+    return {
+      fecha,
+      labores: labor?.laborCount ? Math.round((labor.labor / labor.laborCount) * 100) / 100 : 0,
+      cortes: corte?.corteCount ? Math.round((corte.corte / corte.corteCount) * 100) / 100 : 0,
+      aseguramiento: aseg?.asegCount ? Math.round((aseg.aseg / aseg.asegCount) * 100) / 100 : 0,
+    }
+  })
+
+  return (
+    <div className="space-y-6">
+      <ChartCard title="📊 Líneas por Labor, Corte y Aseguramiento" full>
+        {mergedData.length > 0 ? (
+          <ResponsiveContainer width="100%" height={350}>
+            {chartType === 'line' ? (
+              <LineChart data={mergedData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="fecha" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="labores"
+                  name="Labores %"
+                  stroke="#3b82f6"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="cortes"
+                  name="Cortes %"
+                  stroke="#ef4444"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="aseguramiento"
+                  name="Aseguramiento %"
+                  stroke="#10b981"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                />
+              </LineChart>
+            ) : (
+              <BarChart data={mergedData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="fecha" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="labores" name="Labores %" fill="#3b82f6" />
+                <Bar dataKey="cortes" name="Cortes %" fill="#ef4444" />
+                <Bar dataKey="aseguramiento" name="Aseguramiento %" fill="#10b981" />
+              </BarChart>
+            )}
+          </ResponsiveContainer>
+        ) : (
+          <NoData />
+        )}
+      </ChartCard>
+
+      {/* Tabla de resumen */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <ChartCard title="🌿 Total Labores">
+          {laborData.length > 0 ? (
+            <div className="space-y-2">
+              <div className="text-3xl font-bold text-blue-600">{laborData.length}</div>
+              <div className="text-sm text-gray-500">registros</div>
+              <div className="text-lg font-semibold text-gray-700 mt-4">
+                Promedio:{' '}
+                <span className="text-green-600">
+                  {laborData.length > 0
+                    ? Math.round(
+                        (laborData.reduce((sum, l) => sum + l.rendimientoLabor, 0) / laborData.length) * 100,
+                      ) / 100
+                    : 0}
+                  %
+                </span>
+              </div>
+            </div>
+          ) : (
+            <NoData />
+          )}
+        </ChartCard>
+
+        <ChartCard title="✂️ Total Cortes">
+          {corteData.length > 0 ? (
+            <div className="space-y-2">
+              <div className="text-3xl font-bold text-red-600">{corteData.length}</div>
+              <div className="text-sm text-gray-500">registros</div>
+              <div className="text-lg font-semibold text-gray-700 mt-4">
+                Promedio:{' '}
+                <span className="text-red-600">
+                  {corteData.length > 0
+                    ? Math.round(
+                        (corteData.reduce((sum, c) => sum + c.rendimiento, 0) / corteData.length) * 100,
+                      ) / 100
+                    : 0}
+                  %
+                </span>
+              </div>
+            </div>
+          ) : (
+            <NoData />
+          )}
+        </ChartCard>
+
+        <ChartCard title="✅ Total Aseguramiento">
+          {asegData.length > 0 ? (
+            <div className="space-y-2">
+              <div className="text-3xl font-bold text-green-600">{asegData.length}</div>
+              <div className="text-sm text-gray-500">registros</div>
+              <div className="text-lg font-semibold text-gray-700 mt-4">
+                Cumpl.:{' '}
+                <span className="text-green-600">
+                  {asegData.length > 0
+                    ? Math.round(
+                        (asegData.reduce((sum, a) => sum + a.cumplimiento, 0) / asegData.length) * 100,
+                      ) / 100
+                    : 0}
+                  %
+                </span>
+              </div>
+            </div>
+          ) : (
+            <NoData />
+          )}
+        </ChartCard>
+      </div>
+    </div>
+  )
 }
