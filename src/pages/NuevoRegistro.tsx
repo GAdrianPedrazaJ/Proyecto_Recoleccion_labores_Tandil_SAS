@@ -71,9 +71,10 @@ const registroSchema = z.object({
 // â”€â”€â”€ Constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const TIPOS_REGISTRO = [
-  { value: 'Corte', label: 'Corte' },
-  { value: 'Labores', label: 'Labores' },
-  { value: 'Aseguramiento', label: 'Aseguramiento' },
+  { value: 'Todos', label: 'Corte + Labores + Aseguramiento (todos)' },
+  { value: 'Corte', label: 'Solo Corte' },
+  { value: 'Labores', label: 'Solo Labores' },
+  { value: 'Aseguramiento', label: 'Solo Aseguramiento' },
 ]
 
 // â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -235,7 +236,7 @@ export default function NuevoRegistro() {
       if (!ok) errs.push({ field: `filas.${index}.${field}`, message: msg })
     }
 
-    if (tipo === 'Corte') {
+    if (tipo === 'Corte' || tipo === 'Todos') {
       // Estimados requeridos en borrador y completo
       req(fila.tiempoEstimadoMinutos > 0, 'tiempoEstimadoMinutos')
       req(fila.tallosEstimados > 0, 'tallosEstimados')
@@ -249,7 +250,8 @@ export default function NuevoRegistro() {
         req(!!fila.horaFinCorteReal, 'horaFinCorteReal')
         req(fila.rendimientoCorteReal > 0, 'rendimientoCorteReal')
       }
-    } else if (tipo === 'Labores') {
+    }
+    if (tipo === 'Labores' || tipo === 'Todos') {
       // Al menos una labor con datos estimados
       fila.labores.forEach((labor, j) => {
         req(!!labor.laborId, `labores.${j}.laborId`, 'Selecciona una labor')
@@ -260,7 +262,8 @@ export default function NuevoRegistro() {
           req(labor.tiempoCamaReal > 0, `labores.${j}.tiempoCamaReal`)
         }
       })
-    } else if (tipo === 'Aseguramiento') {
+    }
+    if (tipo === 'Aseguramiento' || tipo === 'Todos') {
       // Proceso y seguridad requerido siempre
       req(!!fila.procesoSeguridad, 'procesoSeguridad')
     }

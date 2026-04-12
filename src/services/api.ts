@@ -682,7 +682,7 @@ export async function saveFormularioCompleto(formulario: {
   fecha: string
   areaId: string
   supervisorId: string
-  tipo: 'Corte' | 'Labores' | 'Aseguramiento'
+  tipo: 'Corte' | 'Labores' | 'Aseguramiento' | 'Todos'
   estado?: string
   filas: Array<{
     colaboradorId: string
@@ -736,7 +736,7 @@ export async function saveFormularioCompleto(formulario: {
   for (const fila of formulario.filas) {
     const filaId = `${formulario.id}-${fila.colaboradorId}`
 
-    if (formulario.tipo === 'Corte') {
+    if (formulario.tipo === 'Corte' || formulario.tipo === 'Todos') {
       await saveFilaCorte(formulario.id, filaId, {
         idColaborador: fila.colaboradorId,
         nombreColaborador: fila.nombre,
@@ -760,7 +760,8 @@ export async function saveFormularioCompleto(formulario: {
         seCompletoCorte: true,
         filaCorteId: filaId,
       })
-    } else if (formulario.tipo === 'Labores') {
+    }
+    if (formulario.tipo === 'Labores' || formulario.tipo === 'Todos') {
       await saveFilaLabores(formulario.id, filaId, {
         idColaborador: fila.colaboradorId,
         nombreColaborador: fila.nombre,
@@ -792,7 +793,8 @@ export async function saveFormularioCompleto(formulario: {
         seCompletoLabores: true,
         filaLaboresId: filaId,
       })
-    } else if (formulario.tipo === 'Aseguramiento') {
+    }
+    if (formulario.tipo === 'Aseguramiento' || formulario.tipo === 'Todos') {
       await saveFilaAseguramiento(formulario.id, filaId, {
         idColaborador: fila.colaboradorId,
         nombreColaborador: fila.nombre,

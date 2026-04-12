@@ -126,8 +126,8 @@ export function FilaColaboradorForm({ index, bloques, variedades, laborCatalog, 
         </div>
       </div>
 
-      {/* CORTE - Solo si tipoRegistro es 'Corte' */}
-      {tipoRegistro === 'Corte' && (
+      {/* CORTE - Solo si tipoRegistro es 'Corte' o 'Todos' */}
+      {(tipoRegistro === 'Corte' || tipoRegistro === 'Todos') && (
         <div className="border-b border-gray-100">
           <p className="bg-green-50 px-4 py-2 text-xs font-bold uppercase text-green-700">
             CORTE
@@ -247,8 +247,8 @@ export function FilaColaboradorForm({ index, bloques, variedades, laborCatalog, 
         </div>
       )}
 
-      {/* LABORES - Solo si tipoRegistro es 'Labores' */}
-      {tipoRegistro === 'Labores' && (
+      {/* LABORES - Solo si tipoRegistro es 'Labores' o 'Todos' */}
+      {(tipoRegistro === 'Labores' || tipoRegistro === 'Todos') && (
         <div className="border-b border-gray-100">
           <div className="flex items-center justify-between bg-green-50 px-4 py-2">
             <p className="text-xs font-bold uppercase text-green-700">
@@ -290,8 +290,8 @@ export function FilaColaboradorForm({ index, bloques, variedades, laborCatalog, 
         </div>
       )}
 
-      {/* ASEGURAMIENTO - Solo si tipoRegistro es 'Aseguramiento' */}
-      {tipoRegistro === 'Aseguramiento' && (
+      {/* ASEGURAMIENTO - Solo si tipoRegistro es 'Aseguramiento' o 'Todos' */}
+      {(tipoRegistro === 'Aseguramiento' || tipoRegistro === 'Todos') && (
         <div className="px-4 py-4 space-y-4">
           <p className="text-xs font-bold uppercase text-gray-500">ASEGURAMIENTO</p>
 
