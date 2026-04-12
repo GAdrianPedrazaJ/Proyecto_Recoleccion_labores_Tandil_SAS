@@ -98,8 +98,9 @@ export default function AreaDetalle() {
       bloqueId: r.bloqueId,
       variedadId: r.variedadId,
     }))
-    // Guardar selecciones en sessionStorage para pasar a NuevoRegistro
+    // Guardar selecciones Y tipo en sessionStorage para pasar a NuevoRegistro
     sessionStorage.setItem('labores-selecciones', JSON.stringify(selecciones))
+    sessionStorage.setItem('labores-tipo-actual', tipoRegistro)
     navigate('nuevo-registro', { areaId, sedeId: sedeId || '', tipo: tipoRegistro })
   }
 

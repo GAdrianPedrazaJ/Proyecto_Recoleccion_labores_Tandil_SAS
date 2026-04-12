@@ -128,8 +128,12 @@ export default function NuevoRegistro() {
   const { params } = useNavigationStore()
   const areaIdParam = params.areaId ? String(params.areaId) : undefined
   const formularioId = params.formularioId ? String(params.formularioId) : undefined
-  const tipoParam = params.tipo ? String(params.tipo) : 'Labores'
-  console.log('🚀 NuevoRegistro mount - tipoParam:', tipoParam, 'areaId:', areaIdParam)
+  
+  // Leer tipo desde sessionStorage (lo guardó AreaDetalle) o usar param
+  const tipoSessionStorage = sessionStorage.getItem('labores-tipo-actual')
+  const tipoParam = tipoSessionStorage || (params.tipo ? String(params.tipo) : 'Labores')
+  
+  console.log('🚀 NuevoRegistro mount - tipoParam:', tipoParam, 'areaId:', areaIdParam, 'tipoSession:', tipoSessionStorage)
   
   // Mantener areaId en estado localpara no perderlo si se navega sin parámetros
   const [areaIdLocal, setAreaIdLocal] = useState<string | undefined>(areaIdParam)
@@ -155,10 +159,15 @@ export default function NuevoRegistro() {
 
   const { fields } = useFieldArray({ control: methods.control, name: 'filas' })
 
-  // Actualizar tipo en el formulario cuando tipoParam cambia
+  // Sincronizar tipo del formulario cuando tipoParam cambia (desde sessionStorage)
   useEffect(() => {
-    console.log('🔄 tipoParam cambió a:', tipoParam)
-    methods.setValue('tipo', tipoParam)
+    console.log('🔄 Sincronizando tipo en formulario a:', tipoParam)
+    const currentValues = methods.getValues()
+    methods.reset({ 
+      fecha: currentValues.fecha || nowDate(),
+      tipo: tipoParam, 
+      filas: currentValues.filas || [] 
+    })
   }, [tipoParam, methods])
 
   // Actualizar areaIdLocal cuando areaIdParam cambia (mantiene contexto si navega sin paráms)
@@ -183,6 +192,8 @@ export default function NuevoRegistro() {
       }
     }
     loadCatalog()
+    // Limpiar tipo del sessionStorage después de leerlo
+    return () => sessionStorage.removeItem('labores-tipo-actual')
   }, [])
 
   // NEW mode: load area + init filas from sessionStorage
