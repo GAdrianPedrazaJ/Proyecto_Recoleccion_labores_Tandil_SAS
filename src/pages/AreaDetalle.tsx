@@ -79,7 +79,6 @@ export default function AreaDetalle() {
     setRows((prev) => prev.map((r, i) => (i === idx ? { ...r, variedadId } : r)))
 
   const [intentoIniciar, setIntentoIniciar] = useState(false)
-  const [tipoRegistro, setTipoRegistro] = useState('Corte')
 
   const seleccionados = rows.filter((r) => r.incluido)
 
@@ -98,10 +97,10 @@ export default function AreaDetalle() {
       bloqueId: r.bloqueId,
       variedadId: r.variedadId,
     }))
-    // Guardar selecciones Y tipo en sessionStorage para pasar a NuevoRegistro
+    // Guardar selecciones en sessionStorage para que los formularios las lean
     sessionStorage.setItem('labores-selecciones', JSON.stringify(selecciones))
-    sessionStorage.setItem('labores-tipo-actual', tipoRegistro)
-    navigate('nuevo-registro', { areaId, sedeId: sedeId || '', tipo: tipoRegistro })
+    // Navegar a SelectTipo para que el usuario elija qué tipo de formulario llenar
+    navigate('select-tipo', { areaId, sedeId: sedeId || '' })
   }
 
   const bloquesOpts = bloques.map((b) => ({ value: b.id, label: b.nombre }))
@@ -215,20 +214,8 @@ export default function AreaDetalle() {
               Seleccioná al menos un colaborador
             </p>
           )}
-          <div className="bg-white rounded-xl border border-gray-200 shadow px-3 py-2">
-            <Select
-              label="Tipo de registro"
-              options={[
-                { value: 'Corte', label: 'Corte' },
-                { value: 'Labores', label: 'Labores' },
-                { value: 'Aseguramiento', label: 'Aseguramiento' },
-              ]}
-              value={tipoRegistro}
-              onChange={(e) => setTipoRegistro(e.target.value)}
-            />
-          </div>
           <Button className="w-full shadow-lg" size="lg" onClick={handleIniciar}>
-            Iniciar Formulario
+            Siguiente
             {seleccionados.length > 0 && ` · ${seleccionados.length} colaborador${seleccionados.length !== 1 ? 'es' : ''}`}
           </Button>
         </div>

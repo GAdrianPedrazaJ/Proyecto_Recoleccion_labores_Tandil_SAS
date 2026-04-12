@@ -133,8 +133,6 @@ export default function NuevoRegistro() {
   const tipoSessionStorage = sessionStorage.getItem('labores-tipo-actual')
   const tipoParam = tipoSessionStorage || (params.tipo ? String(params.tipo) : 'Labores')
   
-  console.log('🚀 NuevoRegistro mount - tipoParam:', tipoParam, 'areaId:', areaIdParam, 'tipoSession:', tipoSessionStorage)
-  
   // Mantener areaId en estado localpara no perderlo si se navega sin parámetros
   const [areaIdLocal, setAreaIdLocal] = useState<string | undefined>(areaIdParam)
   const areaId = areaIdParam || areaIdLocal
@@ -161,7 +159,6 @@ export default function NuevoRegistro() {
 
   // Sincronizar tipo del formulario cuando tipoParam cambia (desde sessionStorage)
   useEffect(() => {
-    console.log('🔄 Sincronizando tipo en formulario a:', tipoParam)
     const currentValues = methods.getValues()
     methods.reset({ 
       fecha: currentValues.fecha || nowDate(),
@@ -205,7 +202,7 @@ export default function NuevoRegistro() {
     // Limpiar después de usar
     sessionStorage.removeItem('labores-selecciones')
     const today = nowDate()
-    console.log('🔍 Buscando borrador con tipoParam:', tipoParam)
+
     Promise.all([getAreaById(areaId), getBloquesByArea(areaId), getFormularioBorradorDelDia(areaId, today, tipoParam)]).then(([areaData, bloquesData, borradorExistente]) => {
       setArea(areaData ?? null)
       setBloques(bloquesData)
@@ -308,7 +305,7 @@ export default function NuevoRegistro() {
 
     if (filasActivas.length === 0) return
 
-    console.log('📋 data.tipo:', data.tipo, '| tipoParam:', tipoParam, '| fase:', fase)
+
 
     // En fase 'estimado' siempre se guarda borrador; en fase 'real' siempre completo
     const estado: 'borrador' | 'completo' = estadoForzado ?? (fase === 'estimado' ? 'borrador' : 'completo')
@@ -392,7 +389,7 @@ export default function NuevoRegistro() {
         }
       }
 
-      console.log('💾 save() called with formularioNuevo.tipo:', formularioNuevo.tipo)
+
       await save(formularioNuevo)
     }
     setSuccess(true)

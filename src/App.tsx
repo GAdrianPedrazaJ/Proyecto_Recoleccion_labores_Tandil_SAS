@@ -4,6 +4,8 @@ import { useNavigationStore } from './store/useNavigationStore'
 import { syncFromRemote } from './services/sync'
 import AreaSelector from './pages/AreaSelector'
 import AreaDetalle from './pages/AreaDetalle'
+import SelectTipo from './pages/SelectTipo'
+import FormularioCorte from './pages/FormularioCorte'
 import NuevoRegistro from './pages/NuevoRegistro'
 import Historial from './pages/Historial'
 import Login from './pages/Login'
@@ -55,6 +57,8 @@ export default function App() {
       // Páginas de supervisor
       case 'areas':               return isAuthenticated ? <AreaSelector />       : <Login />
       case 'area-detail':         return isAuthenticated ? <AreaDetalle />        : <Login />
+      case 'select-tipo':         return isAuthenticated ? <SelectTipo />         : <Login />
+      case 'formulario-corte':    return isAuthenticated ? <FormularioCorte />    : <Login />
       case 'nuevo-registro':
       case 'registro':            return isAuthenticated ? <NuevoRegistro />      : <Login />
       case 'historial':           return isAuthenticated ? <Historial />          : <Login />

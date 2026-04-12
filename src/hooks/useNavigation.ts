@@ -26,6 +26,8 @@ export function useNavigation() {
         'admin-setup',
         'areas',
         'area-detail',
+        'select-tipo',
+        'formulario-corte',
         'nuevo-registro',
         'registro',
         'historial',

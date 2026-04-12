@@ -15,7 +15,6 @@ export function useFormulario() {
   const save = async (input: FormularioInput): Promise<string> => {
     setSaving(true)
     setError(null)
-    console.log('📥 save() received input.tipo:', input.tipo)
     try {
       const formulario: Formulario = {
         ...input,
@@ -25,8 +24,6 @@ export function useFormulario() {
         errorPermanente: false,
         fechaCreacion: new Date().toISOString(),
       }
-
-      console.log('📝 formulario created with tipo:', formulario.tipo)
 
       // Guardar localmente en IndexedDB
       await putFormulario(formulario)
