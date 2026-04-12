@@ -1,19 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useAuthStore } from '../../store/useAuthStore'
-import { getAllColaboradores, getAllFormularios } from '../../services/db'
-import type { Colaborador } from '../../types'
+import { getSupervisorColaboradorStats } from '../../services/dashboard'
+import type { ColaboradorStats } from '../../services/dashboard'
 import { Header } from '../../components/layout/Header'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { Spinner } from '../../components/ui/Spinner'
 import { Card } from '../../components/ui/Card'
-
-interface ColaboradorStats {
-  colaborador: Colaborador
-  registrosTotal: number
-  registrosPendientes: number
-  registrosSincronizados: number
-  ultimoRegistro?: Date
-}
+import { Button } from '../../components/ui/Button'
 
 export default function SupervisorGestionar() {
   const usuario = useAuthStore((s) => s.usuario)
@@ -28,52 +21,23 @@ export default function SupervisorGestionar() {
 
   useEffect(() => {
     loadData()
-  }, [])
+  }, [usuario?.id])
 
   const loadData = async () => {
     try {
       setLoading(true)
 
-      // Obtener colaboradores asignados a este supervisor
-      const todosColaboradores = await getAllColaboradores()
-      const colaboradores = todosColaboradores.filter((c) => c.supervisorId === usuario?.id)
+      if (!usuario?.id) {
+        setLoading(false)
+        return
+      }
 
-      // Obtener todos los formularios para calcular estadísticas
-      const formularios = await getAllFormularios()
-
-      // Calcular estadísticas por colaborador
-      const colaboradorStats: ColaboradorStats[] = colaboradores.map((colab: Colaborador) => {
-        // Filtrar formularios de este colaborador
-        const formulariosByColaborador = formularios.filter(
-          (f: any) => f.supervisorId === usuario?.id && f.colaboradorId === colab.id,
-        )
-
-        const pendientes = formulariosByColaborador.filter((f: any) => !f.sincronizado).length
-        const sincronizados = formulariosByColaborador.filter((f: any) => f.sincronizado).length
-
-        const ultimoRegistro = formulariosByColaborador.length > 0
-          ? new Date(
-              Math.max(
-                ...formulariosByColaborador
-                  .map((f: any) => new Date(f.fecha || 0).getTime())
-                  .filter((t: number) => t > 0),
-              ),
-            )
-          : undefined
-
-        return {
-          colaborador: colab,
-          registrosTotal: formulariosByColaborador.length,
-          registrosPendientes: pendientes,
-          registrosSincronizados: sincronizados,
-          ultimoRegistro,
-        }
-      })
-
+      // Obtener estadísticas por colaborador para este supervisor
+      const colaboradorStats = await getSupervisorColaboradorStats(usuario.id)
       setStats(colaboradorStats)
 
       // Calcular totales
-      const totalRegistros = colaboradorStats.reduce((sum, s) => sum + s.registrosTotal, 0)
+      const totalRegistros = colaboradorStats.reduce((sum, s) => sum + s.registrosTotales, 0)
       const totalPendientes = colaboradorStats.reduce((sum, s) => sum + s.registrosPendientes, 0)
       const totalSincronizados = colaboradorStats.reduce((sum, s) => sum + s.registrosSincronizados, 0)
 
@@ -90,6 +54,11 @@ export default function SupervisorGestionar() {
     }
   }
 
+  const completionPercent =
+    totalStats.registrosTotal > 0
+      ? Math.round((totalStats.registrosSincronizados / totalStats.registrosTotal) * 100)
+      : 0
+
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -98,14 +67,9 @@ export default function SupervisorGestionar() {
     )
   }
 
-  const completionPercent =
-    totalStats.registrosTotal > 0
-      ? Math.round((totalStats.registrosSincronizados / totalStats.registrosTotal) * 100)
-      : 0
-
   return (
     <div className="flex flex-col min-h-screen pb-24">
-      <Header title="Gestionar Colaboradores" />
+      <Header title="Gestionar Colaboradores" showBack />
 
       <div className="flex-1 px-4 py-6 space-y-6">
         {/* KPI Cards */}
@@ -159,75 +123,107 @@ export default function SupervisorGestionar() {
         {stats.length > 0 ? (
           <div className="space-y-3">
             <h3 className="text-sm font-semibold text-gray-900">Detalle por Colaborador</h3>
-            {stats
-              .sort((a, b) => b.registrosPendientes - a.registrosPendientes)
-              .map((stat) => {
-                const percent =
-                  stat.registrosTotal > 0
-                    ? Math.round((stat.registrosSincronizados / stat.registrosTotal) * 100)
-                    : 0
+            {stats.map((stat) => {
+              const percent =
+                stat.registrosTotales > 0
+                  ? Math.round((stat.registrosSincronizados / stat.registrosTotales) * 100)
+                  : 0
 
-                return (
-                  <Card
-                    key={stat.colaborador.id}
-                    className="hover:shadow-md transition-shadow"
-                  >
-                    <div className="space-y-3">
-                      {/* Name and last update */}
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="font-medium text-gray-900">{stat.colaborador.nombre}</p>
-                          {stat.ultimoRegistro && (
-                            <p className="text-xs text-gray-500">
-                              Último: {stat.ultimoRegistro.toLocaleDateString('es-AR')}
-                            </p>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-bold text-gray-900">{percent}%</p>
-                          <p className="text-xs text-gray-500">
-                            {stat.registrosSincronizados}/{stat.registrosTotal}
+              const estadoColor = {
+                'Sin registros': 'bg-gray-100 text-gray-700',
+                'Hoy': 'bg-green-100 text-green-700',
+                'Últimos 7 días': 'bg-blue-100 text-blue-700',
+                'Inactivo': 'bg-orange-100 text-orange-700',
+              }[stat.estadoActividad]
+
+              return (
+                <Card key={stat.colaboradorId} className="hover:shadow-md transition-shadow">
+                  <div className="space-y-3">
+                    {/* Name and status */}
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="font-medium text-gray-900">{stat.colaboradorNombre}</p>
+                        <p className="text-xs text-gray-500">{stat.area}</p>
+                        {stat.ultimoRegistro && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            Último: {new Date(stat.ultimoRegistro).toLocaleDateString('es-AR')}
                           </p>
-                        </div>
-                      </div>
-
-                      {/* Progress bar */}
-                      <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full transition-all duration-300 ${
-                            percent === 100
-                              ? 'bg-green-500'
-                              : percent >= 75
-                                ? 'bg-blue-500'
-                                : percent >= 50
-                                  ? 'bg-yellow-500'
-                                  : 'bg-red-500'
-                          }`}
-                          style={{ width: `${percent}%` }}
-                        />
-                      </div>
-
-                      {/* Stats row */}
-                      <div className="flex gap-2 text-xs">
-                        {stat.registrosPendientes > 0 && (
-                          <span className="px-2 py-1 bg-orange-100 text-orange-700 rounded">
-                            ⏳ {stat.registrosPendientes} pendiente{stat.registrosPendientes !== 1 ? 's' : ''}
-                          </span>
                         )}
-                        {stat.registrosSincronizados > 0 && (
-                          <span className="px-2 py-1 bg-green-100 text-green-700 rounded">
-                            ✓ {stat.registrosSincronizados} sync
-                          </span>
-                        )}
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-bold text-gray-900">{percent}%</p>
+                        <p className="text-xs text-gray-500">
+                          {stat.registrosSincronizados}/{stat.registrosTotales}
+                        </p>
+                        <span className={`inline-block px-2 py-1 text-xs rounded mt-1 ${estadoColor}`}>
+                          {stat.estadoActividad}
+                        </span>
                       </div>
                     </div>
-                  </Card>
-                )
-              })}
+
+                    {/* Progress bar */}
+                    <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full transition-all duration-300 ${
+                          percent === 100
+                            ? 'bg-green-500'
+                            : percent >= 75
+                              ? 'bg-blue-500'
+                              : percent >= 50
+                                ? 'bg-yellow-500'
+                                : 'bg-red-500'
+                        }`}
+                        style={{ width: `${percent}%` }}
+                      />
+                    </div>
+
+                    {/* Stats grid */}
+                    <div className="grid grid-cols-3 gap-2 text-xs">
+                      <div className="bg-orange-50 p-2 rounded text-center">
+                        <p className="text-orange-700 font-medium">{stat.registrosPendientes}</p>
+                        <p className="text-orange-600 text-xs">Pendientes</p>
+                      </div>
+                      <div className="bg-green-50 p-2 rounded text-center">
+                        <p className="text-green-700 font-medium">{stat.registrosSincronizados}</p>
+                        <p className="text-green-600 text-xs">Sync</p>
+                      </div>
+                      <div className="bg-blue-50 p-2 rounded text-center">
+                        <p className="text-blue-700 font-medium">{stat.registrosTotales}</p>
+                        <p className="text-blue-600 text-xs">Total</p>
+                      </div>
+                    </div>
+
+                    {/* Type breakdown */}
+                    {stat.registrosTotales > 0 && (
+                      <div className="flex gap-1 text-xs">
+                        {stat.registrosCorte > 0 && (
+                          <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded">
+                            🌾 {stat.registrosCorte}
+                          </span>
+                        )}
+                        {stat.registrosLabores > 0 && (
+                          <span className="px-2 py-1 bg-green-100 text-green-700 rounded">
+                            🌱 {stat.registrosLabores}
+                          </span>
+                        )}
+                        {stat.registrosAseguramiento > 0 && (
+                          <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded">
+                            ✓ {stat.registrosAseguramiento}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              )
+            })}
           </div>
         ) : (
           <div className="text-center py-12">
             <p className="text-gray-500">No tienes colaboradores asignados</p>
+            <Button className="mt-4" onClick={loadData}>
+              Recargar
+            </Button>
           </div>
         )}
       </div>
