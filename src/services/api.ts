@@ -720,6 +720,7 @@ export async function saveFormularioCompleto(formulario: {
     observaciones?: string
   }>
 }): Promise<void> {
+  console.log('🔷 saveFormularioCompleto called with tipo:', formulario.tipo)
   // 1. Crear encabezado del formulario
   const { error: errForm } = await supabase.from('formularios').upsert({
     id: formulario.id,

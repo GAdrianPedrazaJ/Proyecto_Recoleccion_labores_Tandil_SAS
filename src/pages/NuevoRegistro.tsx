@@ -129,7 +129,7 @@ export default function NuevoRegistro() {
   const areaId = params.areaId ? String(params.areaId) : undefined
   const formularioId = params.formularioId ? String(params.formularioId) : undefined
   const tipoParam = params.tipo ? String(params.tipo) : 'Labores'
-  console.log('🚀 NuevoRegistro mount - params:', { areaId, formularioId, tipoParam, rawParams: params })
+  console.log('🚀 NuevoRegistro mount - tipoParam:', tipoParam, 'areaId:', areaId)
   const navigate = useNavigation()
   const { save, update, saving } = useFormulario()
   const isEditMode = !!formularioId
@@ -280,7 +280,7 @@ export default function NuevoRegistro() {
 
     if (filasActivas.length === 0) return
 
-    console.log('📋 Guardando formulario:', { tipo: data.tipo, tipoParam, fase, filasActivas: filasActivas.length })
+    console.log('📋 data.tipo:', data.tipo, '| tipoParam:', tipoParam, '| fase:', fase)
 
     // En fase 'estimado' siempre se guarda borrador; en fase 'real' siempre completo
     const estado: 'borrador' | 'completo' = estadoForzado ?? (fase === 'estimado' ? 'borrador' : 'completo')
@@ -364,6 +364,7 @@ export default function NuevoRegistro() {
         }
       }
 
+      console.log('💾 save() called with formularioNuevo.tipo:', formularioNuevo.tipo)
       await save(formularioNuevo)
     }
     setSuccess(true)
