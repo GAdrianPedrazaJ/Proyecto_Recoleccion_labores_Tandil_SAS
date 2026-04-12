@@ -155,6 +155,12 @@ export default function NuevoRegistro() {
 
   const { fields } = useFieldArray({ control: methods.control, name: 'filas' })
 
+  // Actualizar tipo en el formulario cuando tipoParam cambia
+  useEffect(() => {
+    console.log('🔄 tipoParam cambió a:', tipoParam)
+    methods.setValue('tipo', tipoParam)
+  }, [tipoParam, methods])
+
   // Actualizar areaIdLocal cuando areaIdParam cambia (mantiene contexto si navega sin paráms)
   useEffect(() => {
     if (areaIdParam) {
