@@ -128,6 +128,7 @@ export default function NuevoRegistro() {
   const { params } = useNavigationStore()
   const areaId = params.areaId ? String(params.areaId) : undefined
   const formularioId = params.formularioId ? String(params.formularioId) : undefined
+  const tipoParam = params.tipo ? String(params.tipo) : 'Labores'
   const navigate = useNavigation()
   const { save, update, saving } = useFormulario()
   const isEditMode = !!formularioId
@@ -144,7 +145,7 @@ export default function NuevoRegistro() {
 
   const methods = useForm<RegistroFV>({
     resolver: zodResolver(registroSchema),
-    defaultValues: { fecha: nowDate(), tipo: 'Labores', filas: [] },
+    defaultValues: { fecha: nowDate(), tipo: tipoParam, filas: [] },
   })
 
   const { fields } = useFieldArray({ control: methods.control, name: 'filas' })
@@ -175,7 +176,7 @@ export default function NuevoRegistro() {
     // Limpiar después de usar
     sessionStorage.removeItem('labores-selecciones')
     const today = nowDate()
-    Promise.all([getAreaById(areaId), getBloquesByArea(areaId), getFormularioBorradorDelDia(areaId, today)]).then(([areaData, bloquesData, borradorExistente]) => {
+    Promise.all([getAreaById(areaId), getBloquesByArea(areaId), getFormularioBorradorDelDia(areaId, today, tipoParam)]).then(([areaData, bloquesData, borradorExistente]) => {
       setArea(areaData ?? null)
       setBloques(bloquesData)
       if (borradorExistente) {
@@ -192,7 +193,7 @@ export default function NuevoRegistro() {
         setFase('estimado')
         methods.reset({
           fecha: today,
-          tipo: 'Labores',
+          tipo: tipoParam,
           filas: selecciones.length > 0 ? selecciones.map(defaultFila) : [],
         })
       }

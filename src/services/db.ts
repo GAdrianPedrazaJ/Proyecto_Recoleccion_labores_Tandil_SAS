@@ -284,12 +284,12 @@ export async function clearLabores(): Promise<void> {
   await db.clear('labores')
 }
 
-export async function getFormularioBorradorDelDia(areaId: string, fecha: string): Promise<Formulario | undefined> {
+export async function getFormularioBorradorDelDia(areaId: string, fecha: string, tipo?: string): Promise<Formulario | undefined> {
   const db = await getDb()
   const all = await db.getAll('formularios')
-  // Buscar cualquier borrador del dia para esta area, sin importar el tipo
+  // Buscar borrador del dia para esta area filtrado por tipo (si se provee)
   return all.find(
-    (f) => f.areaId === areaId && f.fecha === fecha && f.fase === 'estimado' && f.estado === 'borrador',
+    (f) => f.areaId === areaId && f.fecha === fecha && f.fase === 'estimado' && f.estado === 'borrador' && (!tipo || f.tipo === tipo),
   )
 }
 

@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useAuthStore } from './store/useAuthStore'
 import { useNavigationStore } from './store/useNavigationStore'
+import { syncFromRemote } from './services/sync'
 import AreaSelector from './pages/AreaSelector'
 import AreaDetalle from './pages/AreaDetalle'
 import NuevoRegistro from './pages/NuevoRegistro'
@@ -27,6 +28,15 @@ export default function App() {
   useEffect(() => {
     restoreSession()
   }, [restoreSession])
+
+  // Sincronizar datos maestros al iniciar (sedes, areas, colaboradores, etc.)
+  useEffect(() => {
+    if (navigator.onLine) {
+      syncFromRemote()
+        .then(() => window.dispatchEvent(new Event('sync:remote:done')))
+        .catch(() => {})
+    }
+  }, [])
 
   // Guard: si no está autenticado y no está en página pública, enviar a login
   useEffect(() => {

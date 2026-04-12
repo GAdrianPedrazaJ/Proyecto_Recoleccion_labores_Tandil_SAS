@@ -79,6 +79,7 @@ export default function AreaDetalle() {
     setRows((prev) => prev.map((r, i) => (i === idx ? { ...r, variedadId } : r)))
 
   const [intentoIniciar, setIntentoIniciar] = useState(false)
+  const [tipoRegistro, setTipoRegistro] = useState('Corte')
 
   const seleccionados = rows.filter((r) => r.incluido)
 
@@ -99,7 +100,7 @@ export default function AreaDetalle() {
     }))
     // Guardar selecciones en sessionStorage para pasar a NuevoRegistro
     sessionStorage.setItem('labores-selecciones', JSON.stringify(selecciones))
-    navigate('nuevo-registro', { areaId, sedeId: sedeId || '' })
+    navigate('nuevo-registro', { areaId, sedeId: sedeId || '', tipo: tipoRegistro })
   }
 
   const bloquesOpts = bloques.map((b) => ({ value: b.id, label: b.nombre }))
@@ -213,6 +214,18 @@ export default function AreaDetalle() {
               Seleccioná al menos un colaborador
             </p>
           )}
+          <div className="bg-white rounded-xl border border-gray-200 shadow px-3 py-2">
+            <Select
+              label="Tipo de registro"
+              options={[
+                { value: 'Corte', label: 'Corte' },
+                { value: 'Labores', label: 'Labores' },
+                { value: 'Aseguramiento', label: 'Aseguramiento' },
+              ]}
+              value={tipoRegistro}
+              onChange={(e) => setTipoRegistro(e.target.value)}
+            />
+          </div>
           <Button className="w-full shadow-lg" size="lg" onClick={handleIniciar}>
             Iniciar Formulario
             {seleccionados.length > 0 && ` · ${seleccionados.length} colaborador${seleccionados.length !== 1 ? 'es' : ''}`}
