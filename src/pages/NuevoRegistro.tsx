@@ -129,6 +129,7 @@ export default function NuevoRegistro() {
   const areaId = params.areaId ? String(params.areaId) : undefined
   const formularioId = params.formularioId ? String(params.formularioId) : undefined
   const tipoParam = params.tipo ? String(params.tipo) : 'Labores'
+  console.log('🚀 NuevoRegistro mount - params:', { areaId, formularioId, tipoParam, rawParams: params })
   const navigate = useNavigation()
   const { save, update, saving } = useFormulario()
   const isEditMode = !!formularioId
@@ -176,6 +177,7 @@ export default function NuevoRegistro() {
     // Limpiar después de usar
     sessionStorage.removeItem('labores-selecciones')
     const today = nowDate()
+    console.log('🔍 Buscando borrador con tipoParam:', tipoParam)
     Promise.all([getAreaById(areaId), getBloquesByArea(areaId), getFormularioBorradorDelDia(areaId, today, tipoParam)]).then(([areaData, bloquesData, borradorExistente]) => {
       setArea(areaData ?? null)
       setBloques(bloquesData)
@@ -277,6 +279,8 @@ export default function NuevoRegistro() {
       .map(({ _active: _, ...rest }) => rest)
 
     if (filasActivas.length === 0) return
+
+    console.log('📋 Guardando formulario:', { tipo: data.tipo, tipoParam, fase, filasActivas: filasActivas.length })
 
     // En fase 'estimado' siempre se guarda borrador; en fase 'real' siempre completo
     const estado: 'borrador' | 'completo' = estadoForzado ?? (fase === 'estimado' ? 'borrador' : 'completo')
