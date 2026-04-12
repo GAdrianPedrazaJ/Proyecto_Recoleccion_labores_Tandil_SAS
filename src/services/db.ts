@@ -293,6 +293,18 @@ export async function getFormularioBorradorDelDia(areaId: string, fecha: string,
   )
 }
 
+/**
+ * Obtiene los 3 borradores (Corte, Labores, Aseguramiento) de una área+fecha
+ */
+export async function obtenerLosTres(areaId: string, fecha: string): Promise<{ corte: Formulario | undefined; labores: Formulario | undefined; aseguramiento: Formulario | undefined }> {
+  const [corte, labores, aseguramiento] = await Promise.all([
+    getFormularioBorradorDelDia(areaId, fecha, 'Corte'),
+    getFormularioBorradorDelDia(areaId, fecha, 'Labores'),
+    getFormularioBorradorDelDia(areaId, fecha, 'Aseguramiento'),
+  ])
+  return { corte, labores, aseguramiento }
+}
+
 /** --- Formularios --- */
 export async function putFormulario(f: Formulario): Promise<void> {
   const db = await getDb()

@@ -682,7 +682,7 @@ export async function saveFormularioCompleto(formulario: {
   fecha: string
   areaId: string
   supervisorId: string
-  tipo: 'Corte' | 'Labores' | 'Aseguramiento' | 'Todos'
+  tipo: 'Corte' | 'Labores' | 'Aseguramiento'
   estado?: string
   filas: Array<{
     colaboradorId: string
@@ -736,7 +736,7 @@ export async function saveFormularioCompleto(formulario: {
   for (const fila of formulario.filas) {
     const filaId = `${formulario.id}-${fila.colaboradorId}`
 
-    if (formulario.tipo === 'Corte' || formulario.tipo === 'Todos') {
+    if (formulario.tipo === 'Corte') {
       await saveFilaCorte(formulario.id, filaId, {
         idColaborador: fila.colaboradorId,
         nombreColaborador: fila.nombre,
@@ -760,8 +760,7 @@ export async function saveFormularioCompleto(formulario: {
         seCompletoCorte: true,
         filaCorteId: filaId,
       })
-    }
-    if (formulario.tipo === 'Labores' || formulario.tipo === 'Todos') {
+    } else if (formulario.tipo === 'Labores') {
       await saveFilaLabores(formulario.id, filaId, {
         idColaborador: fila.colaboradorId,
         nombreColaborador: fila.nombre,
@@ -793,8 +792,7 @@ export async function saveFormularioCompleto(formulario: {
         seCompletoLabores: true,
         filaLaboresId: filaId,
       })
-    }
-    if (formulario.tipo === 'Aseguramiento' || formulario.tipo === 'Todos') {
+    } else if (formulario.tipo === 'Aseguramiento') {
       await saveFilaAseguramiento(formulario.id, filaId, {
         idColaborador: fila.colaboradorId,
         nombreColaborador: fila.nombre,
@@ -819,6 +817,55 @@ export async function saveFormularioCompleto(formulario: {
         filaAseguramientoId: filaId,
       })
     }
+  }
+}
+
+/**
+ * Guarda 3 formularios completos (Corte, Labores, Aseguramiento) en bloque
+ */
+export async function saveFormulariosEnBloque(formularios: Formulario[]): Promise<void> {
+  // Guardar los 3 formularios secuencialmente (uno a uno)
+  for (const formulario of formularios) {
+    await saveFormularioCompleto({
+      id: formulario.id,
+      fecha: formulario.fecha,
+      areaId: formulario.areaId,
+      supervisorId: formulario.supervisorId,
+      tipo: formulario.tipo as 'Corte' | 'Labores' | 'Aseguramiento',
+      estado: formulario.estado,
+      filas: formulario.filas.map(f => ({
+        colaboradorId: f.colaboradorId,
+        nombre: f.nombre,
+        externo: f.externo,
+        bloqueId: f.bloqueId,
+        variedadId: f.variedadId,
+        tiempoEstimadoMinutos: f.tiempoEstimadoMinutos,
+        tiempoRealMinutos: f.tiempoRealMinutos,
+        tallosEstimados: f.tallosEstimados,
+        tallosReales: f.tallosReales,
+        horaInicio: f.horaInicio,
+        horaFinEstimado: f.horaFinCorteEstimado,
+        horaFinReal: f.horaFinCorteReal,
+        horaCama: f.horaCama,
+        rendimientoCorteEstimado: f.rendimientoCorteEstimado,
+        rendimientoCorteReal: f.rendimientoCorteReal,
+        labores: f.labores.map((l, idx) => ({
+          id: `${formulario.id}-${f.colaboradorId}-labor-${idx}`,
+          numero: idx + 1,
+          laborId: l.laborId,
+          laborNombre: l.laborNombre,
+          camasEstimadas: l.camasEstimadas,
+          tiempoCamaEstimado: l.tiempoCamaEstimado,
+          camasReales: l.camasReales,
+          tiempoCamaReal: l.tiempoCamaReal,
+        })),
+        desglose: f.desglossePiPc,
+        procesoSeguridad: f.procesoSeguridad,
+        calidad: [f.calidad1, f.calidad2, f.calidad3, f.calidad4, f.calidad5],
+        rendimientoPromedio: f.rendimientoPromedio,
+        observaciones: f.observaciones,
+      })),
+    })
   }
 }
 

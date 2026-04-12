@@ -5,7 +5,7 @@ import { FormProvider, useFieldArray, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useFormulario } from '../hooks/useFormulario'
-import { getAllLabores, getAllVariedades, getAreaById, getBloquesByArea, getFormularioById, getFormularioBorradorDelDia } from '../services/db'
+import { getAllLabores, getAllVariedades, getAreaById, getBloquesByArea, getFormularioById, getFormularioBorradorDelDia, obtenerLosTres } from '../services/db'
 import { syncFromRemote } from '../services/sync'
 import type { Area, Bloque, Formulario, LaborCatalog, RegistroFV, SeleccionColaborador, Variedad } from '../types'
 import { Header } from '../components/layout/Header'
@@ -71,10 +71,9 @@ const registroSchema = z.object({
 // â”€â”€â”€ Constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const TIPOS_REGISTRO = [
-  { value: 'Todos', label: 'Corte + Labores + Aseguramiento (todos)' },
-  { value: 'Corte', label: 'Solo Corte' },
-  { value: 'Labores', label: 'Solo Labores' },
-  { value: 'Aseguramiento', label: 'Solo Aseguramiento' },
+  { value: 'Corte', label: 'Corte' },
+  { value: 'Labores', label: 'Labores' },
+  { value: 'Aseguramiento', label: 'Aseguramiento' },
 ]
 
 // â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -236,7 +235,7 @@ export default function NuevoRegistro() {
       if (!ok) errs.push({ field: `filas.${index}.${field}`, message: msg })
     }
 
-    if (tipo === 'Corte' || tipo === 'Todos') {
+    if (tipo === 'Corte') {
       // Estimados requeridos en borrador y completo
       req(fila.tiempoEstimadoMinutos > 0, 'tiempoEstimadoMinutos')
       req(fila.tallosEstimados > 0, 'tallosEstimados')
@@ -250,8 +249,7 @@ export default function NuevoRegistro() {
         req(!!fila.horaFinCorteReal, 'horaFinCorteReal')
         req(fila.rendimientoCorteReal > 0, 'rendimientoCorteReal')
       }
-    }
-    if (tipo === 'Labores' || tipo === 'Todos') {
+    } else if (tipo === 'Labores') {
       // Al menos una labor con datos estimados
       fila.labores.forEach((labor, j) => {
         req(!!labor.laborId, `labores.${j}.laborId`, 'Selecciona una labor')
@@ -262,8 +260,7 @@ export default function NuevoRegistro() {
           req(labor.tiempoCamaReal > 0, `labores.${j}.tiempoCamaReal`)
         }
       })
-    }
-    if (tipo === 'Aseguramiento' || tipo === 'Todos') {
+    } else if (tipo === 'Aseguramiento') {
       // Proceso y seguridad requerido siempre
       req(!!fila.procesoSeguridad, 'procesoSeguridad')
     }
@@ -302,7 +299,7 @@ export default function NuevoRegistro() {
 
     if (formularioOriginal) {
       // Actualizar borrador existente (fase real o edición normal)
-      await update({
+      const formularioActualizado = {
         ...formularioOriginal,
         fecha: data.fecha,
         tipo: data.tipo,
@@ -310,9 +307,35 @@ export default function NuevoRegistro() {
         fase: estado === 'completo' ? 'real' : formularioOriginal.fase,
         filas: filasActivas,
         sincronizado: false,
-      })
+      }
+
+      // Si se completa, validar que existan los 3 borradores
+      if (estado === 'completo') {
+        const { corte, labores, aseguramiento } = await obtenerLosTres(
+          decodeURIComponent(areaId ?? ''),
+          data.fecha,
+        )
+
+        const faltanTipos: string[] = []
+        if (!corte) faltanTipos.push('Corte')
+        if (!labores) faltanTipos.push('Labores')
+        if (!aseguramiento) faltanTipos.push('Aseguramiento')
+
+        // Si es el primero que se completa, mostrar advertencia
+        if (faltanTipos.length === 2) {
+          const complecion = `Completar ${faltanTipos.join(' y ')}`
+          alert(`⚠️ Recuerda: hoy debes completar los 3 tipos.\n\n✅ ${data.tipo}\n❌ ${faltanTipos.join('\n❌ ')}\n\n${complecion} para que se sincronicen juntos.`)
+        }
+        // Si faltan tipos, bloquear guardado como 'completo'
+        else if (faltanTipos.length > 0) {
+          alert(`❌ No puedes completar todavía.\n\nFaltan: ${faltanTipos.join(', ')}\n\nCompleta los 3 tipos (Corte, Labores, Aseguramiento) en el mismo día para que se guarden juntos.`)
+          return
+        }
+      }
+
+      await update(formularioActualizado)
     } else {
-      await save({
+      const formularioNuevo = {
         fecha: data.fecha,
         areaId: decodeURIComponent(areaId ?? ''),
         areaNombre: area?.nombre ?? '',
@@ -321,7 +344,28 @@ export default function NuevoRegistro() {
         estado,
         fase,
         filas: filasActivas,
-      })
+      }
+
+      // Si se completa directamente, validar que existan los 3 borradores
+      if (estado === 'completo') {
+        const { corte, labores, aseguramiento } = await obtenerLosTres(
+          decodeURIComponent(areaId ?? ''),
+          data.fecha,
+        )
+
+        const faltanTipos: string[] = []
+        if (!corte) faltanTipos.push('Corte')
+        if (!labores) faltanTipos.push('Labores')
+        if (!aseguramiento) faltanTipos.push('Aseguramiento')
+
+        // Si faltan tipos, bloquear guardado como 'completo'
+        if (faltanTipos.length > 0) {
+          alert(`❌ No puedes completar todavía.\n\nFaltan: ${faltanTipos.join(', ')}\n\nCompleta los 3 tipos (Corte, Labores, Aseguramiento) en el mismo día para que se guarden juntos.`)
+          return
+        }
+      }
+
+      await save(formularioNuevo)
     }
     setSuccess(true)
     setTimeout(() => navigate('historial'), 1200)

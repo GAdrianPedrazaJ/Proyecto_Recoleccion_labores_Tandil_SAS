@@ -79,7 +79,7 @@ export default function AreaDetalle() {
     setRows((prev) => prev.map((r, i) => (i === idx ? { ...r, variedadId } : r)))
 
   const [intentoIniciar, setIntentoIniciar] = useState(false)
-  const [tipoRegistro, setTipoRegistro] = useState('Todos')
+  const [tipoRegistro, setTipoRegistro] = useState('Corte')
 
   const seleccionados = rows.filter((r) => r.incluido)
 
@@ -218,10 +218,9 @@ export default function AreaDetalle() {
             <Select
               label="Tipo de registro"
               options={[
-                { value: 'Todos', label: 'Corte + Labores + Aseguramiento (todos)' },
-                { value: 'Corte', label: 'Solo Corte' },
-                { value: 'Labores', label: 'Solo Labores' },
-                { value: 'Aseguramiento', label: 'Solo Aseguramiento' },
+                { value: 'Corte', label: 'Corte' },
+                { value: 'Labores', label: 'Labores' },
+                { value: 'Aseguramiento', label: 'Aseguramiento' },
               ]}
               value={tipoRegistro}
               onChange={(e) => setTipoRegistro(e.target.value)}
