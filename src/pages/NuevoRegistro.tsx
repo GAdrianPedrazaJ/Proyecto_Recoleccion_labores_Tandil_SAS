@@ -309,7 +309,7 @@ export default function NuevoRegistro() {
         sincronizado: false,
       }
 
-      // Si se completa, validar que existan los 3 borradores
+      // Si se completa, informar sobre block-sync pero permitir guardado
       if (estado === 'completo') {
         const { corte, labores, aseguramiento } = await obtenerLosTres(
           decodeURIComponent(areaId ?? ''),
@@ -317,19 +317,14 @@ export default function NuevoRegistro() {
         )
 
         const faltanTipos: string[] = []
-        if (!corte) faltanTipos.push('Corte')
-        if (!labores) faltanTipos.push('Labores')
-        if (!aseguramiento) faltanTipos.push('Aseguramiento')
+        if (!corte && data.tipo !== 'Corte') faltanTipos.push('Corte')
+        if (!labores && data.tipo !== 'Labores') faltanTipos.push('Labores')
+        if (!aseguramiento && data.tipo !== 'Aseguramiento') faltanTipos.push('Aseguramiento')
 
-        // Si es el primero que se completa, mostrar advertencia
-        if (faltanTipos.length === 2) {
-          const complecion = `Completar ${faltanTipos.join(' y ')}`
-          alert(`⚠️ Recuerda: hoy debes completar los 3 tipos.\n\n✅ ${data.tipo}\n❌ ${faltanTipos.join('\n❌ ')}\n\n${complecion} para que se sincronicen juntos.`)
-        }
-        // Si faltan tipos, bloquear guardado como 'completo'
-        else if (faltanTipos.length > 0) {
-          alert(`❌ No puedes completar todavía.\n\nFaltan: ${faltanTipos.join(', ')}\n\nCompleta los 3 tipos (Corte, Labores, Aseguramiento) en el mismo día para que se guarden juntos.`)
-          return
+        // Informar al usuario sobre el estado (pero no bloquear)
+        if (faltanTipos.length > 0) {
+          const msg = `ℹ️ Guardando ${data.tipo}...\n\nFaltan: ${faltanTipos.join(', ')}\n\nCompleta los 3 tipos para que se sincronicen juntos a Supabase.`
+          console.info(msg)
         }
       }
 
@@ -346,7 +341,7 @@ export default function NuevoRegistro() {
         filas: filasActivas,
       }
 
-      // Si se completa directamente, validar que existan los 3 borradores
+      // Si se completa directamente, permitir pero informar
       if (estado === 'completo') {
         const { corte, labores, aseguramiento } = await obtenerLosTres(
           decodeURIComponent(areaId ?? ''),
@@ -354,14 +349,14 @@ export default function NuevoRegistro() {
         )
 
         const faltanTipos: string[] = []
-        if (!corte) faltanTipos.push('Corte')
-        if (!labores) faltanTipos.push('Labores')
-        if (!aseguramiento) faltanTipos.push('Aseguramiento')
+        if (!corte && data.tipo !== 'Corte') faltanTipos.push('Corte')
+        if (!labores && data.tipo !== 'Labores') faltanTipos.push('Labores')
+        if (!aseguramiento && data.tipo !== 'Aseguramiento') faltanTipos.push('Aseguramiento')
 
-        // Si faltan tipos, bloquear guardado como 'completo'
+        // Informar pero permitir guardado
         if (faltanTipos.length > 0) {
-          alert(`❌ No puedes completar todavía.\n\nFaltan: ${faltanTipos.join(', ')}\n\nCompleta los 3 tipos (Corte, Labores, Aseguramiento) en el mismo día para que se guarden juntos.`)
-          return
+          const msg = `ℹ️ Guardando ${data.tipo}...\n\nFaltan: ${faltanTipos.join(', ')}\n\nCompleta los 3 tipos para que se sincronicen juntos a Supabase.`
+          console.info(msg)
         }
       }
 
