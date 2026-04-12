@@ -128,7 +128,7 @@ export default function FormularioCorte() {
     const today = nowDate()
     const seleccionesJson = sessionStorage.getItem('labores-selecciones')
     const selecciones: SeleccionColaborador[] = seleccionesJson ? JSON.parse(seleccionesJson) : []
-    sessionStorage.removeItem('labores-selecciones')
+    // NO limpiar sessionStorage - mantenerlo para siguiente formulario
 
     Promise.all([
       getAreaById(decodeURIComponent(areaId)),
@@ -230,7 +230,7 @@ export default function FormularioCorte() {
 
     await save(formularioNuevo)
     setSuccess(true)
-    setTimeout(() => navigate('historial'), 1200)
+    setTimeout(() => navigate('select-tipo', { areaId: decodeURIComponent(areaId ?? ''), sedeId: '' }), 1200)
   }
 
   if (success) {
