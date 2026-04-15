@@ -26,6 +26,7 @@ export function useNavigation() {
         'admin-setup',
         'areas',
         'area-detail',
+        'planeacion',
         'select-tipo',
         'formulario-corte',
         'formulario-labores',
@@ -71,6 +72,7 @@ function urlToPage(url: string): PageName {
   if (pathname === '/admin-setup') return 'admin-setup'
   if (pathname === '/areas') return 'areas'
   if (pathname === '/area-detail') return 'area-detail'
+  if (pathname === '/planeacion') return 'planeacion'
   if (pathname === '/historial') return 'historial'
   if (pathname === '/supervisor/gestionar') return 'supervisor-gestionar'
 

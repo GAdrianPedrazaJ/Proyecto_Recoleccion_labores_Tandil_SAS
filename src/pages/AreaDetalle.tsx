@@ -3,19 +3,16 @@ import { useNavigationStore } from '../store/useNavigationStore'
 import { useNavigation } from '../hooks/useNavigation'
 import { getAreaById, getBloquesByArea, getAllVariedades, getAllVariedadesBloques, getColaboradoresByArea } from '../services/db'
 import { syncFromRemote } from '../services/sync'
-import type { Area, Bloque, Colaborador, SeleccionColaborador, Variedad, VariedadBloque } from '../types'
+import type { Area, Colaborador, SeleccionColaborador } from '../types'
 import { Header } from '../components/layout/Header'
 import { BottomNav } from '../components/layout/BottomNav'
 import { Button } from '../components/ui/Button'
-import { Select } from '../components/ui/Select'
 import { Badge } from '../components/ui/Badge'
 import { Spinner } from '../components/ui/Spinner'
 
 interface ColabRow {
   colaborador: Colaborador
   incluido: boolean
-  bloqueId: string
-  variedadId: string
 }
 
 export default function AreaDetalle() {
@@ -25,16 +22,13 @@ export default function AreaDetalle() {
   const navigate = useNavigation()
   const [area, setArea] = useState<Area | null>(null)
   const [rows, setRows] = useState<ColabRow[]>([])
-  const [bloques, setBloques] = useState<Bloque[]>([])
-  const [variedades, setVariedades] = useState<Variedad[]>([])
-  const [variedadesBloques, setVariedadesBloques] = useState<VariedadBloque[]>([])
   const [loading, setLoading] = useState(true)
 
   const load = async () => {
     if (!areaId) return
     const id = decodeURIComponent(areaId)
     setLoading(true)
-    let [areaData, colabs, bloquesData, varsData, vbData] = await Promise.all([
+    let [areaData, colabs, , , vbData] = await Promise.all([
       getAreaById(id),
       getColaboradoresByArea(id),
       getBloquesByArea(id),
@@ -44,7 +38,7 @@ export default function AreaDetalle() {
     // If no data or variedadesBloques missing, try syncing once
     if (colabs.length === 0 || vbData.length === 0) {
       await syncFromRemote()
-      ;[areaData, colabs, bloquesData, varsData, vbData] = await Promise.all([
+      ;[areaData, colabs, , , vbData] = await Promise.all([
         getAreaById(id),
         getColaboradoresByArea(id),
         getBloquesByArea(id),
@@ -53,15 +47,10 @@ export default function AreaDetalle() {
       ])
     }
     setArea(areaData ?? null)
-    setBloques(bloquesData)
-    setVariedades(varsData)
-    setVariedadesBloques(vbData)
     setRows(
       colabs.map((c) => ({
         colaborador: c,
         incluido: true,
-        bloqueId: bloquesData[0]?.id ?? '',
-        variedadId: '',
       })),
     )
     setLoading(false)
@@ -72,50 +61,27 @@ export default function AreaDetalle() {
   const toggle = (idx: number) =>
     setRows((prev) => prev.map((r, i) => (i === idx ? { ...r, incluido: !r.incluido } : r)))
 
-  const setBloque = (idx: number, bloqueId: string) =>
-    setRows((prev) => prev.map((r, i) => (i === idx ? { ...r, bloqueId, variedadId: '' } : r)))
-
-  const setVariedad = (idx: number, variedadId: string) =>
-    setRows((prev) => prev.map((r, i) => (i === idx ? { ...r, variedadId } : r)))
-
   const [intentoIniciar, setIntentoIniciar] = useState(false)
 
   const seleccionados = rows.filter((r) => r.incluido)
 
-  const sinBloque = (r: ColabRow) => r.incluido && !r.bloqueId && bloques.length > 0
-  const sinVariedad = (r: ColabRow) => r.incluido && !r.variedadId
-
   const handleIniciar = () => {
     setIntentoIniciar(true)
     if (seleccionados.length === 0) return
-    const invalidos = seleccionados.filter((r) => sinBloque(r) || sinVariedad(r))
-    if (invalidos.length > 0) return
     const selecciones: SeleccionColaborador[] = seleccionados.map((r) => ({
       colaboradorId: r.colaborador.id,
       nombre: r.colaborador.nombre,
       externo: r.colaborador.externo,
-      bloqueId: r.bloqueId,
-      variedadId: r.variedadId,
+      bloqueId: '', // Será seleccionado en Planeación
+      variedadId: '', // Será seleccionado en Planeación
     }))
     // Guardar selecciones en sessionStorage para que los formularios las lean
     sessionStorage.setItem('labores-selecciones', JSON.stringify(selecciones))
-    // Navegar a SelectTipo para que el usuario elija qué tipo de formulario llenar
+    // Navegar directamente a elección de formulario
     navigate('select-tipo', { areaId, sedeId: sedeId || '' })
   }
 
-  const bloquesOpts = bloques.map((b) => ({ value: b.id, label: b.nombre }))
-  const getVarsOpts = (bloqueId: string) => {
-    const allVars = variedades.map((v) => ({ value: v.id, label: v.nombre }))
-    if (!bloqueId) return allVars
-    const idsEnBloque = new Set(
-      variedadesBloques.filter((vb) => vb.bloqueId === bloqueId).map((vb) => vb.variedadId)
-    )
-    // Si no hay restricciones definidas para el bloque, mostrar todas las variedades
-    if (idsEnBloque.size === 0) return allVars
-    return variedades
-      .filter((v) => idsEnBloque.has(v.id))
-      .map((v) => ({ value: v.id, label: v.nombre }))
-  }
+
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
@@ -169,38 +135,6 @@ export default function AreaDetalle() {
                   </span>
                   {row.colaborador.externo && <Badge variant="blue">Externo</Badge>}
                 </label>
-
-                {row.incluido && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-0 sm:pl-8">
-                    <div>
-                      <Select
-                        label="Bloque"
-                        options={bloquesOpts}
-                        placeholder="Seleccionar..."
-                        value={row.bloqueId}
-                        onChange={(e) => setBloque(idx, e.target.value)}
-                        className={intentoIniciar && sinBloque(row) ? 'border-red-400 ring-1 ring-red-400' : ''}
-                      />
-                      {intentoIniciar && sinBloque(row) && (
-                        <p className="mt-1 text-xs text-red-600">Requerido</p>
-                      )}
-                    </div>
-                    <div>
-                      <Select
-                        label="Variedad"
-                        options={getVarsOpts(row.bloqueId)}
-                        placeholder="Seleccionar..."
-                        value={row.variedadId}
-                        onChange={(e) => setVariedad(idx, e.target.value)}
-                        disabled={bloques.length > 0 && !row.bloqueId}
-                        className={intentoIniciar && sinVariedad(row) ? 'border-red-400 ring-1 ring-red-400' : ''}
-                      />
-                      {intentoIniciar && sinVariedad(row) && (
-                        <p className="mt-1 text-xs text-red-600">Requerido</p>
-                      )}
-                    </div>
-                  </div>
-                )}
               </div>
             ))}
           </div>

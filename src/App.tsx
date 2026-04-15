@@ -5,6 +5,7 @@ import { syncFromRemote } from './services/sync'
 import { PWAInstallBanner } from './components/PWAInstallBanner'
 import AreaSelector from './pages/AreaSelector'
 import AreaDetalle from './pages/AreaDetalle'
+import Planeacion from './pages/Planeacion'
 import SelectTipo from './pages/SelectTipo'
 import FormularioCorte from './pages/FormularioCorte'
 import FormularioLabores from './pages/FormularioLabores'
@@ -60,6 +61,7 @@ export default function App() {
       // Páginas de supervisor
       case 'areas':               return isAuthenticated ? <AreaSelector />       : <Login />
       case 'area-detail':         return isAuthenticated ? <AreaDetalle />        : <Login />
+      case 'planeacion':          return isAuthenticated ? <Planeacion />         : <Login />
       case 'select-tipo':         return isAuthenticated ? <SelectTipo />         : <Login />
       case 'formulario-corte':    return isAuthenticated ? <FormularioCorte />    : <Login />
       case 'formulario-labores':  return isAuthenticated ? <FormularioLabores />  : <Login />

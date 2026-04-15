@@ -125,13 +125,20 @@ export interface Usuario {
   activo: boolean
 }
 
-// Navigation state when moving from AreaDetalle → NuevoRegistro
+// Navigation state when moving from AreaDetalle → Planeación
 export interface SeleccionColaborador {
   colaboradorId: string
   nombre: string
   externo: boolean
+  bloqueId?: string
+  variedadId?: string
+}
+
+// Navigation state when moving from Planeación → Formularios
+export interface SeleccionBloqueVariedad {
   bloqueId: string
   variedadId: string
+  colaboradores: SeleccionColaborador[]
 }
 
 // Form value types for NuevoRegistro (shared with form sub-components)

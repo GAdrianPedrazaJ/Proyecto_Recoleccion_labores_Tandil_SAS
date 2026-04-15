@@ -5,6 +5,7 @@ export type PageName =
   | 'admin-setup'
   | 'areas'
   | 'area-detail'
+  | 'planeacion'
   | 'select-tipo'
   | 'formulario-corte'
   | 'formulario-labores'

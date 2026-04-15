@@ -47,13 +47,12 @@ export default function SelectTipo() {
     load()
   }, [areaId])
 
-  const handleSelectTipo = (tipo: 'Corte' | 'Labores' | 'Aseguramiento') => {
-    // Guardar tipo en sessionStorage para que el formulario lo lea
+  const handleSelectTipo = (tipo: 'Planeacion' | 'Aseguramiento') => {
+    // Guardar tipo en sessionStorage para que el formulario lo lea si lo necesita
     sessionStorage.setItem('labores-tipo-actual', tipo)
     
     const formularioMap: Record<string, string> = {
-      Corte: 'formulario-corte',
-      Labores: 'formulario-labores',
+      Planeacion: 'planeacion',
       Aseguramiento: 'formulario-aseguramiento',
     }
 
@@ -81,7 +80,7 @@ export default function SelectTipo() {
     )
   }
 
-  const tipos = ['Corte', 'Labores', 'Aseguramiento'] as const
+const tipos = ['Planeacion', 'Aseguramiento'] as const
   const allCompleted = tipos.every((t) => completados.has(t))
 
   return (
@@ -99,69 +98,42 @@ export default function SelectTipo() {
             </p>
             {completados.size > 0 && (
               <p className="mt-3 text-xs text-green-600 font-medium">
-                ✅ {completados.size} de 3 completado{completados.size !== 1 ? 's' : ''}
+                ✅ {completados.size} de 2 completado{completados.size !== 1 ? 's' : ''}
               </p>
             )}
           </div>
 
           <div className="space-y-3">
-            {/* Corte */}
+            {/* Planeacion */}
             <button
-              onClick={() => handleSelectTipo('Corte')}
-              disabled={completados.has('Corte')}
+              onClick={() => handleSelectTipo('Planeacion')}
+              disabled={completados.has('Planeacion')}
               className={`w-full rounded-lg border-2 px-4 py-6 text-left transition-all ${
-                completados.has('Corte')
+                completados.has('Planeacion')
                   ? 'border-gray-300 bg-gray-100 opacity-60 cursor-not-allowed'
                   : 'border-orange-200 bg-orange-50 hover:border-orange-400 hover:bg-orange-100'
               }`}
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <h3 className={`font-semibold ${completados.has('Corte') ? 'text-gray-600' : 'text-orange-900'}`}>
-                    {completados.has('Corte') ? '✅ Corte' : '🌾 Corte'}
+                  <h3 className={`font-semibold ${completados.has('Planeacion') ? 'text-gray-600' : 'text-orange-900'}`}>
+                    {completados.has('Planeacion') ? '✅ Planeación' : '📋 Planeación'}
                   </h3>
                   <p
                     className={`mt-1 text-sm ${
-                      completados.has('Corte') ? 'text-gray-500' : 'text-orange-700'
+                      completados.has('Planeacion') ? 'text-gray-500' : 'text-orange-700'
                     }`}
                   >
-                    {completados.has('Corte')
+                    {completados.has('Planeacion')
                       ? 'Completado hoy'
-                      : 'Tiempos, tallos estimados y reales, rendimiento'}
+                      : 'Corte + Labores, bloque/variedad, estimados/reales'}
                   </p>
                 </div>
-                <span className="text-2xl">{completados.has('Corte') ? '✓' : '→'}</span>
+                <span className="text-2xl">{completados.has('Planeacion') ? '✓' : '→'}</span>
               </div>
             </button>
 
-            {/* Labores */}
-            <button
-              onClick={() => handleSelectTipo('Labores')}
-              disabled={completados.has('Labores')}
-              className={`w-full rounded-lg border-2 px-4 py-6 text-left transition-all ${
-                completados.has('Labores')
-                  ? 'border-gray-300 bg-gray-100 opacity-60 cursor-not-allowed'
-                  : 'border-blue-200 bg-blue-50 hover:border-blue-400 hover:bg-blue-100'
-              }`}
-            >
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className={`font-semibold ${completados.has('Labores') ? 'text-gray-600' : 'text-blue-900'}`}>
-                    {completados.has('Labores') ? '✅ Labores' : '🌱 Labores'}
-                  </h3>
-                  <p
-                    className={`mt-1 text-sm ${
-                      completados.has('Labores') ? 'text-gray-500' : 'text-blue-700'
-                    }`}
-                  >
-                    {completados.has('Labores')
-                      ? 'Completado hoy'
-                      : 'Labores por cama, camas y tiempos estimados/reales'}
-                  </p>
-                </div>
-                <span className="text-2xl">{completados.has('Labores') ? '✓' : '→'}</span>
-              </div>
-            </button>
+
 
             {/* Aseguramiento */}
             <button
@@ -201,8 +173,8 @@ export default function SelectTipo() {
             <p className={`text-sm ${allCompleted ? 'text-green-900' : 'text-blue-900'}`}>
               <strong>{allCompleted ? '🎉 ¡Excelente!' : '💡 Tip:'}</strong> {
                 allCompleted
-                  ? 'Has completado los 3 tipos. Puedes ver tus registros o continuar editando.'
-                  : 'Puedes completar múltiples tipos. Cuando hayas completado todos los necesarios hoy, se sincronizarán juntos a la base de datos.'
+                  ? 'Has completado los 2 tipos. Puedes ver tus registros.'
+                  : 'Completa ambos tipos para sincronización en bloque.'
               }
             </p>
           </div>

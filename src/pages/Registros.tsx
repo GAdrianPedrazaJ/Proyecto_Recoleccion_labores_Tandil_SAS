@@ -11,7 +11,7 @@ import { Button } from '../components/ui/Button'
 import { Spinner } from '../components/ui/Spinner'
 import { Calendar } from 'lucide-react'
 
-type TipoFiltro = 'Todos' | 'Corte' | 'Labores' | 'Aseguramiento'
+type TipoFiltro = 'Todos' | 'Planeacion' | 'Corte' | 'Labores' | 'Aseguramiento'
 
 export default function Registros() {
   const [formularios, setFormularios] = useState<Formulario[]>([])
@@ -66,6 +66,7 @@ export default function Registros() {
   // Contar formularios por tipo (para la fecha activa)
   const contadores = {
     Todos: formulariosPorFecha.length,
+    Planeacion: formulariosPorFecha.filter((f) => f.tipo === 'Planeacion').length,
     Corte: formulariosPorFecha.filter((f) => f.tipo === 'Corte').length,
     Labores: formulariosPorFecha.filter((f) => f.tipo === 'Labores').length,
     Aseguramiento: formulariosPorFecha.filter((f) => f.tipo === 'Aseguramiento').length,
@@ -139,7 +140,7 @@ export default function Registros() {
             <div className="rounded-lg bg-white border border-gray-200 p-3">
               <label className="text-xs font-medium text-gray-600 block mb-2">Filtrar por tipo</label>
               <div className="grid grid-cols-2 gap-2">
-                {(['Todos', 'Corte', 'Labores', 'Aseguramiento'] as TipoFiltro[]).map((tipo) => (
+                {(['Todos', 'Planeacion', 'Corte', 'Labores', 'Aseguramiento'] as TipoFiltro[]).map((tipo) => (
                   <button
                     key={tipo}
                     onClick={() => setFiltroTipo(tipo)}
@@ -203,7 +204,12 @@ export default function Registros() {
                             <Button
                               size="sm"
                               variant="secondary"
-                              onClick={() => navigate('registro', { formularioId: f.id })}
+                              onClick={() =>
+                                navigate(
+                                  f.tipo === 'Planeacion' ? 'planeacion' : 'registro',
+                                  { formularioId: f.id, areaId: f.areaId },
+                                )
+                              }
                             >
                               Completar
                             </Button>

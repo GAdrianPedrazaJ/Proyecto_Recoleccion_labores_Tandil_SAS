@@ -94,8 +94,8 @@ function defaultFila(c: SeleccionColaborador) {
     colaboradorId: c.colaboradorId,
     nombre: c.nombre,
     externo: c.externo,
-    variedadId: c.variedadId,
-    bloqueId: c.bloqueId,
+    variedadId: '',
+    bloqueId: '',
     tiempoEstimadoMinutos: 0,
     tiempoEstimadoHoras: 0,
     tiempoRealMinutos: 0,
@@ -193,14 +193,12 @@ export default function NuevoRegistro() {
     return () => sessionStorage.removeItem('labores-tipo-actual')
   }, [])
 
-  // NEW mode: load area + init filas from sessionStorage
+    // NEW mode: load area + init filas from sessionStorage
   useEffect(() => {
     if (isEditMode || !areaId) return
     // Obtener selecciones del sessionStorage (pasadas desde AreaDetalle)
     const seleccionesJson = sessionStorage.getItem('labores-selecciones')
     const selecciones = seleccionesJson ? JSON.parse(seleccionesJson) : []
-    // Limpiar después de usar
-    sessionStorage.removeItem('labores-selecciones')
     const today = nowDate()
 
     Promise.all([getAreaById(areaId), getBloquesByArea(areaId), getFormularioBorradorDelDia(areaId, today, tipoParam)]).then(([areaData, bloquesData, borradorExistente]) => {
@@ -215,6 +213,7 @@ export default function NuevoRegistro() {
           tipo: borradorExistente.tipo,
           filas: borradorExistente.filas.map((fila) => ({ _active: true, ...fila })),
         })
+        sessionStorage.removeItem('labores-selecciones')
       } else {
         // Primera vez del día → fase ESTIMADO
         setFase('estimado')
@@ -223,10 +222,11 @@ export default function NuevoRegistro() {
           tipo: tipoParam,
           filas: selecciones.length > 0 ? selecciones.map(defaultFila) : [],
         })
+        sessionStorage.removeItem('labores-selecciones')
       }
       setLoading(false)
     })
-  }, [areaId, isEditMode]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [areaId, isEditMode, tipoParam, methods]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // EDIT mode: load existing formulario
   useEffect(() => {

@@ -877,4 +877,131 @@ export async function patchAssignArea(areaId: string, supervisorId: string): Pro
   if (error) throw new Error(error.message)
 }
 
+/**
+ * Guarda un formulario de tipo Planeacion que incluye Corte + Labores
+ * Crea un único formulario que contiene ambos conjuntos de datos
+ */
+export async function savePlaneacion(planeacion: {
+  id: string
+  fecha: string
+  areaId: string
+  areaNombre: string
+  supervisorId: string
+  usuarioId?: string
+  usuarioNombre?: string
+  filas: Array<{
+    colaboradorId: string
+    nombre: string
+    externo: boolean
+    bloqueId: string
+    variedadId: string
+    // Corte
+    tiempoEstimadoMinutos: number
+    tiempoEstimadoHoras: number
+    tiempoRealMinutos: number
+    tiempoRealHoras: number
+    tallosEstimados: number
+    tallosReales: number
+    horaInicio: string
+    horaFinCorteEstimado: string
+    horaFinCorteReal: string
+    horaCama: number
+    rendimientoCorteEstimado: number
+    rendimientoCorteReal: number
+    // Labores
+    labores: Array<{
+      laborId: string
+      laborNombre: string
+      camasEstimadas: number
+      tiempoCamaEstimado: number
+      rendimientoHorasEstimado: number
+      camasReales: number
+      tiempoCamaReal: number
+      rendimientoHorasReal: number
+      rendimientoPorcentaje: number
+    }>
+    // Aseguramiento (opcional)
+    desglossePiPc: boolean
+    procesoSeguridad: string
+    calidad1: boolean
+    calidad2: boolean
+    calidad3: boolean
+    calidad4: boolean
+    calidad5: boolean
+    cumplimientoCalidad: number
+    rendimientoPromedio: number
+    observaciones: string
+  }>
+}): Promise<void> {
+  // 1. Crear encabezado del formulario tipo Planeacion
+  const { error: errForm } = await supabase.from('formularios').upsert({
+    id: planeacion.id,
+    fecha: planeacion.fecha,
+    area_id: planeacion.areaId,
+    supervisor_id: planeacion.supervisorId,
+    tipo: 'Planeacion',
+    estado: 'borrador',
+    usuario_id: planeacion.usuarioId,
+    usuario_nombre: planeacion.usuarioNombre,
+  }, { onConflict: 'id' })
 
+  if (errForm) throw new Error(`Error guardando planeacion: ${errForm.message}`)
+
+  // 2. Guardar filas (que incluyen Corte + Labores)
+  for (const fila of planeacion.filas) {
+    const filaId = `${planeacion.id}-${fila.colaboradorId}`
+
+    // Guardar datos de Corte
+    await saveFilaCorte(planeacion.id, filaId, {
+      idColaborador: fila.colaboradorId,
+      nombreColaborador: fila.nombre,
+      externo: fila.externo,
+      idArea: planeacion.areaId,
+      idSupervisor: planeacion.supervisorId,
+      idBloque: fila.bloqueId,
+      idVariedad: fila.variedadId,
+      tiempoEstimadoMinutos: fila.tiempoEstimadoMinutos,
+      tiempoRealMinutos: fila.tiempoRealMinutos,
+      totalTallosCorteEstimado: fila.tallosEstimados,
+      totalTallosCorteReal: fila.tallosReales,
+      horaIniciCorte: fila.horaInicio,
+      horaFinCorteEstimado: fila.horaFinCorteEstimado,
+      horaRealFinCorte: fila.horaFinCorteReal,
+      horaCama: fila.horaCama,
+      rendimientoCorteEstimado: fila.rendimientoCorteEstimado,
+      rendimientoCorteReal: fila.rendimientoCorteReal,
+    })
+
+    // Guardar datos de Labores si existen
+    if (fila.labores && fila.labores.length > 0) {
+      const totalCamasEst = fila.labores.reduce((acc, l) => acc + l.camasEstimadas, 0)
+      const totalCamasReales = fila.labores.reduce((acc, l) => acc + l.camasReales, 0)
+
+      await saveFilaLabores(planeacion.id, filaId, {
+        idColaborador: fila.colaboradorId,
+        nombreColaborador: fila.nombre,
+        externo: fila.externo,
+        idArea: planeacion.areaId,
+        idSupervisor: planeacion.supervisorId,
+        idBloque: fila.bloqueId,
+        idVariedad: fila.variedadId,
+        cantidadLaboresRegistradas: fila.labores.length,
+        rendimientoPromedio: fila.rendimientoPromedio,
+        camasTotalEstimadas: totalCamasEst,
+        camasTotalReales: totalCamasReales,
+      })
+
+      // Guardar detalles de labores
+      await saveLaboresDetalle(filaId, fila.labores.map((l, idx) => ({
+        id: `${filaId}-labor-${idx}`,
+        numeroLabor: idx + 1,
+        idLabor: l.laborId,
+        nomLabor: l.laborNombre,
+        camasEstimado: l.camasEstimadas,
+        tiempoCamaEstimado: l.tiempoCamaEstimado,
+        camasReal: l.camasReales,
+        tiempoCamaReal: l.tiempoCamaReal,
+      })))
+    }
+  }
+}
