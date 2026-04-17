@@ -213,7 +213,7 @@ export interface FilaCorte {
   tiempoRealHoras: number | null
   totalTallosCorteEstimado: number | null
   totalTallosCorteReal: number | null
-  horaIniciCorte: string | null
+  horaInicioCorte: string | null
   horaFinCorteEstimado: string | null
   horaRealFinCorte: string | null
   horaCama: number | null

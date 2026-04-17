@@ -409,7 +409,7 @@ export async function saveFilaCorte(formularioId: string, filaId: string, data: 
   tiempoRealMinutos?: number
   totalTallosCorteEstimado?: number
   totalTallosCorteReal?: number
-  horaIniciCorte?: string
+  horaInicioCorte?: string
   horaFinCorteEstimado?: string
   horaRealFinCorte?: string
   horaCama?: number
@@ -430,7 +430,7 @@ export async function saveFilaCorte(formularioId: string, filaId: string, data: 
     tiempo_real_minutos: data.tiempoRealMinutos || null,
     total_tallos_corte_estimado: data.totalTallosCorteEstimado || null,
     total_tallos_corte_real: data.totalTallosCorteReal || null,
-    hora_inicio_corte: data.horaIniciCorte || null,
+    hora_inicio_corte: data.horaInicioCorte || null,
     hora_fin_corte_estimado: data.horaFinCorteEstimado || null,
     hora_real_fin_corte: data.horaRealFinCorte || null,
     hora_cama: data.horaCama || null,
@@ -522,7 +522,7 @@ export async function saveFilaAseguramiento(formularioId: string, filaId: string
   idSupervisor: string
   idBloque: string
   idVariedad: string
-  desglossePipe?: boolean
+  desglosePipe?: boolean
   procesoSeguridad?: string
   calidadCuadro1?: boolean
   calidadCuadro2?: boolean
@@ -543,7 +543,7 @@ export async function saveFilaAseguramiento(formularioId: string, filaId: string
     id_supervisor: data.idSupervisor || null,
     id_bloque: data.idBloque || null,
     id_variedad: data.idVariedad || null,
-    desglose_pipe: data.desglossePipe || false,
+    desglose_pipe: data.desglosePipe || false,
     proceso_seguridad: data.procesoSeguridad || null,
     calidad_cuadro_1: data.calidadCuadro1 || false,
     calidad_cuadro_2: data.calidadCuadro2 || false,
@@ -749,7 +749,7 @@ export async function saveFormularioCompleto(formulario: {
         tiempoRealMinutos: fila.tiempoRealMinutos,
         totalTallosCorteEstimado: fila.tallosEstimados,
         totalTallosCorteReal: fila.tallosReales,
-        horaIniciCorte: fila.horaInicio,
+        horaInicioCorte: fila.horaInicio,
         horaFinCorteEstimado: fila.horaFinEstimado,
         horaRealFinCorte: fila.horaFinReal,
         horaCama: fila.horaCama,
@@ -801,7 +801,7 @@ export async function saveFormularioCompleto(formulario: {
         idSupervisor: formulario.supervisorId,
         idBloque: fila.bloqueId,
         idVariedad: fila.variedadId,
-        desglossePipe: fila.desglose,
+        desglosePipe: fila.desglose,
         procesoSeguridad: fila.procesoSeguridad,
         calidadCuadro1: fila.calidad?.[0],
         calidadCuadro2: fila.calidad?.[1],
@@ -953,31 +953,6 @@ export async function savePlaneacion(planeacion: {
 
     // Guardar datos de Corte
     await saveFilaCorte(planeacion.id, filaId, {
-      idColaborador: fila.colaboradorId,
-      nombreColaborador: fila.nombre,
-      externo: fila.externo,
-      idArea: planeacion.areaId,
-      idSupervisor: planeacion.supervisorId,
-      idBloque: fila.bloqueId,
-      idVariedad: fila.variedadId,
-      tiempoEstimadoMinutos: fila.tiempoEstimadoMinutos,
-      tiempoRealMinutos: fila.tiempoRealMinutos,
-      totalTallosCorteEstimado: fila.tallosEstimados,
-      totalTallosCorteReal: fila.tallosReales,
-      horaIniciCorte: fila.horaInicio,
-      horaFinCorteEstimado: fila.horaFinCorteEstimado,
-      horaRealFinCorte: fila.horaFinCorteReal,
-      horaCama: fila.horaCama,
-      rendimientoCorteEstimado: fila.rendimientoCorteEstimado,
-      rendimientoCorteReal: fila.rendimientoCorteReal,
-    })
-
-    // Guardar datos de Labores si existen
-    if (fila.labores && fila.labores.length > 0) {
-      const totalCamasEst = fila.labores.reduce((acc, l) => acc + l.camasEstimadas, 0)
-      const totalCamasReales = fila.labores.reduce((acc, l) => acc + l.camasReales, 0)
-
-      await saveFilaLabores(planeacion.id, filaId, {
         idColaborador: fila.colaboradorId,
         nombreColaborador: fila.nombre,
         externo: fila.externo,
@@ -985,23 +960,48 @@ export async function savePlaneacion(planeacion: {
         idSupervisor: planeacion.supervisorId,
         idBloque: fila.bloqueId,
         idVariedad: fila.variedadId,
-        cantidadLaboresRegistradas: fila.labores.length,
-        rendimientoPromedio: fila.rendimientoPromedio,
-        camasTotalEstimadas: totalCamasEst,
-        camasTotalReales: totalCamasReales,
+        tiempoEstimadoMinutos: fila.tiempoEstimadoMinutos,
+        tiempoRealMinutos: fila.tiempoRealMinutos,
+        totalTallosCorteEstimado: fila.tallosEstimados,
+        totalTallosCorteReal: fila.tallosReales,
+        horaInicioCorte: fila.horaInicio,
+        horaFinCorteEstimado: fila.horaFinCorteEstimado,
+        horaRealFinCorte: fila.horaFinCorteReal,
+        horaCama: fila.horaCama,
+        rendimientoCorteEstimado: fila.rendimientoCorteEstimado,
+        rendimientoCorteReal: fila.rendimientoCorteReal,
       })
 
-      // Guardar detalles de labores
-      await saveLaboresDetalle(filaId, fila.labores.map((l, idx) => ({
-        id: `${filaId}-labor-${idx}`,
-        numeroLabor: idx + 1,
-        idLabor: l.laborId,
-        nomLabor: l.laborNombre,
-        camasEstimado: l.camasEstimadas,
-        tiempoCamaEstimado: l.tiempoCamaEstimado,
-        camasReal: l.camasReales,
-        tiempoCamaReal: l.tiempoCamaReal,
-      })))
-    }
+      if (fila.labores && fila.labores.length > 0) {
+        const totalCamasEst = fila.labores.reduce((acc, l) => acc + l.camasEstimadas, 0)
+        const totalCamasReales = fila.labores.reduce((acc, l) => acc + l.camasReales, 0)
+
+        await saveFilaLabores(planeacion.id, filaId, {
+          idColaborador: fila.colaboradorId,
+          nombreColaborador: fila.nombre,
+          externo: fila.externo,
+          idArea: planeacion.areaId,
+          idSupervisor: planeacion.supervisorId,
+          idBloque: fila.bloqueId,
+          idVariedad: fila.variedadId,
+          cantidadLaboresRegistradas: fila.labores.length,
+          rendimientoPromedio: fila.rendimientoPromedio,
+          tiempoTotalLaboresEstimado: fila.labores.reduce((sum, l) => sum + l.tiempoCamaEstimado, 0),
+          tiempoTotalLaboresReal: fila.labores.reduce((sum, l) => sum + l.tiempoCamaReal, 0),
+          camasTotalEstimadas: totalCamasEst,
+          camasTotalReales: totalCamasReales,
+        })
+
+        await saveLaboresDetalle(filaId, fila.labores.map((l, idx) => ({
+          id: `${filaId}-labor-${idx}`,
+          numeroLabor: idx + 1,
+          idLabor: l.laborId,
+          nomLabor: l.laborNombre,
+          camasEstimado: l.camasEstimadas,
+          tiempoCamaEstimado: l.tiempoCamaEstimado,
+          camasReal: l.camasReales,
+          tiempoCamaReal: l.tiempoCamaReal,
+        })))
+      }
   }
 }

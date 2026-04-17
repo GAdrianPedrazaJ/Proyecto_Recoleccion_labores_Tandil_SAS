@@ -244,7 +244,7 @@ function EstadoBadge({ formulario }: { formulario: Formulario }) {
 }
 
 function SyncBadge({ formulario }: { formulario: Formulario }) {
-  if (formulario.sincronizado) return <Badge variant="green">✓ Sincronizado</Badge>
-  if (formulario.errorPermanente) return <Badge variant="red">⚠️ Error</Badge>
-  return <Badge variant="yellow">📤 Pendiente</Badge>
+  if (formulario.sincronizado) return <Badge variant="green">✓ Respaldo remoto</Badge>
+  if (formulario.errorPermanente) return <Badge variant="red">⚠️ Requiere revisión</Badge>
+  return <Badge variant="yellow">📤 Pendiente de respaldo</Badge>
 }

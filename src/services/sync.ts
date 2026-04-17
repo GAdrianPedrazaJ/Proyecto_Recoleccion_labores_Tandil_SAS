@@ -60,7 +60,6 @@ export async function syncFromRemote(): Promise<void> {
         safe(fetchLabores()),
       ])
 
-    await clearVariedadesBloques()
     // Para cada store de datos maestros: limpiar y repoblar SOLO si el backend
     // devolvio datos (evita borrar cache cuando no hay conexion)
     if (sedes.length > 0) { await clearSedes(); await Promise.all(sedes.map(putSede)) }
@@ -69,7 +68,7 @@ export async function syncFromRemote(): Promise<void> {
     if (bloques.length > 0) { await clearBloques(); await Promise.all(bloques.map(putBloque)) }
     if (colaboradores.length > 0) { await clearColaboradores(); await Promise.all(colaboradores.map(putColaborador)) }
     if (variedades.length > 0) { await clearVariedades(); await Promise.all(variedades.map(putVariedad)) }
-    await Promise.all(variedadesBloques.map(putVariedadBloque))
+    if (variedadesBloques.length > 0) { await clearVariedadesBloques(); await Promise.all(variedadesBloques.map(putVariedadBloque)) }
     if (labores.length > 0) { await clearLabores(); await Promise.all(labores.map(putLabor)) }
   } catch {
     // Sin conexión — usar caché IDB existente
@@ -88,7 +87,11 @@ export interface SyncResult {
  * Actualiza el estado de cada formulario en IDB tras el intento.
  */
 export async function syncPendientes(): Promise<SyncResult> {
-  const pendientes = await getPendientesSincronizacion()
+  const pendientes = (await getPendientesSincronizacion()).filter(
+    (formulario) =>
+      (formulario.estado === 'completo' || formulario.fase === 'estimado') &&
+      ['Corte', 'Labores', 'Aseguramiento'].includes(formulario.tipo),
+  )
   let synced = 0
   let errors = 0
 
