@@ -1,3 +1,5 @@
+export type Rol = 'supervisor' | 'administrador' | 'superadministrador'
+
 export interface Sede {
   id: string
   nombre: string
@@ -119,8 +121,9 @@ export interface Formulario {
 export interface Usuario {
   id: string
   username: string
+  email?: string
   passwordHash: string
-  rol: 'admin'
+  rol: Rol
   nombre: string
   activo: boolean
 }

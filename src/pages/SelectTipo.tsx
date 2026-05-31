@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigationStore } from '../store/useNavigationStore'
-import { useNavigation } from '../hooks/useNavigation'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { getAreaById, getAllFormularios } from '../services/db'
 import type { Area } from '../types'
 import { Header } from '../components/layout/Header'
@@ -9,10 +8,10 @@ import { Button } from '../components/ui/Button'
 import { Spinner } from '../components/ui/Spinner'
 
 export default function SelectTipo() {
-  const { params } = useNavigationStore()
-  const navigate = useNavigation()
-  const areaId = params.areaId ? String(params.areaId) : undefined
-  const sedeId = params.sedeId ? String(params.sedeId) : undefined
+  const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
+  const areaId = searchParams.get('areaId') || ''
+  const sedeId = searchParams.get('sedeId') || ''
 
   const [area, setArea] = useState<Area | null>(null)
   const [loading, setLoading] = useState(true)
@@ -51,16 +50,13 @@ export default function SelectTipo() {
     // Guardar tipo en sessionStorage para que el formulario lo lea si lo necesita
     sessionStorage.setItem('labores-tipo-actual', tipo)
     
-    const formularioMap: Record<string, string> = {
-      Planeacion: 'planeacion',
-      Aseguramiento: 'formulario-aseguramiento',
+    const pathMap: Record<string, string> = {
+      Planeacion: '/planeacion',
+      Aseguramiento: '/formulario-aseguramiento',
     }
 
-    navigate(formularioMap[tipo], {
-      areaId: areaId || '',
-      sedeId: sedeId || '',
-      tipo,
-    })
+    const query = new URLSearchParams({ areaId, sedeId, tipo }).toString()
+    navigate(`${pathMap[tipo]}?${query}`)
   }
 
   if (loading) {
@@ -75,12 +71,12 @@ export default function SelectTipo() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-gray-50 p-8 text-center">
         <p className="text-red-600">Error: No se encontró el área</p>
-        <Button onClick={() => navigate('areas')}>Volver a Áreas</Button>
+        <Button onClick={() => navigate('/areas')}>Volver a Áreas</Button>
       </div>
     )
   }
 
-const tipos = ['Planeacion', 'Aseguramiento'] as const
+  const tipos = ['Planeacion', 'Aseguramiento'] as const
   const allCompleted = tipos.every((t) => completados.has(t))
 
   return (
@@ -132,8 +128,6 @@ const tipos = ['Planeacion', 'Aseguramiento'] as const
                 <span className="text-2xl">{completados.has('Planeacion') ? '✓' : '→'}</span>
               </div>
             </button>
-
-
 
             {/* Aseguramiento */}
             <button
@@ -190,7 +184,7 @@ const tipos = ['Planeacion', 'Aseguramiento'] as const
             onClick={() => {
               sessionStorage.removeItem('labores-selecciones')
               sessionStorage.removeItem('labores-tipo-actual')
-              navigate('historial')
+              navigate('/historial')
             }}
           >
             {allCompleted ? 'Ver todos mis registros' : `Ver registros (${completados.size} completado${completados.size !== 1 ? 's' : ''})`}

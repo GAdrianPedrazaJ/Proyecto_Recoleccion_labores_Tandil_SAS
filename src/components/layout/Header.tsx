@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigation } from '../../hooks/useNavigation'
+import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/useAuthStore'
 import { SyncIndicator } from '../ui/SyncIndicator'
 
@@ -10,14 +10,24 @@ interface HeaderProps {
 }
 
 export function Header({ title, showBack = false, showUser = true }: HeaderProps) {
-  const navigate = useNavigation()
+  const navigate = useNavigate()
   const { usuario, logout } = useAuthStore()
   const [showMenu, setShowMenu] = useState(false)
+
+  const isAdmin = usuario?.rol === 'administrador' || usuario?.rol === 'superadministrador'
 
   const handleLogout = () => {
     logout()
     setShowMenu(false)
-    navigate('login', { replace: true })
+    navigate('/login', { replace: true })
+  }
+
+  const handleHomeClick = () => {
+    if (isAdmin) {
+      navigate('/admin')
+    } else {
+      navigate('/areas')
+    }
   }
 
   return (
@@ -36,8 +46,8 @@ export function Header({ title, showBack = false, showUser = true }: HeaderProps
       )}
 
       <button 
-        onClick={() => navigate(usuario?.rol === 'administrador' ? 'admin-dashboard' : 'areas')} 
-        className="flex items-center gap-2 flex-1 min-w-0 hover:opacity-80 active:opacity-70 transition-opacity"
+        onClick={handleHomeClick}
+        className="flex items-center gap-2 flex-1 min-w-0 hover:opacity-80 active:opacity-70 transition-opacity text-left"
       >
         <span className="text-2xl" role="img" aria-label="Flor">🌷</span>
         <span className="truncate font-semibold text-lg">{title}</span>
@@ -54,7 +64,7 @@ export function Header({ title, showBack = false, showUser = true }: HeaderProps
             title={`${usuario.nombre} (${usuario.rol})`}
           >
             <span className="hidden sm:inline text-sm">👤 {usuario.nombre}</span>
-            <span className="inline sm:hidden text-sm">{usuario.rol === 'administrador' ? '👨‍💼' : '👤'}</span>
+            <span className="inline sm:hidden text-sm">{isAdmin ? '👨‍💼' : '👤'}</span>
             <svg
               className={`h-4 w-4 transition-transform ${showMenu ? 'rotate-180' : ''}`}
               fill="none"
@@ -67,19 +77,19 @@ export function Header({ title, showBack = false, showUser = true }: HeaderProps
 
           {/* Dropdown menu */}
           {showMenu && (
-            <div className="absolute right-0 top-full mt-1 rounded-lg bg-white text-gray-900 shadow-lg overflow-hidden min-w-max z-40">
-              <div className="px-4 py-2 border-b border-gray-200">
-                <p className="font-semibold text-sm">{usuario.nombre}</p>
+            <div className="absolute right-0 top-full mt-1 rounded-lg bg-white text-gray-900 shadow-lg overflow-hidden min-w-[180px] z-40">
+              <div className="px-4 py-2 border-b border-gray-200 bg-gray-50">
+                <p className="font-semibold text-sm truncate">{usuario.nombre}</p>
                 <p className="text-xs text-gray-500 capitalize">{usuario.rol}</p>
               </div>
               
-              {usuario.rol === 'administrador' && (
+              {isAdmin && (
                 <button
                   onClick={() => {
-                    navigate('admin-dashboard')
+                    navigate('/admin')
                     setShowMenu(false)
                   }}
-                  className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition"
+                  className="block w-full text-left px-4 py-2.5 text-sm hover:bg-gray-100 transition border-b border-gray-100"
                 >
                   📊 Panel Administrador
                 </button>
@@ -87,17 +97,17 @@ export function Header({ title, showBack = false, showUser = true }: HeaderProps
 
               <button
                 onClick={() => {
-                  navigate(usuario.rol === 'administrador' ? 'admin-dashboard' : 'areas')
+                  handleHomeClick()
                   setShowMenu(false)
                 }}
-                className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition"
+                className="block w-full text-left px-4 py-2.5 text-sm hover:bg-gray-100 transition"
               >
                 🏠 Inicio
               </button>
 
               <button
                 onClick={handleLogout}
-                className="block w-full text-left px-4 py-2 text-sm hover:bg-red-100 text-red-600 transition"
+                className="block w-full text-left px-4 py-2.5 text-sm hover:bg-red-50 text-red-600 transition font-medium"
               >
                 🚪 Cerrar sesión
               </button>

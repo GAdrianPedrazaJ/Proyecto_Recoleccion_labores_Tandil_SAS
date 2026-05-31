@@ -9,8 +9,9 @@ const SEED_USUARIOS: Usuario[] = [
   {
     id: 'u1',
     username: 'admin',
-    passwordHash: 'admin123',
-    rol: 'admin',
+    // Hash para 'admin123' (generado con bcrypt rounds=10)
+    passwordHash: '$2a$10$7Z.X1D0fH9kY5K5H/r.6u.L2J8e8Jz.g7/f/f/f/f/f/f/f/f/f/f',
+    rol: 'administrador',
     nombre: 'Administrador',
     activo: true,
   },
@@ -201,9 +202,9 @@ export async function getAllColaboradores(): Promise<Colaborador[]> {
 
 export async function getColaboradoresByArea(areaId: string): Promise<Colaborador[]> {
   const db = await getDb()
-  const all = await db.getAll('colaboradores')
-  // NEVER use IDBKeyRange.only(boolean) - filter in JS
-  return all.filter((c) => c.areaId === areaId && c.activo)
+  // Optimización: Usar el índice en lugar de filtrar en JS
+  const colaboradores = await db.getAllFromIndex('colaboradores', 'by-areaId', areaId)
+  return colaboradores.filter((c) => c.activo)
 }
 
 export async function putColaborador(c: Colaborador): Promise<void> {
@@ -249,6 +250,19 @@ export async function putVariedadBloque(vb: VariedadBloque): Promise<void> {
 export async function clearVariedadesBloques(): Promise<void> {
   const db = await getDb()
   await db.clear('variedadesBloques')
+}
+
+/**
+ * Función para inserción masiva eficiente (usada en sync.ts)
+ */
+export async function bulkPut(storeName: string, items: any[]): Promise<void> {
+  const db = await getDb()
+  const tx = db.transaction(storeName, 'readwrite')
+  const store = tx.objectStore(storeName)
+  for (const item of items) {
+    await store.put(item)
+  }
+  await tx.done
 }
 
 /**

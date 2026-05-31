@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, forwardRef, type InputHTMLAttributes } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -10,16 +10,43 @@ import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
 import { Select } from '../../components/ui/Select'
 import { Spinner } from '../../components/ui/Spinner'
+import {
+  Users,
+  UserPlus,
+  Search,
+  Edit2,
+  Trash2,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  UserCheck,
+  Globe,
+  Briefcase
+} from 'lucide-react'
 
 const schema = z.object({
-  nombre: z.string().min(1, 'Requerido'),
-  areaId: z.string().min(1, 'Requerido'),
+  nombre: z.string().min(1, 'El nombre es requerido'),
+  areaId: z.string().min(1, 'Debe seleccionar un área'),
   supervisorId: z.string(),
   externo: z.boolean(),
   asignado: z.boolean(),
   activo: z.boolean(),
 })
 type FormData = z.infer<typeof schema>
+
+// Subcomponente de Toggle con importación nombrada de forwardRef
+const ToggleField = forwardRef<HTMLInputElement, { label: string } & InputHTMLAttributes<HTMLInputElement>>(
+  ({ label, ...props }, ref) => (
+    <label className="flex items-center gap-3 cursor-pointer group p-3 bg-white rounded-2xl border border-gray-100 hover:border-green-200 transition-all">
+      <div className="relative">
+        <input type="checkbox" ref={ref} {...props} className="sr-only peer" />
+        <div className="w-8 h-4 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-green-600"></div>
+      </div>
+      <span className="text-[11px] font-black text-gray-600 group-hover:text-gray-900 uppercase">{label}</span>
+    </label>
+  )
+)
+ToggleField.displayName = 'ToggleField'
 
 export default function AdminColaboradores() {
   const [colaboradores, setColaboradores] = useState<Colaborador[]>([])
@@ -43,13 +70,36 @@ export default function AdminColaboradores() {
       setColaboradores(c); setAreas(a)
       await Promise.all([...c.map(putColaborador), ...a.map(putArea)])
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Error al cargar')
+      setError(e instanceof Error ? e.message : 'Error al cargar los datos')
     } finally { setLoading(false) }
   }
   useEffect(() => { load() }, [])
 
-  const openAdd = () => { setEditing(null); reset({ nombre: '', areaId: areas[0]?.id ?? '', supervisorId: '', externo: false, asignado: false, activo: true }); setModalOpen(true) }
-  const openEdit = (c: Colaborador) => { setEditing(c); reset({ nombre: c.nombre, areaId: c.areaId, supervisorId: c.supervisorId, externo: c.externo, asignado: c.asignado, activo: c.activo }); setModalOpen(true) }
+  const openAdd = () => {
+    setEditing(null)
+    reset({
+      nombre: '',
+      areaId: areas[0]?.id ?? '',
+      supervisorId: '',
+      externo: false,
+      asignado: false,
+      activo: true
+    })
+    setModalOpen(true)
+  }
+
+  const openEdit = (c: Colaborador) => {
+    setEditing(c)
+    reset({
+      nombre: c.nombre,
+      areaId: c.areaId,
+      supervisorId: c.supervisorId,
+      externo: c.externo,
+      asignado: c.asignado,
+      activo: c.activo
+    })
+    setModalOpen(true)
+  }
 
   const onSubmit = async (data: FormData) => {
     setSaving(true); setError(null)
@@ -57,126 +107,207 @@ export default function AdminColaboradores() {
       const colab: Colaborador = editing ? { ...editing, ...data } : { id: crypto.randomUUID(), ...data }
       await upsertColaborador(colab)
       await putColaborador(colab)
-      await load(); setModalOpen(false)
+      await load()
+      setModalOpen(false)
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Error al guardar')
+      setError(e instanceof Error ? e.message : 'Error al guardar los cambios')
     } finally { setSaving(false) }
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('¿Eliminar este colaborador?')) return
+    if (!confirm('¿Estás seguro de eliminar a este colaborador?')) return
     setError(null)
     try {
       await deleteColaboradorSupa(id)
       await deleteColaborador(id)
       setColaboradores((prev) => prev.filter((c) => c.id !== id))
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Error al eliminar')
+      setError(e instanceof Error ? e.message : 'Error al eliminar el registro')
     }
   }
 
-  const getAreaNombre = (id: string) => areas.find((a) => a.id === id)?.nombre ?? id
+  const getAreaNombre = (id: string) => areas.find((a) => a.id === id)?.nombre ?? 'Sin área'
   const areaOptions = areas.map((a) => ({ value: a.id, label: a.nombre }))
-  const filtered = search ? colaboradores.filter((c) => c.nombre.toLowerCase().includes(search.toLowerCase())) : colaboradores
+  const filtered = search
+    ? colaboradores.filter((c) => c.nombre.toLowerCase().includes(search.toLowerCase()))
+    : colaboradores
 
   return (
     <AdminLayout>
-      {error && (
-        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-start gap-2">
-          <span className="font-semibold">Error:</span> {error}
-          <button onClick={() => setError(null)} className="ml-auto text-red-400 hover:text-red-600">✕</button>
+      <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+          <div>
+            <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Personal de Campo</h1>
+            <div className="flex flex-wrap items-center gap-4 mt-2">
+              <div className="flex items-center gap-1.5 text-sm font-medium text-gray-500">
+                <Users className="w-4 h-4 text-blue-500" />
+                <span>{colaboradores.length} Colaboradores</span>
+              </div>
+              <div className="w-1.5 h-1.5 bg-gray-300 rounded-full"></div>
+              <div className="flex items-center gap-1.5 text-sm font-medium text-green-600">
+                <CheckCircle2 className="w-4 h-4" />
+                <span>{colaboradores.filter(c => c.activo).length} Activos</span>
+              </div>
+            </div>
+          </div>
+          <Button onClick={openAdd} className="px-6 py-6 rounded-2xl shadow-lg shadow-green-100 flex items-center gap-2">
+            <UserPlus className="w-5 h-5" />
+            Nuevo Colaborador
+          </Button>
         </div>
-      )}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Colaboradores</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{colaboradores.length} colaborador{colaboradores.length !== 1 ? 'es' : ''}</p>
-        </div>
-        <Button onClick={openAdd}>+ Nuevo colaborador</Button>
-      </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-3">
-          <input type="search" placeholder="Buscar por nombre..." value={search} onChange={(e) => setSearch(e.target.value)}
-            className="w-72 rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-green-500 focus:outline-none"
-          />
-          <span className="text-xs text-gray-400">{filtered.length} resultado{filtered.length !== 1 ? 's' : ''}</span>
-        </div>
-        {loading ? (
-          <div className="flex justify-center py-16"><Spinner /></div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Nombre</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Área</th>
-                  <th className="text-center px-4 py-3 font-semibold text-gray-600">Externo</th>
-                  <th className="text-center px-4 py-3 font-semibold text-gray-600">Asignado</th>
-                  <th className="text-center px-4 py-3 font-semibold text-gray-600">Estado</th>
-                  <th className="text-center px-4 py-3 font-semibold text-gray-600">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.length === 0 && <tr><td colSpan={6} className="text-center py-12 text-gray-400">Sin resultados</td></tr>}
-                {filtered.map((c, i) => (
-                  <tr key={c.id} className={`border-b border-gray-100 hover:bg-blue-50/30 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/60'}`}>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-green-100 text-sm font-bold text-green-700">{c.nombre.charAt(0)}</div>
-                        <span className="font-medium text-gray-900">{c.nombre}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">{getAreaNombre(c.areaId)}</td>
-                    <td className="px-4 py-3 text-center">
-                      <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${c.externo ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-500'}`}>{c.externo ? 'Sí' : 'No'}</span>
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${c.asignado ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'}`}>{c.asignado ? 'Sí' : 'No'}</span>
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${c.activo ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>{c.activo ? 'Activo' : 'Inactivo'}</span>
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <button onClick={() => openEdit(c)} className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50" title="Editar">
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 012.828 2.828L11.828 15.828a4 4 0 01-2.828 1.172H7v-2a4 4 0 011.172-2.828z" /></svg>
-                        </button>
-                        <button onClick={() => handleDelete(c.id)} className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50" title="Eliminar">
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4h6v3M4 7h16" /></svg>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {error && (
+          <div className="mb-6 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm text-red-700 flex items-center gap-3 animate-in shake duration-300">
+            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <p className="font-semibold">{error}</p>
+            <button onClick={() => setError(null)} className="ml-auto p-1 hover:bg-red-100 rounded-lg transition-colors">
+              <XCircle className="w-4 h-4" />
+            </button>
           </div>
         )}
+
+        <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden">
+          <div className="p-4 sm:p-6 bg-gray-50/30 border-b border-gray-50">
+            <div className="relative max-w-md">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="search"
+                placeholder="Buscar por nombre..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-11 pr-4 py-3 rounded-2xl bg-white border-none ring-1 ring-gray-200 focus:ring-2 focus:ring-green-500 text-sm font-medium transition-all outline-none"
+              />
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-24 gap-4">
+              <Spinner size="lg" />
+              <p className="text-gray-400 text-sm font-medium animate-pulse">Cargando personal...</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b border-gray-50 text-[10px] font-black uppercase tracking-widest text-gray-400 bg-gray-50/50">
+                    <th className="px-6 py-4">Colaborador</th>
+                    <th className="px-6 py-4">Área Asignada</th>
+                    <th className="px-6 py-4 text-center">Tipo</th>
+                    <th className="px-6 py-4 text-center">Estado Laboral</th>
+                    <th className="px-6 py-4 text-center">Vigencia</th>
+                    <th className="px-6 py-4 text-right">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {filtered.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="text-center py-20">
+                        <div className="flex flex-col items-center gap-2 opacity-30">
+                          <Users className="w-12 h-12" />
+                          <p className="font-bold">No se encontraron colaboradores</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    filtered.map((c) => (
+                      <tr key={c.id} className="group hover:bg-green-50/30 transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-green-500 to-green-600 font-black text-white shadow-sm">
+                              {c.nombre.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="font-bold text-gray-900 group-hover:text-green-700 transition-colors">{c.nombre}</span>
+                              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">ID: {c.id.split('-')[0]}</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <Briefcase className="w-3.5 h-3.5 text-gray-400" />
+                            <span className="text-sm font-semibold text-gray-600">{getAreaNombre(c.areaId)}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-black tracking-tight ${
+                            c.externo ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
+                          }`}>
+                            {c.externo ? 'EXTERNO' : 'INTERNO'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-black ${
+                            c.asignado ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
+                          }`}>
+                            {c.asignado ? 'ASIGNADO' : 'DISPONIBLE'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black ${
+                            c.activo ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'
+                          }`}>
+                            {c.activo ? 'ACTIVO' : 'BAJA'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <button onClick={() => openEdit(c)} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all">
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => handleDelete(c.id)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
 
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-5">{editing ? 'Editar colaborador' : 'Nuevo colaborador'}</h2>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <Input label="Nombre" {...register('nombre')} error={errors.nombre?.message} />
-              <Select label="Área" options={areaOptions} {...register('areaId')} error={errors.areaId?.message} />
-              <Input label="Supervisor ID (opcional)" {...register('supervisorId')} />
-              <div className="flex gap-6">
-                <label className="flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" {...register('externo')} className="rounded" /> Externo</label>
-                <label className="flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" {...register('asignado')} className="rounded" /> Asignado</label>
-                <label className="flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" {...register('activo')} className="rounded" /> Activo</label>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="px-8 pt-8 pb-4">
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h2 className="text-2xl font-black text-gray-900">{editing ? 'Ficha de Colaborador' : 'Nuevo Ingreso'}</h2>
+                  <p className="text-sm text-gray-500 font-medium">Gestiona los datos del personal operativo</p>
+                </div>
+                <button onClick={() => setModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-2xl transition-colors">
+                  <XCircle className="w-6 h-6 text-gray-400" />
+                </button>
               </div>
-              <div className="flex gap-3 pt-2">
-                <Button type="submit" loading={saving} className="flex-1">Guardar</Button>
-                <Button type="button" variant="ghost" onClick={() => setModalOpen(false)} className="flex-1">Cancelar</Button>
-              </div>
-            </form>
+
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                <div className="space-y-4 bg-gray-50/50 p-6 rounded-3xl border border-gray-100">
+                  <Input label="Nombre Completo" placeholder="Ej: Juan Pérez" {...register('nombre')} error={errors.nombre?.message} />
+                  <Select label="Área de Trabajo" options={areaOptions} {...register('areaId')} error={errors.areaId?.message} />
+                  <Input label="ID de Supervisor" placeholder="Opcional" {...register('supervisorId')} />
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+                    <ToggleField label="Externo" {...register('externo')} />
+                    <ToggleField label="Asignado" {...register('asignado')} />
+                    <ToggleField label="Activo" {...register('activo')} />
+                  </div>
+                </div>
+
+                <div className="flex gap-4 pt-2">
+                  <Button type="submit" loading={saving} className="flex-1 py-4 rounded-2xl font-bold">
+                    {editing ? 'Guardar Cambios' : 'Registrar'}
+                  </Button>
+                  <Button type="button" variant="ghost" onClick={() => setModalOpen(false)} className="flex-1 py-4 rounded-2xl font-bold text-gray-500">
+                    Cancelar
+                  </Button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}
     </AdminLayout>
   )
 }
-

@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigationStore } from '../store/useNavigationStore'
-import { useNavigation } from '../hooks/useNavigation'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { FormProvider, useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -61,7 +60,7 @@ const filaPlaneacionSchema = z.object({
   horaInicio: z.string(),
   horaFinCorteEstimado: z.string(),
   horaFinCorteReal: z.string(),
-  horaCama: z.number(),
+  horaCama: 0,
   rendimientoCorteEstimado: z.number().min(0),
   rendimientoCorteReal: z.number().min(0),
   labores: z.array(laborSchema).min(0),
@@ -145,11 +144,11 @@ interface SeleccionBV {
 }
 
 export default function Planeacion() {
-  const { params } = useNavigationStore()
-  const areaId = params.areaId ? String(params.areaId) : undefined
-  const formularioId = params.formularioId ? String(params.formularioId) : undefined
-  const sedeId = String(params.sedeId ?? '')
-  const navigate = useNavigation()
+  const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
+  const areaId = searchParams.get('areaId') || ''
+  const formularioId = searchParams.get('formularioId') || ''
+  const sedeId = searchParams.get('sedeId') || ''
 
   const [area, setArea] = useState<Area | null>(null)
   const [bloques, setBloques] = useState<Bloque[]>([])
@@ -184,7 +183,7 @@ export default function Planeacion() {
     name: 'filas',
   })
 
-  const totalRendimientoLabores = filasValues?.reduce((acc, fila) => {
+  const totalRendimientoLabores = (filasValues || []).reduce((acc, fila) => {
     const totalEstimadas = fila.labores?.reduce((sum: number, lab: any) => sum + (lab.camasEstimadas || 0), 0) ?? 0
     const totalReales = fila.labores?.reduce((sum: number, lab: any) => sum + (lab.camasReales || 0), 0) ?? 0
     return {
@@ -193,7 +192,7 @@ export default function Planeacion() {
     }
   }, { camasEstimadas: 0, camasReales: 0 })
 
-  const rendimientoTotalPorcentaje = totalRendimientoLabores?.camasEstimadas > 0
+  const rendimientoTotalPorcentaje = totalRendimientoLabores.camasEstimadas > 0
     ? (totalRendimientoLabores.camasReales / totalRendimientoLabores.camasEstimadas) * 100
     : 0
 
@@ -203,8 +202,7 @@ export default function Planeacion() {
   const formularioEstado = isCompletionMode ? 'completo' : 'borrador'
 
   const load = async () => {
-    const decodedAreaId = areaId ? decodeURIComponent(areaId) : undefined
-    const id = decodedAreaId ?? (formularioId ? (await getFormularioById(formularioId))?.areaId : undefined)
+    const id = areaId || (formularioId ? (await getFormularioById(formularioId))?.areaId : undefined)
     if (!id) return
 
     // Cargar selecciones de colaboradores del sessionStorage
@@ -234,20 +232,13 @@ export default function Planeacion() {
   }, [areaId, formularioId])
 
   useEffect(() => {
-    if (!formularioId) return
+    if (!formularioId || loading) return
 
     const loadExistingForm = async () => {
       const existingForm = await getFormularioById(formularioId)
       if (!existingForm) return
 
       setIsEditMode(true)
-      setArea({
-        id: existingForm.areaId,
-        nombre: existingForm.areaNombre,
-        sedeId: '',
-        supervisorId: existingForm.supervisorId,
-        activo: true,
-      })
 
       const filasConActivo = existingForm.filas.map((fila) => ({ _active: true, ...fila }))
 
@@ -283,7 +274,7 @@ export default function Planeacion() {
     }
 
     loadExistingForm()
-  }, [formularioId, bloques, variedades])
+  }, [formularioId, loading])
 
   const bloquesOpts = bloques.map((b) => ({ value: b.id, label: b.nombre }))
 
@@ -388,8 +379,8 @@ export default function Planeacion() {
       // Limpiar sessionStorage
       sessionStorage.removeItem('labores-selecciones')
 
-      // Navegar a registros o mostrar confirmación
-      navigate('historial', { areaId, sedeId })
+      // Navegar a registros
+      navigate('/historial')
 
       if (remoteError) {
         alert('Guardado localmente. Cuando tengas internet, se sincronizará.')
@@ -439,37 +430,39 @@ export default function Planeacion() {
         </div>
 
         {/* Selector de Bloque/Variedad */}
-        <div className="rounded-xl bg-white border border-gray-100 shadow-sm p-4 space-y-3">
-          <h2 className="font-semibold text-gray-700">Agregar Bloque y Variedad</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <Select
-              label="Bloque"
-              options={bloquesOpts}
-              placeholder="Seleccionar..."
-              value={bloqueSeleccioando}
-              onChange={(e) => {
-                setBloqueSeleccionando(e.target.value)
-                setVariedadSeleccionando('')
-              }}
-            />
-            <Select
-              label="Variedad"
-              options={getVarsOpts(bloqueSeleccioando)}
-              placeholder="Seleccionar..."
-              value={variedadSeleccionando}
-              onChange={(e) => setVariedadSeleccionando(e.target.value)}
-              disabled={!bloqueSeleccioando}
-            />
+        {!isCompletionMode && (
+          <div className="rounded-xl bg-white border border-gray-100 shadow-sm p-4 space-y-3">
+            <h2 className="font-semibold text-gray-700">Agregar Bloque y Variedad</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <Select
+                label="Bloque"
+                options={bloquesOpts}
+                placeholder="Seleccionar..."
+                value={bloqueSeleccioando}
+                onChange={(e) => {
+                  setBloqueSeleccionando(e.target.value)
+                  setVariedadSeleccionando('')
+                }}
+              />
+              <Select
+                label="Variedad"
+                options={getVarsOpts(bloqueSeleccioando)}
+                placeholder="Seleccionar..."
+                value={variedadSeleccionando}
+                onChange={(e) => setVariedadSeleccionando(e.target.value)}
+                disabled={!bloqueSeleccioando}
+              />
+            </div>
+            <Button
+              variant="secondary"
+              className="w-full"
+              onClick={handleAgregarBV}
+              disabled={!bloqueSeleccioando || !variedadSeleccionando}
+            >
+              Agregar Bloque/Variedad
+            </Button>
           </div>
-          <Button
-            variant="secondary"
-            className="w-full"
-            onClick={handleAgregarBV}
-            disabled={!bloqueSeleccioando || !variedadSeleccionando}
-          >
-            Agregar Bloque/Variedad
-          </Button>
-        </div>
+        )}
 
         {/* Bloques/Variedades Seleccionados */}
         {seleccionesBV.length > 0 && (
@@ -482,13 +475,15 @@ export default function Planeacion() {
                     <Badge variant="green">{bv.bloqueNombre}</Badge>
                     <Badge variant="blue">{bv.variedadNombre}</Badge>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveBV(idx)}
-                    className="text-red-600 hover:text-red-700 text-sm font-medium"
-                  >
-                    Remover
-                  </button>
+                  {!isCompletionMode && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveBV(idx)}
+                      className="text-red-600 hover:text-red-700 text-sm font-medium"
+                    >
+                      Remover
+                    </button>
+                  )}
                 </div>
                 <p className="text-xs text-gray-500">
                   {colaboradores.length} colaborador{colaboradores.length !== 1 ? 'es' : ''}
@@ -553,7 +548,7 @@ export default function Planeacion() {
                               <FormularioCorteSimple
                                 indexAsset={filaBasePath}
                                 isEditMode={isEditMode}
-                                faseReal={false}
+                                faseReal={isCompletionMode}
                               />
                             </div>
 
@@ -566,7 +561,7 @@ export default function Planeacion() {
                                 indexAsset={`${filaBasePath}.labores`}
                                 catalogoLabores={laborCatalog}
                                 isEditMode={isEditMode}
-                                faseReal={false}
+                                faseReal={isCompletionMode}
                               />
                             </div>
                           </div>
@@ -577,7 +572,7 @@ export default function Planeacion() {
                 )
               })}
 
-              {filasValues && filasValues.length > 0 && (
+              {filasValues && filasValues.length > 0 && isCompletionMode && (
                 <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 mb-4">
                   <div className="flex items-center justify-between gap-4">
                     <div>

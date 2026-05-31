@@ -1,5 +1,4 @@
-import { useNavigation } from '../hooks/useNavigation'
-import { useNavigationStore } from '../store/useNavigationStore'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useAreas } from '../hooks/useAreas'
 import { useSedes } from '../hooks/useSedes'
 import { Header } from '../components/layout/Header'
@@ -10,11 +9,11 @@ import { Spinner } from '../components/ui/Spinner'
 export default function AreaSelector() {
   const { areas, loading: areasLoading, error: areasError } = useAreas()
   const { sedes, loading: sedesLoading, error: sedesError } = useSedes()
-  const navigate = useNavigation()
-  const { params, back } = useNavigationStore()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const navigate = useNavigate()
 
   // Determinar si estamos en modo sedes o áreas
-  const sedeId = params.sedeId as string | undefined
+  const sedeId = searchParams.get('sedeId')
   const showSedes = !sedeId
 
   // Filtrar sedes activas
@@ -59,7 +58,7 @@ export default function AreaSelector() {
 
           <div className="grid gap-3">
             {activeSedes.map((sede) => (
-              <Card key={sede.id} onClick={() => navigate('areas', { sedeId: sede.id })}>
+              <Card key={sede.id} onClick={() => setSearchParams({ sedeId: sede.id })}>
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 text-xl">
                     🏢
@@ -101,7 +100,7 @@ export default function AreaSelector() {
             )}
           </div>
           <button
-            onClick={back}
+            onClick={() => setSearchParams({})}
             className="text-sm text-blue-600 hover:text-blue-700 font-medium"
           >
             Cambiar sede
@@ -130,7 +129,7 @@ export default function AreaSelector() {
           {activeAreas.map((area) => (
             <Card
               key={area.id}
-              onClick={() => navigate('area-detail', { areaId: area.id, sedeId })}
+              onClick={() => navigate(`/area/${area.id}?sedeId=${sedeId}`)}
             >
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-green-100 text-xl">

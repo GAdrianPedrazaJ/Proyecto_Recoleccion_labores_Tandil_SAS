@@ -1,0 +1,114 @@
+Propuesta de módulo de creación de formularios
+
+1. Enfoque sugerido
+- Usar un form builder basado en metadatos.
+- Evitar crear tablas físicas nuevas por cada formulario.
+- Usar tablas de definición y una tabla genérica de envíos.
+- Esto es más flexible, más fácil de mantener y evita migraciones complejas.
+
+2. Modelo de datos recomendado
+Tablas principales:
+- form_definitions
+  - id
+  - name
+  - slug
+  - description
+  - created_by
+  - created_by_role
+  - status = pending | active | rejected
+  - needs_approval = true | false
+  - approved_by
+  - approved_at
+
+- field_definitions
+  - id
+  - form_id
+  - key
+  - label
+  - type = text | number | date | select | checkbox | boolean | decimal | textarea
+  - required
+  - order
+  - options (JSON)
+  - placeholder
+  - calculated = true | false
+  - formula
+  - data_type = integer | decimal | string | boolean | date
+
+- form_submissions
+  - id
+  - form_id
+  - submitted_by
+  - supervisor_id
+  - created_at
+  - updated_at
+  - status = draft | completed | synced
+
+- submission_values
+  - id
+  - submission_id
+  - field_key
+  - value
+  - value_type
+
+3. Tipos de datos y campos
+Cada campo debería permitir configurar:
+- etiqueta visible
+- nombre interno / key
+- tipo de dato
+- obligatorio sí/no
+- orden de presentación
+- opciones (select / radio)
+- unidad / formato
+- cálculo automático
+
+Ejemplos de tipos:
+- text
+- number
+- decimal
+- date
+- select
+- boolean
+- textarea
+
+4. Cálculos en backend
+- Las fórmulas deben funcionar en backend.
+- Se guardan como metadata.
+- Se evalúan al guardar o editar un registro.
+- Se recalculan automáticamente.
+- Deben validar tipos y dependencias.
+
+Ejemplo de fórmula:
+- campo costo_total
+- tipo decimal
+- calculado: true
+- fórmula: camas_estimadas * precio_por_cama
+
+5. Reglas de aprobación según rol
+- superadmin crea formularios y no necesita aprobación.
+- admin crea formularios que quedan en estado pending.
+- admin requiere aprobación por superadmin antes de activar.
+- supervisor solo ve formularios active.
+
+6. Visibilidad para supervisores
+- La UI debe mostrar claramente los formularios disponibles.
+- Mostrar estado: activo, pendiente, etc.
+- Mostrar descripción breve y creador.
+- Filtrado por área o tipo de formulario.
+- Acceso directo para crear registros.
+
+7. Campos calculados seleccionables
+- Permitir elegir campos para operar.
+- Seleccionar operación: + - * /
+- Permitir asignar resultado a un campo calculado.
+- Indicar tipo de dato final y precisión.
+
+Ejemplo de campo calculado:
+- rendimiento = tallos_reales / camas_real
+- tipo de dato: decimal
+- precisión: 2 decimales
+
+8. Conclusión
+- Mejor usar metadata dinámica.
+- Tabla flexible de envíos con valores de campo.
+- Backend calcula y valida.
+- Superadmin publica directamente; admin requiere aprobación.

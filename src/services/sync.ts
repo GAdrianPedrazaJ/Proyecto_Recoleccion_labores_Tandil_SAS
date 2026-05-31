@@ -19,15 +19,8 @@ import {
   clearVariedades,
   clearVariedadesBloques,
   getPendientesSincronizacion,
-  putArea,
-  putBloque,
-  putColaborador,
+  bulkPut,
   putFormulario,
-  putLabor,
-  putSede,
-  putSupervisor,
-  putVariedad,
-  putVariedadBloque,
 } from './db'
 import type { Formulario } from '../types'
 
@@ -62,14 +55,14 @@ export async function syncFromRemote(): Promise<void> {
 
     // Para cada store de datos maestros: limpiar y repoblar SOLO si el backend
     // devolvio datos (evita borrar cache cuando no hay conexion)
-    if (sedes.length > 0) { await clearSedes(); await Promise.all(sedes.map(putSede)) }
-    if (areas.length > 0) { await clearAreas(); await Promise.all(areas.map(putArea)) }
-    if (supervisores.length > 0) { await clearSupervisores(); await Promise.all(supervisores.map(putSupervisor)) }
-    if (bloques.length > 0) { await clearBloques(); await Promise.all(bloques.map(putBloque)) }
-    if (colaboradores.length > 0) { await clearColaboradores(); await Promise.all(colaboradores.map(putColaborador)) }
-    if (variedades.length > 0) { await clearVariedades(); await Promise.all(variedades.map(putVariedad)) }
-    if (variedadesBloques.length > 0) { await clearVariedadesBloques(); await Promise.all(variedadesBloques.map(putVariedadBloque)) }
-    if (labores.length > 0) { await clearLabores(); await Promise.all(labores.map(putLabor)) }
+    if (sedes.length > 0) { await clearSedes(); await bulkPut('sedes', sedes) }
+    if (areas.length > 0) { await clearAreas(); await bulkPut('areas', areas) }
+    if (supervisores.length > 0) { await clearSupervisores(); await bulkPut('supervisores', supervisores) }
+    if (bloques.length > 0) { await clearBloques(); await bulkPut('bloques', bloques) }
+    if (colaboradores.length > 0) { await clearColaboradores(); await bulkPut('colaboradores', colaboradores) }
+    if (variedades.length > 0) { await clearVariedades(); await bulkPut('variedades', variedades) }
+    if (variedadesBloques.length > 0) { await clearVariedadesBloques(); await bulkPut('variedadesBloques', variedadesBloques) }
+    if (labores.length > 0) { await clearLabores(); await bulkPut('labores', labores) }
   } catch {
     // Sin conexión — usar caché IDB existente
   } finally {

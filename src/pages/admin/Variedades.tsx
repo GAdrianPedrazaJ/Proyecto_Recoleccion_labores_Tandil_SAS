@@ -9,8 +9,19 @@ import { AdminLayout } from '../../components/layout/AdminLayout'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
 import { Spinner } from '../../components/ui/Spinner'
+import {
+  Flower2,
+  Plus,
+  Search,
+  Edit2,
+  Trash2,
+  XCircle,
+  AlertCircle,
+  Hash,
+  Tag
+} from 'lucide-react'
 
-const schema = z.object({ nombre: z.string().min(1, 'Requerido') })
+const schema = z.object({ nombre: z.string().min(1, 'El nombre es requerido') })
 type FormData = z.infer<typeof schema>
 
 export default function AdminVariedades() {
@@ -34,7 +45,7 @@ export default function AdminVariedades() {
       setItems(data)
       await Promise.all(data.map(putVariedad))
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Error al cargar')
+      setError(e instanceof Error ? e.message : 'Error al cargar el catálogo de variedades')
     } finally { setLoading(false) }
   }
   useEffect(() => { load() }, [])
@@ -50,19 +61,19 @@ export default function AdminVariedades() {
       await putVariedad(v)
       await load(); setModalOpen(false)
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Error al guardar')
+      setError(e instanceof Error ? e.message : 'Error al guardar los cambios')
     } finally { setSaving(false) }
   }
 
   const handleDelete = async (id: string, nombre: string) => {
-    if (!confirm(`�Eliminar variedad "${nombre}"?`)) return
+    if (!confirm(`¿Estás seguro de eliminar la variedad "${nombre}"?`)) return
     setError(null)
     try {
       await deleteVariedadSupa(id)
       await deleteVariedad(id)
       setItems((prev) => prev.filter((v) => v.id !== id))
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Error al eliminar')
+      setError(e instanceof Error ? e.message : 'Error al intentar eliminar el registro')
     }
   }
 
@@ -70,72 +81,157 @@ export default function AdminVariedades() {
 
   return (
     <AdminLayout>
-      {error && (
-        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-start gap-2">
-          <span className="font-semibold">Error:</span> {error}
-          <button onClick={() => setError(null)} className="ml-auto text-red-400 hover:text-red-600">?</button>
+      <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+        {/* Header Section */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
+          <div>
+            <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Catálogo de Variedades</h1>
+            <p className="text-sm font-medium text-gray-500 mt-1 flex items-center gap-2">
+              <Flower2 className="w-4 h-4 text-pink-500" />
+              {items.length} variedades registradas en el sistema
+            </p>
+          </div>
+          <Button onClick={openAdd} className="w-full sm:w-auto px-6 py-6 rounded-2xl shadow-lg shadow-pink-100 flex items-center gap-2 bg-pink-600 hover:bg-pink-700">
+            <Plus className="w-5 h-5" />
+            Nueva Variedad
+          </Button>
         </div>
-      )}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Variedades</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{items.length} variedad{items.length !== 1 ? 'es' : ''}</p>
-        </div>
-        <Button onClick={openAdd}>+ Nueva variedad</Button>
-      </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-3">
-          <input type="search" placeholder="Buscar variedad..." value={search} onChange={(e) => setSearch(e.target.value)}
-            className="w-72 rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-green-500 focus:outline-none"
-          />
-          <span className="text-xs text-gray-400">{filtered.length} resultado{filtered.length !== 1 ? 's' : ''}</span>
-        </div>
-        {loading ? <div className="flex justify-center py-16"><Spinner /></div> : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600">#</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Nombre</th>
-                  <th className="text-center px-4 py-3 font-semibold text-gray-600">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.length === 0 && <tr><td colSpan={3} className="text-center py-12 text-gray-400">Sin resultados</td></tr>}
-                {filtered.map((v, i) => (
-                  <tr key={v.id} className={`border-b border-gray-100 hover:bg-pink-50/30 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/60'}`}>
-                    <td className="px-4 py-3 text-gray-400 text-xs">{i + 1}</td>
-                    <td className="px-4 py-3 font-medium text-gray-900">{v.nombre}</td>
-                    <td className="px-4 py-3 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <button onClick={() => openEdit(v)} className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50">
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 012.828 2.828L11.828 15.828a4 4 0 01-2.828 1.172H7v-2a4 4 0 011.172-2.828z" /></svg>
-                        </button>
-                        <button onClick={() => handleDelete(v.id, v.nombre)} className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50">
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4h6v3M4 7h16" /></svg>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {error && (
+          <div className="mb-6 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm text-red-700 flex items-center gap-3 animate-in shake duration-300">
+            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <p className="font-semibold">{error}</p>
+            <button onClick={() => setError(null)} className="ml-auto p-1 hover:bg-red-100 rounded-lg transition-colors">
+              <XCircle className="w-4 h-4" />
+            </button>
           </div>
         )}
+
+        {/* Data Container */}
+        <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden">
+          {/* Toolbar */}
+          <div className="p-4 sm:p-6 bg-gray-50/30 border-b border-gray-50">
+            <div className="relative max-w-md">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="search"
+                placeholder="Buscar variedad..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-11 pr-4 py-3 rounded-2xl bg-white border-none ring-1 ring-gray-200 focus:ring-2 focus:ring-pink-500 text-sm font-medium transition-all outline-none"
+              />
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-24 gap-4">
+              <Spinner size="lg" />
+              <p className="text-gray-400 text-sm font-medium animate-pulse">Cargando catálogo...</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b border-gray-50 text-[10px] font-black uppercase tracking-widest text-gray-400 bg-gray-50/50">
+                    <th className="px-8 py-4 w-20"><Hash className="w-3 h-3" /></th>
+                    <th className="px-8 py-4">Nombre de la Variedad</th>
+                    <th className="px-8 py-4 text-right">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {filtered.length === 0 ? (
+                    <tr>
+                      <td colSpan={3} className="text-center py-20">
+                        <div className="flex flex-col items-center gap-2 opacity-30">
+                          <Flower2 className="w-12 h-12" />
+                          <p className="font-bold">No hay variedades disponibles</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    filtered.map((v, i) => (
+                      <tr key={v.id} className="group hover:bg-pink-50/30 transition-colors">
+                        <td className="px-8 py-5 text-xs font-black text-gray-300">
+                          {String(i + 1).padStart(2, '0')}
+                        </td>
+                        <td className="px-8 py-5">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-pink-50 rounded-xl text-pink-600 group-hover:bg-pink-100 transition-colors">
+                              <Tag className="w-4 h-4" />
+                            </div>
+                            <span className="font-bold text-gray-900 group-hover:text-pink-700 transition-colors">{v.nombre}</span>
+                          </div>
+                        </td>
+                        <td className="px-8 py-5 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => openEdit(v)}
+                              className="p-2.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                              title="Editar variedad"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(v.id, v.nombre)}
+                              className="p-2.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                              title="Eliminar registro"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
 
+      {/* Modern Modal Form */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-5">{editing ? 'Editar variedad' : 'Nueva variedad'}</h2>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <Input label="Nombre" {...register('nombre')} error={errors.nombre?.message} />
-              <div className="flex gap-3 pt-2">
-                <Button type="submit" loading={saving} className="flex-1">Guardar</Button>
-                <Button type="button" variant="ghost" onClick={() => setModalOpen(false)} className="flex-1">Cancelar</Button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="px-8 pt-8 pb-4">
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h2 className="text-2xl font-black text-gray-900">{editing ? 'Editar Variedad' : 'Nueva Variedad'}</h2>
+                  <p className="text-sm text-gray-500 font-medium">Actualiza el catálogo de productos</p>
+                </div>
+                <button onClick={() => setModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-2xl transition-colors">
+                  <XCircle className="w-6 h-6 text-gray-400" />
+                </button>
               </div>
-            </form>
+
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                <div className="bg-gray-50/50 p-6 rounded-3xl border border-gray-100">
+                  <Input
+                    label="Nombre descriptivo"
+                    placeholder="Ej: Rosa Freedom"
+                    {...register('nombre')}
+                    error={errors.nombre?.message}
+                    className="bg-white border-none ring-1 ring-gray-200 focus:ring-pink-500"
+                  />
+                </div>
+
+                <div className="flex gap-4 pt-2">
+                  <Button type="submit" loading={saving} className="flex-1 py-4 rounded-2xl shadow-lg shadow-pink-100 font-bold bg-pink-600 hover:bg-pink-700">
+                    {editing ? 'Guardar Cambios' : 'Crear Registro'}
+                  </Button>
+                  <Button type="button" variant="ghost" onClick={() => setModalOpen(false)} className="flex-1 py-4 rounded-2xl font-bold text-gray-500">
+                    Cancelar
+                  </Button>
+                </div>
+              </form>
+            </div>
+            <div className="bg-gray-50 p-4 text-center mt-4">
+              <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest flex items-center justify-center gap-2">
+                <AlertCircle className="w-3 h-3" />
+                Cambios permanentes en la base de datos
+              </p>
+            </div>
           </div>
         </div>
       )}

@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigationStore } from '../store/useNavigationStore'
-import { useNavigation } from '../hooks/useNavigation'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { FormProvider, useFieldArray, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -101,10 +100,10 @@ function defaultFila(c: SeleccionColaborador) {
 
 // Component
 export default function FormularioCorte() {
-  const { params } = useNavigationStore()
-  const areaIdParam = params.areaId ? String(params.areaId) : undefined
-  const areaId = areaIdParam
-  const navigate = useNavigation()
+  const [searchParams] = useSearchParams()
+  const areaId = searchParams.get('areaId') || ''
+  const sedeId = searchParams.get('sedeId') || ''
+  const navigate = useNavigate()
   const { save, saving } = useFormulario()
 
   const [area, setArea] = useState<Area | null>(null)
@@ -128,7 +127,6 @@ export default function FormularioCorte() {
     const today = nowDate()
     const seleccionesJson = sessionStorage.getItem('labores-selecciones')
     const selecciones: SeleccionColaborador[] = seleccionesJson ? JSON.parse(seleccionesJson) : []
-    // NO limpiar sessionStorage - mantenerlo para siguiente formulario
 
     Promise.all([
       getAreaById(decodeURIComponent(areaId)),
@@ -171,28 +169,45 @@ export default function FormularioCorte() {
     // Validación básica para Corte
     let validationErrors = 0
     filasActivas.forEach((fila, i) => {
-      // Required fields
       if (fase === 'estimado') {
-        if (!fila.tiempoEstimadoMinutos || fila.tiempoEstimadoMinutos < 1)
+        if (!fila.tiempoEstimadoMinutos || fila.tiempoEstimadoMinutos < 1) {
           methods.setError(`filas.${i}.tiempoEstimadoMinutos` as any, { type: 'manual' })
-        if (!fila.tallosEstimados || fila.tallosEstimados < 1)
+          validationErrors++
+        }
+        if (!fila.tallosEstimados || fila.tallosEstimados < 1) {
           methods.setError(`filas.${i}.tallosEstimados` as any, { type: 'manual' })
-        if (!fila.horaInicio)
+          validationErrors++
+        }
+        if (!fila.horaInicio) {
           methods.setError(`filas.${i}.horaInicio` as any, { type: 'manual' })
-        if (!fila.horaFinCorteEstimado)
+          validationErrors++
+        }
+        if (!fila.horaFinCorteEstimado) {
           methods.setError(`filas.${i}.horaFinCorteEstimado` as any, { type: 'manual' })
-        if (!fila.rendimientoCorteEstimado || fila.rendimientoCorteEstimado < 1)
+          validationErrors++
+        }
+        if (!fila.rendimientoCorteEstimado || fila.rendimientoCorteEstimado < 1) {
           methods.setError(`filas.${i}.rendimientoCorteEstimado` as any, { type: 'manual' })
+          validationErrors++
+        }
       } else {
         // Real phase
-        if (!fila.tiempoRealMinutos || fila.tiempoRealMinutos < 1)
+        if (!fila.tiempoRealMinutos || fila.tiempoRealMinutos < 1) {
           methods.setError(`filas.${i}.tiempoRealMinutos` as any, { type: 'manual' })
-        if (!fila.tallosReales || fila.tallosReales < 1)
+          validationErrors++
+        }
+        if (!fila.tallosReales || fila.tallosReales < 1) {
           methods.setError(`filas.${i}.tallosReales` as any, { type: 'manual' })
-        if (!fila.horaFinCorteReal)
+          validationErrors++
+        }
+        if (!fila.horaFinCorteReal) {
           methods.setError(`filas.${i}.horaFinCorteReal` as any, { type: 'manual' })
-        if (!fila.rendimientoCorteReal || fila.rendimientoCorteReal < 1)
+          validationErrors++
+        }
+        if (!fila.rendimientoCorteReal || fila.rendimientoCorteReal < 1) {
           methods.setError(`filas.${i}.rendimientoCorteReal` as any, { type: 'manual' })
+          validationErrors++
+        }
       }
     })
 
@@ -205,7 +220,7 @@ export default function FormularioCorte() {
     const estado: 'borrador' | 'completo' = fase === 'estimado' ? 'borrador' : 'completo'
     const formularioNuevo = {
       fecha: data.fecha,
-      areaId: decodeURIComponent(areaId ?? ''),
+      areaId: decodeURIComponent(areaId),
       areaNombre: area?.nombre ?? '',
       supervisorId: area?.supervisorId ?? '',
       tipo: 'Corte' as const,
@@ -214,23 +229,9 @@ export default function FormularioCorte() {
       filas: filasActivas,
     }
 
-    // Notify about block-sync
-    if (estado === 'completo') {
-      const { labores, aseguramiento } = await obtenerLosTres(
-        decodeURIComponent(areaId ?? ''),
-        data.fecha,
-      )
-      const faltanTipos: string[] = []
-      if (!labores) faltanTipos.push('Labores')
-      if (!aseguramiento) faltanTipos.push('Aseguramiento')
-      if (faltanTipos.length > 0) {
-        console.info(`ℹ️ Guardando Corte...\nFaltan: ${faltanTipos.join(', ')}\nCompleta los 3 tipos para sincronización en bloque.`)
-      }
-    }
-
     await save(formularioNuevo)
     setSuccess(true)
-    setTimeout(() => navigate('select-tipo', { areaId: decodeURIComponent(areaId ?? ''), sedeId: '' }), 1200)
+    setTimeout(() => navigate(`/select-tipo?areaId=${areaId}&sedeId=${sedeId}`), 1200)
   }
 
   if (success) {
@@ -259,7 +260,6 @@ export default function FormularioCorte() {
         {!loading && (
           <FormProvider {...methods}>
             <form noValidate className="space-y-4">
-              {/* Date input */}
               <div className="rounded-xl bg-white border border-gray-100 shadow-sm p-4 space-y-3">
                 {fase === 'estimado' ? (
                   <div className="rounded-lg bg-blue-50 border border-blue-200 px-3 py-2 text-sm text-blue-700 font-medium">
@@ -279,7 +279,6 @@ export default function FormularioCorte() {
                 />
               </div>
 
-              {/* Colaboradores */}
               {fields.length === 0 && (
                 <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
                   No hay colaboradores. Vuelve atrás para seleccionarlos.
@@ -303,7 +302,6 @@ export default function FormularioCorte() {
         )}
       </main>
 
-      {/* Bottom action bar */}
       {!loading && (
         <div className="fixed bottom-16 inset-x-0 px-4 py-3 bg-white border-t border-gray-200 shadow-lg">
           <Button

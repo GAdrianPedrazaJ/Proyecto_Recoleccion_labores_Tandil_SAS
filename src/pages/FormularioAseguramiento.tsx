@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigationStore } from '../store/useNavigationStore'
-import { useNavigation } from '../hooks/useNavigation'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { FormProvider, useFieldArray, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -102,11 +101,12 @@ function defaultFila(c: SeleccionColaborador) {
 
 // Component
 export default function FormularioAseguramiento() {
-  const { params } = useNavigationStore()
-  const areaIdParam = params.areaId ? String(params.areaId) : undefined
-  const formularioId = params.formularioId ? String(params.formularioId) : undefined
-  const areaId = areaIdParam
-  const navigate = useNavigation()
+  const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
+  const areaId = searchParams.get('areaId') || ''
+  const formularioId = searchParams.get('formularioId') || ''
+  const sedeId = searchParams.get('sedeId') || ''
+
   const { save, saving } = useFormulario()
   const isEditMode = !!formularioId
 
@@ -129,7 +129,7 @@ export default function FormularioAseguramiento() {
       if (!formularioId) return
       getFormularioById(formularioId).then(async (f) => {
         if (!f) {
-          navigate('historial')
+          navigate('/historial')
           return
         }
         const bloquesData = await getBloquesByArea(f.areaId)
@@ -152,7 +152,6 @@ export default function FormularioAseguramiento() {
     const today = nowDate()
     const seleccionesJson = sessionStorage.getItem('labores-selecciones')
     const selecciones: SeleccionColaborador[] = seleccionesJson ? JSON.parse(seleccionesJson) : []
-    // NO limpiar sessionStorage - mantenerlo para siguiente formulario
 
     Promise.all([
       getAreaById(decodeURIComponent(areaId)),
@@ -197,7 +196,7 @@ export default function FormularioAseguramiento() {
     // Save - Aseguramiento siempre se guarda como 'completo'
     const formularioNuevo = {
       fecha: data.fecha,
-      areaId: decodeURIComponent(areaId ?? ''),
+      areaId: decodeURIComponent(areaId),
       areaNombre: area?.nombre ?? '',
       supervisorId: area?.supervisorId ?? '',
       tipo: 'Aseguramiento' as const,
@@ -206,21 +205,9 @@ export default function FormularioAseguramiento() {
       filas: filasActivas,
     }
 
-    // Notify about block-sync
-    const { corte, labores } = await obtenerLosTres(
-      decodeURIComponent(areaId ?? ''),
-      data.fecha,
-    )
-    const faltanTipos: string[] = []
-    if (!corte) faltanTipos.push('Corte')
-    if (!labores) faltanTipos.push('Labores')
-    if (faltanTipos.length > 0) {
-      console.info(`ℹ️ Guardando Aseguramiento...\nFaltan: ${faltanTipos.join(', ')}\nCompleta los 3 tipos para sincronización en bloque.`)
-    }
-
     await save(formularioNuevo)
     setSuccess(true)
-    setTimeout(() => navigate('select-tipo', { areaId: decodeURIComponent(areaId ?? ''), sedeId: '' }), 1200)
+    setTimeout(() => navigate(`/select-tipo?areaId=${areaId}&sedeId=${sedeId}`), 1200)
   }
 
   if (success) {
@@ -249,7 +236,6 @@ export default function FormularioAseguramiento() {
         {!loading && (
           <FormProvider {...methods}>
             <form noValidate className="space-y-4">
-              {/* Date input */}
               <div className="rounded-xl bg-white border border-gray-100 shadow-sm p-4 space-y-3">
                 <div className="rounded-lg bg-green-50 border border-green-200 px-3 py-2 text-sm text-green-700 font-medium">
                   ✅ Formulario de <strong>Aseguramiento</strong> — completa una sola vez
@@ -262,7 +248,6 @@ export default function FormularioAseguramiento() {
                 />
               </div>
 
-              {/* Colaboradores */}
               {fields.length === 0 && (
                 <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
                   No hay colaboradores. Vuelve atrás para seleccionarlos.
@@ -286,7 +271,6 @@ export default function FormularioAseguramiento() {
         )}
       </main>
 
-      {/* Bottom action bar */}
       {!loading && (
         <div className="fixed bottom-16 inset-x-0 px-4 py-3 bg-white border-t border-gray-200 shadow-lg">
           <Button

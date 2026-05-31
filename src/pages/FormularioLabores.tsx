@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigationStore } from '../store/useNavigationStore'
-import { useNavigation } from '../hooks/useNavigation'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { FormProvider, useFieldArray, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -114,10 +113,10 @@ function defaultFila(c: SeleccionColaborador) {
 
 // Component
 export default function FormularioLabores() {
-  const { params } = useNavigationStore()
-  const areaIdParam = params.areaId ? String(params.areaId) : undefined
-  const areaId = areaIdParam
-  const navigate = useNavigation()
+  const [searchParams] = useSearchParams()
+  const areaId = searchParams.get('areaId') || ''
+  const sedeId = searchParams.get('sedeId') || ''
+  const navigate = useNavigate()
   const { save, saving } = useFormulario()
 
   const [area, setArea] = useState<Area | null>(null)
@@ -135,13 +134,9 @@ export default function FormularioLabores() {
 
   const { fields } = useFieldArray({ control: methods.control, name: 'filas' })
 
-  // Load master data + area initialization
+  // Load master data
   useEffect(() => {
-    async function loadCatalog() {
-      const labs = await getAllLabores()
-      setLaborCatalog(labs)
-    }
-    loadCatalog()
+    getAllLabores().then(setLaborCatalog)
   }, [])
 
   // Load area + init filas
@@ -151,7 +146,6 @@ export default function FormularioLabores() {
     const today = nowDate()
     const seleccionesJson = sessionStorage.getItem('labores-selecciones')
     const selecciones: SeleccionColaborador[] = seleccionesJson ? JSON.parse(seleccionesJson) : []
-    // NO limpiar sessionStorage - mantenerlo para siguiente formulario
 
     Promise.all([
       getAreaById(decodeURIComponent(areaId)),
@@ -191,7 +185,7 @@ export default function FormularioLabores() {
 
     if (filasActivas.length === 0) return
 
-    // Validación básica para Labores: al menos una labor con datos
+    // Validación básica para Labores
     let validationErrors = 0
     filasActivas.forEach((fila, i) => {
       if (fila.labores.length === 0) {
@@ -200,18 +194,28 @@ export default function FormularioLabores() {
         return
       }
       fila.labores.forEach((labor, j) => {
-        if (!labor.laborId)
+        if (!labor.laborId) {
           methods.setError(`filas.${i}.labores.${j}.laborId` as any, { type: 'manual' })
+          validationErrors++
+        }
         if (fase === 'estimado') {
-          if (!labor.camasEstimadas || labor.camasEstimadas < 1)
+          if (!labor.camasEstimadas || labor.camasEstimadas < 1) {
             methods.setError(`filas.${i}.labores.${j}.camasEstimadas` as any, { type: 'manual' })
-          if (!labor.tiempoCamaEstimado || labor.tiempoCamaEstimado < 1)
+            validationErrors++
+          }
+          if (!labor.tiempoCamaEstimado || labor.tiempoCamaEstimado < 1) {
             methods.setError(`filas.${i}.labores.${j}.tiempoCamaEstimado` as any, { type: 'manual' })
+            validationErrors++
+          }
         } else {
-          if (!labor.camasReales || labor.camasReales < 1)
+          if (!labor.camasReales || labor.camasReales < 1) {
             methods.setError(`filas.${i}.labores.${j}.camasReales` as any, { type: 'manual' })
-          if (!labor.tiempoCamaReal || labor.tiempoCamaReal < 1)
+            validationErrors++
+          }
+          if (!labor.tiempoCamaReal || labor.tiempoCamaReal < 1) {
             methods.setError(`filas.${i}.labores.${j}.tiempoCamaReal` as any, { type: 'manual' })
+            validationErrors++
+          }
         }
       })
     })
@@ -225,7 +229,7 @@ export default function FormularioLabores() {
     const estado: 'borrador' | 'completo' = fase === 'estimado' ? 'borrador' : 'completo'
     const formularioNuevo = {
       fecha: data.fecha,
-      areaId: decodeURIComponent(areaId ?? ''),
+      areaId: decodeURIComponent(areaId),
       areaNombre: area?.nombre ?? '',
       supervisorId: area?.supervisorId ?? '',
       tipo: 'Labores' as const,
@@ -234,23 +238,9 @@ export default function FormularioLabores() {
       filas: filasActivas,
     }
 
-    // Notify about block-sync
-    if (estado === 'completo') {
-      const { corte, aseguramiento } = await obtenerLosTres(
-        decodeURIComponent(areaId ?? ''),
-        data.fecha,
-      )
-      const faltanTipos: string[] = []
-      if (!corte) faltanTipos.push('Corte')
-      if (!aseguramiento) faltanTipos.push('Aseguramiento')
-      if (faltanTipos.length > 0) {
-        console.info(`ℹ️ Guardando Labores...\nFaltan: ${faltanTipos.join(', ')}\nCompleta los 3 tipos para sincronización en bloque.`)
-      }
-    }
-
     await save(formularioNuevo)
     setSuccess(true)
-    setTimeout(() => navigate('select-tipo', { areaId: decodeURIComponent(areaId ?? ''), sedeId: '' }), 1200)
+    setTimeout(() => navigate(`/select-tipo?areaId=${areaId}&sedeId=${sedeId}`), 1200)
   }
 
   if (success) {
@@ -279,7 +269,6 @@ export default function FormularioLabores() {
         {!loading && (
           <FormProvider {...methods}>
             <form noValidate className="space-y-4">
-              {/* Date input */}
               <div className="rounded-xl bg-white border border-gray-100 shadow-sm p-4 space-y-3">
                 {fase === 'estimado' ? (
                   <div className="rounded-lg bg-blue-50 border border-blue-200 px-3 py-2 text-sm text-blue-700 font-medium">
@@ -299,7 +288,6 @@ export default function FormularioLabores() {
                 />
               </div>
 
-              {/* Colaboradores */}
               {fields.length === 0 && (
                 <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
                   No hay colaboradores. Vuelve atrás para seleccionarlos.
@@ -323,7 +311,6 @@ export default function FormularioLabores() {
         )}
       </main>
 
-      {/* Bottom action bar */}
       {!loading && (
         <div className="fixed bottom-16 inset-x-0 px-4 py-3 bg-white border-t border-gray-200 shadow-lg">
           <Button

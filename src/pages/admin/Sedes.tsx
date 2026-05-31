@@ -9,9 +9,21 @@ import { AdminLayout } from '../../components/layout/AdminLayout'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
 import { Spinner } from '../../components/ui/Spinner'
+import {
+  Building2,
+  Plus,
+  Search,
+  Edit2,
+  Trash2,
+  XCircle,
+  AlertCircle,
+  MapPin,
+  ChevronRight,
+  Hash
+} from 'lucide-react'
 
 const schema = z.object({
-  nombre: z.string().min(1, 'Requerido'),
+  nombre: z.string().min(1, 'El nombre de la sede es requerido'),
 })
 type FormData = z.infer<typeof schema>
 
@@ -36,7 +48,7 @@ export default function AdminSedes() {
       setSedes(data)
       await Promise.all(data.map(putSede))
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Error al cargar sedes')
+      setError(e instanceof Error ? e.message : 'Error al cargar las sedes operativas')
     } finally { setLoading(false) }
   }
 
@@ -65,18 +77,18 @@ export default function AdminSedes() {
       await load()
       setModalOpen(false)
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Error al guardar')
+      setError(e instanceof Error ? e.message : 'Error al guardar los datos de la sede')
     } finally { setSaving(false) }
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('¿Eliminar esta sede? Asegurate de que no tenga áreas asignadas.')) return
+    if (!confirm('¿Estás seguro de eliminar esta sede? Asegúrate de que no tenga áreas asignadas antes de continuar.')) return
     setError(null)
     try {
       await deleteSedeSupabase(id)
       setSedes((prev) => prev.filter((s) => s.id !== id))
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Error al eliminar')
+      setError(e instanceof Error ? e.message : 'Error al intentar eliminar el registro')
     }
   }
 
@@ -86,104 +98,158 @@ export default function AdminSedes() {
 
   return (
     <AdminLayout>
-      {error && (
-        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-start gap-2">
-          <span className="font-semibold">Error:</span> {error}
-          <button onClick={() => setError(null)} className="ml-auto text-red-400 hover:text-red-600">✕</button>
-        </div>
-      )}
-
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Sedes</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{sedes.length} sede{sedes.length !== 1 ? 's' : ''} en total</p>
-        </div>
-        <Button onClick={openAdd} size="lg" className="w-full sm:w-auto">+ Nueva sede</Button>
-      </div>
-
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        {/* Toolbar */}
-        <div className="px-3 sm:px-4 py-3 border-b border-gray-100 flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
-          <input
-            type="search"
-            placeholder="Buscar sede..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full sm:w-72 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
-          />
-          <span className="text-xs text-gray-400">{filtered.length} resultado{filtered.length !== 1 ? 's' : ''}</span>
+      <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+        {/* Header Section */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
+          <div>
+            <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Sedes Operativas</h1>
+            <p className="text-sm font-medium text-gray-500 mt-1 flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-green-600" />
+              {sedes.length} sedes registradas en el sistema
+            </p>
+          </div>
+          <Button onClick={openAdd} className="w-full sm:w-auto px-6 py-6 rounded-2xl shadow-lg shadow-green-100 flex items-center gap-2">
+            <Plus className="w-5 h-5" />
+            Nueva Sede
+          </Button>
         </div>
 
-        {/* Tabla */}
-        {loading ? (
-          <div className="flex justify-center py-16"><Spinner /></div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Nombre</th>
-                  <th className="text-center px-4 py-3 font-semibold text-gray-600">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.length === 0 && (
-                  <tr>
-                    <td colSpan={2} className="text-center py-12 text-gray-400">
-                      {search ? 'Sin resultados' : 'No hay sedes. Creá la primera.'}
-                    </td>
-                  </tr>
-                )}
-                {filtered.map((s, i) => (
-                  <tr
-                    key={s.id}
-                    className={`border-b border-gray-100 hover:bg-green-50/40 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/60'}`}
-                  >
-                    <td className="px-4 py-3 font-medium text-gray-900">{s.nombre}</td>
-                    <td className="px-4 py-3 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <button
-                          onClick={() => openEdit(s)}
-                          className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50 transition-colors"
-                          title="Editar"
-                        >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 012.828 2.828L11.828 15.828a4 4 0 01-2.828 1.172H7v-2a4 4 0 011.172-2.828z" />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => handleDelete(s.id)}
-                          className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 transition-colors"
-                          title="Eliminar"
-                        >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4h6v3M4 7h16" />
-                          </svg>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {error && (
+          <div className="mb-6 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm text-red-700 flex items-center gap-3 animate-in shake duration-300">
+            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <p className="font-semibold">{error}</p>
+            <button onClick={() => setError(null)} className="ml-auto p-1 hover:bg-red-100 rounded-lg transition-colors">
+              <XCircle className="w-4 h-4" />
+            </button>
           </div>
         )}
+
+        {/* Data Container */}
+        <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden">
+          {/* Toolbar */}
+          <div className="p-4 sm:p-6 bg-gray-50/30 border-b border-gray-50">
+            <div className="relative max-w-md">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="search"
+                placeholder="Buscar por nombre de sede..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-11 pr-4 py-3 rounded-2xl bg-white border-none ring-1 ring-gray-200 focus:ring-2 focus:ring-green-500 text-sm font-medium transition-all outline-none"
+              />
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-24 gap-4">
+              <Spinner size="lg" />
+              <p className="text-gray-400 text-sm font-medium animate-pulse">Cargando infraestructura...</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b border-gray-50 text-[10px] font-black uppercase tracking-widest text-gray-400 bg-gray-50/50">
+                    <th className="px-8 py-4 w-24"><Hash className="w-3 h-3" /></th>
+                    <th className="px-8 py-4">Nombre de la Sede</th>
+                    <th className="px-8 py-4 text-right">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {filtered.length === 0 ? (
+                    <tr>
+                      <td colSpan={3} className="text-center py-20">
+                        <div className="flex flex-col items-center gap-2 opacity-30">
+                          <Building2 className="w-12 h-12" />
+                          <p className="font-bold">No hay sedes configuradas</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    filtered.map((s, i) => (
+                      <tr key={s.id} className="group hover:bg-green-50/30 transition-colors">
+                        <td className="px-8 py-5 text-xs font-black text-gray-300">
+                          {String(i + 1).padStart(2, '0')}
+                        </td>
+                        <td className="px-8 py-5">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2.5 bg-green-50 rounded-xl text-green-600 group-hover:bg-green-100 transition-colors">
+                              <MapPin className="w-4 h-4" />
+                            </div>
+                            <span className="font-bold text-gray-900 group-hover:text-green-700 transition-colors tracking-tight">{s.nombre}</span>
+                          </div>
+                        </td>
+                        <td className="px-8 py-5 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => openEdit(s)}
+                              className="p-2.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                              title="Editar sede"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(s.id)}
+                              className="p-2.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                              title="Eliminar sede"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Modal */}
+      {/* Modern Modal Form */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-5">
-              {editing ? 'Editar sede' : 'Nueva sede'}
-            </h2>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <Input label="Nombre" {...register('nombre')} error={errors.nombre?.message} autoFocus />
-              <div className="flex gap-3 pt-2">
-                <Button type="submit" loading={saving} className="flex-1">Guardar</Button>
-                <Button type="button" variant="ghost" onClick={() => setModalOpen(false)} className="flex-1">Cancelar</Button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="px-8 pt-8 pb-4">
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h2 className="text-2xl font-black text-gray-900">{editing ? 'Editar Sede' : 'Nueva Sede'}</h2>
+                  <p className="text-sm text-gray-500 font-medium">Gestiona los centros operativos del proyecto</p>
+                </div>
+                <button onClick={() => setModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-2xl transition-colors">
+                  <XCircle className="w-6 h-6 text-gray-400" />
+                </button>
               </div>
-            </form>
+
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                <div className="bg-gray-50/50 p-6 rounded-3xl border border-gray-100">
+                  <Input
+                    label="Nombre oficial de la sede"
+                    placeholder="Ej: Sede Norte Principal"
+                    {...register('nombre')}
+                    error={errors.nombre?.message}
+                    className="bg-white border-none ring-1 ring-gray-200 focus:ring-green-500"
+                    autoFocus
+                  />
+                </div>
+
+                <div className="flex gap-4 pt-2">
+                  <Button type="submit" loading={saving} className="flex-1 py-4 rounded-2xl shadow-lg shadow-green-100 font-bold">
+                    {editing ? 'Guardar Cambios' : 'Registrar Sede'}
+                  </Button>
+                  <Button type="button" variant="ghost" onClick={() => setModalOpen(false)} className="flex-1 py-4 rounded-2xl font-bold text-gray-500">
+                    Cancelar
+                  </Button>
+                </div>
+              </form>
+            </div>
+            <div className="bg-gray-50 p-4 text-center mt-4">
+              <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest flex items-center justify-center gap-2">
+                <AlertCircle className="w-3 h-3" />
+                La sede se sincronizará con la nube inmediatamente
+              </p>
+            </div>
           </div>
         </div>
       )}

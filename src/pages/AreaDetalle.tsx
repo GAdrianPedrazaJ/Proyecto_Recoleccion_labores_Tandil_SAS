@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigationStore } from '../store/useNavigationStore'
+import { useParams, useSearchParams } from 'react-router-dom'
 import { useNavigation } from '../hooks/useNavigation'
 import { getAreaById, getBloquesByArea, getAllVariedades, getAllVariedadesBloques, getColaboradoresByArea } from '../services/db'
 import { syncFromRemote } from '../services/sync'
@@ -16,10 +16,11 @@ interface ColabRow {
 }
 
 export default function AreaDetalle() {
-  const { params } = useNavigationStore()
-  const areaId = String(params.areaId)
-  const sedeId = String(params.sedeId ?? '')
+  const { areaId } = useParams<{ areaId: string }>()
+  const [searchParams] = useSearchParams()
+  const sedeId = searchParams.get('sedeId') || ''
   const navigate = useNavigation()
+
   const [area, setArea] = useState<Area | null>(null)
   const [rows, setRows] = useState<ColabRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -78,10 +79,8 @@ export default function AreaDetalle() {
     // Guardar selecciones en sessionStorage para que los formularios las lean
     sessionStorage.setItem('labores-selecciones', JSON.stringify(selecciones))
     // Navegar directamente a elección de formulario
-    navigate('select-tipo', { areaId, sedeId: sedeId || '' })
+    navigate('select-tipo', { areaId, sedeId })
   }
-
-
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">

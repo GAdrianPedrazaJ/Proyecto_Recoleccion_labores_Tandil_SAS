@@ -1,8 +1,11 @@
 import { useEffect } from 'react'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from './store/useAuthStore'
-import { useNavigationStore } from './store/useNavigationStore'
 import { syncFromRemote } from './services/sync'
 import { PWAInstallBanner } from './components/PWAInstallBanner'
+import { ProtectedRoute } from './components/auth/ProtectedRoute'
+
+// Páginas
 import AreaSelector from './pages/AreaSelector'
 import AreaDetalle from './pages/AreaDetalle'
 import Planeacion from './pages/Planeacion'
@@ -28,75 +31,99 @@ import SupervisorGestionar from './pages/supervisor/Gestionar'
 import { SyncProgressModal } from './components/ui/SyncProgressModal'
 
 export default function App() {
-  const { restoreSession, isAuthenticated, usuario } = useAuthStore()
-  const { currentPage, goTo } = useNavigationStore()
+  const { restoreSession, isAuthenticated } = useAuthStore()
 
   useEffect(() => {
     restoreSession()
   }, [restoreSession])
 
-  // Sincronizar datos maestros al iniciar (sedes, areas, colaboradores, etc.)
+  // Sincronizar datos maestros solo cuando el usuario está autenticado y hay conexión
   useEffect(() => {
-    if (navigator.onLine) {
+    if (navigator.onLine && isAuthenticated) {
       syncFromRemote()
         .then(() => window.dispatchEvent(new Event('sync:remote:done')))
-        .catch(() => {})
+        .catch((err) => console.error('Error en sincronización inicial:', err))
     }
-  }, [])
-
-  // Guard: si no está autenticado y no está en página pública, enviar a login
-  useEffect(() => {
-    if (!isAuthenticated && currentPage !== 'login' && currentPage !== 'admin-setup') {
-      goTo('login')
-    }
-  }, [isAuthenticated, currentPage, goTo])
-
-  const isAdmin = usuario?.rol === 'administrador' || usuario?.rol === 'superadministrador'
-
-  const renderPage = () => {
-    switch (currentPage) {
-      case 'login':               return <Login />
-      case 'admin-setup':         return <AdminSetup />
-
-      // Páginas de supervisor
-      case 'areas':               return isAuthenticated ? <AreaSelector />       : <Login />
-      case 'area-detail':         return isAuthenticated ? <AreaDetalle />        : <Login />
-      case 'planeacion':          return isAuthenticated ? <Planeacion />         : <Login />
-      case 'select-tipo':         return isAuthenticated ? <SelectTipo />         : <Login />
-      case 'formulario-corte':    return isAuthenticated ? <FormularioCorte />    : <Login />
-      case 'formulario-labores':  return isAuthenticated ? <FormularioLabores />  : <Login />
-      case 'formulario-aseguramiento': return isAuthenticated ? <FormularioAseguramiento /> : <Login />
-      case 'nuevo-registro':
-      case 'registro':            return isAuthenticated ? <NuevoRegistro />      : <Login />
-      case 'historial':           return isAuthenticated ? <Registros />          : <Login />
-      case 'supervisor-gestionar':return isAuthenticated ? <SupervisorGestionar />: <Login />
-
-      // Páginas de admin
-      case 'admin-dashboard':     return isAdmin ? <AdminDashboard />    : <Login />
-      case 'admin-estadisticas':  return isAdmin ? <AdminDashboard />    : <Login />  // redirige a Dashboard unificado
-      case 'admin-asignaciones':  return isAdmin ? <AdminAsignaciones /> : <Login />
-      case 'admin-areas':         return isAdmin ? <AdminAreas />        : <Login />
-      case 'admin-colaboradores': return isAdmin ? <AdminColaboradores />: <Login />
-      case 'admin-bloques':       return isAdmin ? <AdminBloques />      : <Login />
-      case 'admin-variedades':    return isAdmin ? <AdminVariedades />   : <Login />
-      case 'admin-supervisores':  return isAdmin ? <AdminSupervisores /> : <Login />
-      case 'admin-labores':       return isAdmin ? <AdminLabores />      : <Login />
-      case 'admin-sedes':         return isAdmin ? <AdminSedes />        : <Login />
-      // Páginas exclusivas de superadministrador
-      case 'superadmin-usuarios': return isAdmin ? <AdminGestionUsuarios /> : <Login />
-      default: return <Login />
-    }
-  }
+  }, [isAuthenticated])
 
   return (
     <>
-      {/* key fuerza el remontaje completo al cambiar de página */}
-      <div key={currentPage} className="contents">
-        {renderPage()}
-      </div>
+      <Routes>
+        {/* Rutas Públicas */}
+        <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/" replace />} />
+        <Route path="/admin-setup" element={<AdminSetup />} />
+
+        {/* Rutas de Supervisor */}
+        <Route path="/" element={<ProtectedRoute><AreaSelector /></ProtectedRoute>} />
+        <Route path="/areas" element={<ProtectedRoute><AreaSelector /></ProtectedRoute>} />
+        <Route path="/area/:areaId" element={<ProtectedRoute><AreaDetalle /></ProtectedRoute>} />
+        <Route path="/planeacion" element={<ProtectedRoute><Planeacion /></ProtectedRoute>} />
+        <Route path="/select-tipo" element={<ProtectedRoute><SelectTipo /></ProtectedRoute>} />
+        <Route path="/formulario-corte" element={<ProtectedRoute><FormularioCorte /></ProtectedRoute>} />
+        <Route path="/formulario-labores" element={<ProtectedRoute><FormularioLabores /></ProtectedRoute>} />
+        <Route path="/formulario-aseguramiento" element={<ProtectedRoute><FormularioAseguramiento /></ProtectedRoute>} />
+        <Route path="/nuevo-registro" element={<ProtectedRoute><NuevoRegistro /></ProtectedRoute>} />
+        <Route path="/historial" element={<ProtectedRoute><Registros /></ProtectedRoute>} />
+        <Route path="/supervisor/gestionar" element={<ProtectedRoute><SupervisorGestionar /></ProtectedRoute>} />
+
+        {/* Rutas de Admin */}
+        <Route path="/admin" element={
+          <ProtectedRoute allowedRoles={['administrador', 'superadministrador']}>
+            <AdminDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/areas" element={
+          <ProtectedRoute allowedRoles={['administrador', 'superadministrador']}>
+            <AdminAreas />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/colaboradores" element={
+          <ProtectedRoute allowedRoles={['administrador', 'superadministrador']}>
+            <AdminColaboradores />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/bloques" element={
+          <ProtectedRoute allowedRoles={['administrador', 'superadministrador']}>
+            <AdminBloques />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/variedades" element={
+          <ProtectedRoute allowedRoles={['administrador', 'superadministrador']}>
+            <AdminVariedades />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/supervisores" element={
+          <ProtectedRoute allowedRoles={['administrador', 'superadministrador']}>
+            <AdminSupervisores />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/labores" element={
+          <ProtectedRoute allowedRoles={['administrador', 'superadministrador']}>
+            <AdminLabores />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/asignaciones" element={
+          <ProtectedRoute allowedRoles={['administrador', 'superadministrador']}>
+            <AdminAsignaciones />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/sedes" element={
+          <ProtectedRoute allowedRoles={['administrador', 'superadministrador']}>
+            <AdminSedes />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/usuarios" element={
+          <ProtectedRoute allowedRoles={['superadministrador']}>
+            <AdminGestionUsuarios />
+          </ProtectedRoute>
+        } />
+
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+
       <SyncProgressModal />
       <PWAInstallBanner />
     </>
   )
 }
-

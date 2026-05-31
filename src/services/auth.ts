@@ -101,6 +101,15 @@ export async function updateUsuarioAdmin(
   if (error) throw new Error(error.message)
 }
 
+/**
+ * Actualiza la contraseña de un usuario desde el panel administrativo
+ */
+export async function updatePasswordAdmin(id: string, nuevaContraseña: string): Promise<void> {
+  const contraseña_hash = await bcrypt.hash(nuevaContraseña, 10)
+  const { error } = await supabase.from('usuarios').update({ contraseña_hash }).eq('id', id)
+  if (error) throw new Error(error.message)
+}
+
 export async function createUsuarioAdmin(data: {
   email: string
   nombre: string
@@ -193,4 +202,3 @@ export function hasPermission(usuarioRol: string, requiredRol: 'supervisor' | 'a
   // supervisor puede acceder a supervisor
   return usuarioRol === 'supervisor' || usuarioRol === 'administrador'
 }
-

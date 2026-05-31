@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigationStore } from '../store/useNavigationStore'
-import { useNavigation } from '../hooks/useNavigation'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { FormProvider, useFieldArray, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -16,7 +15,7 @@ import { Select } from '../components/ui/Select'
 import { Spinner } from '../components/ui/Spinner'
 import { FilaColaboradorForm } from '../components/forms/FilaColaboradorForm'
 
-// â”€â”€â”€ Zod Schemas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Zod Schemas ─────────────────────────────────────────────────────────────
 
 const laborSchema = z.object({
   laborId: z.string().min(1, 'Selecciona una labor'),
@@ -68,7 +67,7 @@ const registroSchema = z.object({
   filas: z.array(filaSchema),
 })
 
-// â”€â”€â”€ Constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Constants ───────────────────────────────────────────────────────────────
 
 const TIPOS_REGISTRO = [
   { value: 'Corte', label: 'Corte' },
@@ -76,7 +75,7 @@ const TIPOS_REGISTRO = [
   { value: 'Aseguramiento', label: 'Aseguramiento' },
 ]
 
-// â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function nowDate() {
   return new Date().toISOString().slice(0, 10)
@@ -122,21 +121,17 @@ function defaultFila(c: SeleccionColaborador) {
   }
 }
 
-// â”€â”€â”€ Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Component ───────────────────────────────────────────────────────────────
 
 export default function NuevoRegistro() {
-  const { params } = useNavigationStore()
-  const areaIdParam = params.areaId ? String(params.areaId) : undefined
-  const formularioId = params.formularioId ? String(params.formularioId) : undefined
+  const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
+  const areaId = searchParams.get('areaId') || ''
+  const formularioId = searchParams.get('formularioId') || ''
   
-  // Leer tipo desde sessionStorage (lo guardó AreaDetalle) o usar param
   const tipoSessionStorage = sessionStorage.getItem('labores-tipo-actual')
-  const tipoParam = tipoSessionStorage || (params.tipo ? String(params.tipo) : 'Labores')
+  const tipoParam = tipoSessionStorage || searchParams.get('tipo') || 'Labores'
   
-  // Mantener areaId en estado localpara no perderlo si se navega sin parámetros
-  const [areaIdLocal, setAreaIdLocal] = useState<string | undefined>(areaIdParam)
-  const areaId = areaIdParam || areaIdLocal
-  const navigate = useNavigation()
   const { save, update, saving } = useFormulario()
   const isEditMode = !!formularioId
 
@@ -147,7 +142,6 @@ export default function NuevoRegistro() {
   const [formularioOriginal, setFormularioOriginal] = useState<Formulario | null>(null)
   const [loading, setLoading] = useState(true)
   const [success, setSuccess] = useState(false)
-  // fase: 'estimado' = primera carga del día (solo estimados), 'real' = completar reales
   const [fase, setFase] = useState<'estimado' | 'real'>('estimado')
 
   const methods = useForm<RegistroFV>({
@@ -157,7 +151,7 @@ export default function NuevoRegistro() {
 
   const { fields } = useFieldArray({ control: methods.control, name: 'filas' })
 
-  // Sincronizar tipo del formulario cuando tipoParam cambia (desde sessionStorage)
+  // Sincronizar tipo del formulario cuando tipoParam cambia
   useEffect(() => {
     const currentValues = methods.getValues()
     methods.reset({ 
@@ -165,16 +159,9 @@ export default function NuevoRegistro() {
       tipo: tipoParam, 
       filas: currentValues.filas || [] 
     })
-  }, [tipoParam, methods])
+  }, [tipoParam])
 
-  // Actualizar areaIdLocal cuando areaIdParam cambia (mantiene contexto si navega sin paráms)
-  useEffect(() => {
-    if (areaIdParam) {
-      setAreaIdLocal(areaIdParam)
-    }
-  }, [areaIdParam])
-
-  // Load labor catalog and variedades (shared between modes)
+  // Load labor catalog and variedades
   useEffect(() => {
     async function loadCatalog() {
       const [labs, vars] = await Promise.all([getAllLabores(), getAllVariedades()])
@@ -189,14 +176,12 @@ export default function NuevoRegistro() {
       }
     }
     loadCatalog()
-    // Limpiar tipo del sessionStorage después de leerlo
     return () => sessionStorage.removeItem('labores-tipo-actual')
   }, [])
 
     // NEW mode: load area + init filas from sessionStorage
   useEffect(() => {
     if (isEditMode || !areaId) return
-    // Obtener selecciones del sessionStorage (pasadas desde AreaDetalle)
     const seleccionesJson = sessionStorage.getItem('labores-selecciones')
     const selecciones = seleccionesJson ? JSON.parse(seleccionesJson) : []
     const today = nowDate()
@@ -205,7 +190,6 @@ export default function NuevoRegistro() {
       setArea(areaData ?? null)
       setBloques(bloquesData)
       if (borradorExistente) {
-        // Ya existe un borrador del día → abrir en fase REAL (completar reales)
         setFase('real')
         setFormularioOriginal(borradorExistente)
         methods.reset({
@@ -213,26 +197,24 @@ export default function NuevoRegistro() {
           tipo: borradorExistente.tipo,
           filas: borradorExistente.filas.map((fila) => ({ _active: true, ...fila })),
         })
-        sessionStorage.removeItem('labores-selecciones')
       } else {
-        // Primera vez del día → fase ESTIMADO
         setFase('estimado')
         methods.reset({
           fecha: today,
           tipo: tipoParam,
           filas: selecciones.length > 0 ? selecciones.map(defaultFila) : [],
         })
-        sessionStorage.removeItem('labores-selecciones')
       }
+      sessionStorage.removeItem('labores-selecciones')
       setLoading(false)
     })
-  }, [areaId, isEditMode, tipoParam, methods]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [areaId, isEditMode, tipoParam])
 
   // EDIT mode: load existing formulario
   useEffect(() => {
     if (!isEditMode || !formularioId) return
     getFormularioById(formularioId).then(async (f) => {
-      if (!f) { navigate('historial'); return }
+      if (!f) { navigate('/historial'); return }
       setFormularioOriginal(f)
       setFase(f.fase ?? 'real')
       const bloquesData = await getBloquesByArea(f.areaId)
@@ -245,9 +227,9 @@ export default function NuevoRegistro() {
       })
       setLoading(false)
     })
-  }, [formularioId, isEditMode]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [formularioId, isEditMode])
 
-  // â”€â”€â”€ Save handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Save handlers ──────────────────────────────────────────────────────────
 
   const [validationErrors, setValidationErrors] = useState(0)
 
@@ -263,13 +245,11 @@ export default function NuevoRegistro() {
     }
 
     if (tipo === 'Corte') {
-      // Estimados requeridos en borrador y completo
       req(fila.tiempoEstimadoMinutos > 0, 'tiempoEstimadoMinutos')
       req(fila.tallosEstimados > 0, 'tallosEstimados')
       req(!!fila.horaInicio, 'horaInicio')
       req(!!fila.horaFinCorteEstimado, 'horaFinCorteEstimado')
       req(fila.rendimientoCorteEstimado > 0, 'rendimientoCorteEstimado')
-      // Reales solo al completar
       if (estado === 'completo') {
         req(fila.tiempoRealMinutos > 0, 'tiempoRealMinutos')
         req(fila.tallosReales > 0, 'tallosReales')
@@ -277,7 +257,6 @@ export default function NuevoRegistro() {
         req(fila.rendimientoCorteReal > 0, 'rendimientoCorteReal')
       }
     } else if (tipo === 'Labores') {
-      // Al menos una labor con datos estimados
       fila.labores.forEach((labor, j) => {
         req(!!labor.laborId, `labores.${j}.laborId`, 'Selecciona una labor')
         req(labor.camasEstimadas > 0, `labores.${j}.camasEstimadas`)
@@ -288,7 +267,6 @@ export default function NuevoRegistro() {
         }
       })
     } else if (tipo === 'Aseguramiento') {
-      // Proceso y seguridad requerido siempre
       req(!!fila.procesoSeguridad, 'procesoSeguridad')
     }
 
@@ -305,12 +283,8 @@ export default function NuevoRegistro() {
 
     if (filasActivas.length === 0) return
 
-
-
-    // En fase 'estimado' siempre se guarda borrador; en fase 'real' siempre completo
     const estado: 'borrador' | 'completo' = estadoForzado ?? (fase === 'estimado' ? 'borrador' : 'completo')
 
-    // Validar todos los campos requeridos según el estado y tipo
     let allErrs: Array<{ field: string; message: string }> = []
     data.filas.forEach((fila, i) => {
       if (!fila._active) return
@@ -319,7 +293,7 @@ export default function NuevoRegistro() {
 
     if (allErrs.length > 0) {
       allErrs.forEach(({ field, message }) =>
-        methods.setError(field as Parameters<typeof methods.setError>[0], { type: 'manual', message }),
+        methods.setError(field as any, { type: 'manual', message }),
       )
       setValidationErrors(allErrs.length)
       window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -327,7 +301,6 @@ export default function NuevoRegistro() {
     }
 
     if (formularioOriginal) {
-      // Actualizar borrador existente (fase real o edición normal)
       const formularioActualizado = {
         ...formularioOriginal,
         fecha: data.fecha,
@@ -337,66 +310,23 @@ export default function NuevoRegistro() {
         filas: filasActivas,
         sincronizado: false,
       }
-
-      // Si se completa, informar sobre block-sync pero permitir guardado
-      if (estado === 'completo') {
-        const { corte, labores, aseguramiento } = await obtenerLosTres(
-          decodeURIComponent(areaId ?? ''),
-          data.fecha,
-        )
-
-        const faltanTipos: string[] = []
-        if (!corte && data.tipo !== 'Corte') faltanTipos.push('Corte')
-        if (!labores && data.tipo !== 'Labores') faltanTipos.push('Labores')
-        if (!aseguramiento && data.tipo !== 'Aseguramiento') faltanTipos.push('Aseguramiento')
-
-        // Informar al usuario sobre el estado (pero no bloquear)
-        if (faltanTipos.length > 0) {
-          const msg = `ℹ️ Guardando ${data.tipo}...\n\nFaltan: ${faltanTipos.join(', ')}\n\nCompleta los 3 tipos para que se sincronicen juntos a Supabase.`
-          console.info(msg)
-        }
-      }
-
       await update(formularioActualizado)
     } else {
       const formularioNuevo = {
         fecha: data.fecha,
-        areaId: decodeURIComponent(areaId ?? ''),
-        areaNombre: area?.nombre ?? '',
-        supervisorId: area?.supervisorId ?? '',
+        areaId: decodeURIComponent(areaId),
+        areaNombre: area?.nombre || '',
+        supervisorId: area?.supervisorId || '',
         tipo: data.tipo,
         estado,
         fase,
         filas: filasActivas,
       }
-
-      // Si se completa directamente, permitir pero informar
-      if (estado === 'completo') {
-        const { corte, labores, aseguramiento } = await obtenerLosTres(
-          decodeURIComponent(areaId ?? ''),
-          data.fecha,
-        )
-
-        const faltanTipos: string[] = []
-        if (!corte && data.tipo !== 'Corte') faltanTipos.push('Corte')
-        if (!labores && data.tipo !== 'Labores') faltanTipos.push('Labores')
-        if (!aseguramiento && data.tipo !== 'Aseguramiento') faltanTipos.push('Aseguramiento')
-
-        // Informar pero permitir guardado
-        if (faltanTipos.length > 0) {
-          const msg = `ℹ️ Guardando ${data.tipo}...\n\nFaltan: ${faltanTipos.join(', ')}\n\nCompleta los 3 tipos para que se sincronicen juntos a Supabase.`
-          console.info(msg)
-        }
-      }
-
-
       await save(formularioNuevo)
     }
     setSuccess(true)
-    setTimeout(() => navigate('historial'), 1200)
+    setTimeout(() => navigate('/historial'), 1200)
   }
-
-  // â”€â”€â”€ Success screen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   if (success) {
     return (
@@ -430,9 +360,7 @@ export default function NuevoRegistro() {
         {!loading && (
           <FormProvider {...methods}>
             <form noValidate className="space-y-4">
-              {/* Meta */}
               <div className="rounded-xl bg-white border border-gray-100 shadow-sm p-4 space-y-3">
-                {/* Banner de fase */}
                 {fase === 'estimado' ? (
                   <div className="rounded-lg bg-blue-50 border border-blue-200 px-3 py-2 text-sm text-blue-700 font-medium">
                     📋 Ingreso de <strong>estimados</strong> — los datos reales se completan más tarde
@@ -457,7 +385,6 @@ export default function NuevoRegistro() {
                 />
               </div>
 
-              {/* Colaboradores */}
               {fields.length === 0 && (
                 <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
                   No hay colaboradores. Vuelve atrás para seleccionarlos.
@@ -484,7 +411,6 @@ export default function NuevoRegistro() {
         )}
       </main>
 
-      {/* Bottom action bar */}
       {!loading && (
         <div className="fixed bottom-16 inset-x-0 px-4 py-3 bg-white border-t border-gray-200 shadow-lg space-y-2">
           {validationErrors > 0 && (
